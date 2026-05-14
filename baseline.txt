@@ -1,0 +1,16 @@
+Lordship — Project Baseline
+Lordship is a free and open source foundation for building software to manage mobile home community properties. The primary use case is lot-space tenancy, where tenants lease the land (dirt) rather than the residence itself — though the system is designed to also support traditional residence-type tenancies in parks.
+
+The project is intended to be a solid, extensible base that other developers and companies can build custom property management solutions on top of.
+
+Tech Stack:
+
+Database: PostgreSQL version 18.0, with Flyway managing all schema migrations
+Backend: Java 25, Spring Boot 4.0, structured using Spring Modulith to enforce clean domain boundaries while remaining a single deployable application
+Frontend: React
+Build tool: Gradle
+
+Architecture philosophy:
+The backend is organized into domain modules (users, leases, payments, maintenance, etc.) with enforced boundaries between them. This keeps the codebase clean and maintainable as it grows, while leaving the door open to extract modules into independent services if the application ever reaches a scale that demands it.
+Security: Spring Security with RBAC (role-based access control), where each module owns its own set of permissions that get composed into roles at the application level.
+Package: io.github.lordship
