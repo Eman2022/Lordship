@@ -1,9 +1,0 @@
-CREATE DATABASE lordship;
-
-CREATE USER erich_l WITH PASSWORD 'remoter';
-GRANT ALL PRIVILEGES ON DATABASE lordship TO erich_l;
-
-## Next: set your environment variables:
-## DB_URL
-## DB_USERNAME
-## DB_PASSWORD
