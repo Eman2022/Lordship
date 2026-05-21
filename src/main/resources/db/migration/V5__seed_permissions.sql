@@ -1,0 +1,90 @@
+-- Seed data: core permissions, default roles, and role-permission assignments.
+-- Depends on: agent_role, permission, role_permission (V3)
+
+-- Core permissions
+INSERT INTO permission (uuid, permission_name) VALUES
+    -- Agents
+    (uuidv7(), 'agents:view'),
+    (uuidv7(), 'agents:edit'),
+
+    -- Permissions
+    (uuidv7(), 'permissions:view'),
+    (uuidv7(), 'permissions:assign'),
+    (uuidv7(), 'permissions:deny'),
+
+    -- Roles
+    (uuidv7(), 'agent_roles:view'),
+    (uuidv7(), 'agent_roles:edit'),
+
+    -- Pets
+    (uuidv7(), 'pets:view'),
+    (uuidv7(), 'pets:edit'),
+
+    -- Properties
+    (uuidv7(), 'properties:view'),
+    (uuidv7(), 'properties:edit'),
+
+    -- Property assignments
+    (uuidv7(), 'assignments:view'),
+    (uuidv7(), 'assignments:assign'),  -- assign an agent to a property
+    (uuidv7(), 'assignments:remove'),  -- remove an agent from a property
+
+    -- Persons
+    (uuidv7(), 'persons_ssn:view'),
+    (uuidv7(), 'persons_ssn:edit'),
+    (uuidv7(), 'persons:view'),
+    (uuidv7(), 'persons:edit'),
+
+    -- Audit log
+    (uuidv7(), 'audit:view'),          -- see the full audit trail
+    (uuidv7(), 'audit:view_own');      -- agents can only see their own history
+
+
+-- Default roles
+INSERT INTO agent_role (uuid, role_name) VALUES
+    (uuidv7(), 'Admin'),
+    (uuidv7(), 'Office Staff'),
+    (uuidv7(), 'Property Manager');
+
+
+-- Admin gets all permissions
+INSERT INTO role_permission (uuid, role_id, permission_id)
+SELECT uuidv7(), r.uuid, p.uuid
+FROM agent_role r, permission p
+WHERE r.role_name = 'Admin';
+
+
+-- Office Staff
+INSERT INTO role_permission (uuid, role_id, permission_id)
+SELECT uuidv7(), r.uuid, p.uuid
+FROM agent_role r, permission p
+WHERE r.role_name = 'Office Staff'
+  AND p.permission_name IN (
+        'agents:view',
+        'agents:edit',
+        'persons:view',
+        'persons:edit',
+        'pets:view',
+        'pets:edit',
+        'properties:view',
+        'properties:edit',
+        'assignments:view',
+        'assignments:assign',
+        'assignments:remove',
+        'audit:view',
+        'audit:view_own'
+    );
+
+
+-- Property Manager
+INSERT INTO role_permission (uuid, role_id, permission_id)
+SELECT uuidv7(), r.uuid, p.uuid
+FROM agent_role r, permission p
+WHERE r.role_name = 'Property Manager'
+  AND p.permission_name IN (
+        'persons:view',
+        'pets:view',
+        'properties:view',
+        'assignments:view',
+        'audit:view_own'
+    );
