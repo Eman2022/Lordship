@@ -1,4 +1,4 @@
-package io.github.lordship.access.internal;
+package io.github.lordship.access;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -9,6 +9,7 @@ public record GrantedRole(
     UUID agentId,
     UUID roleId,
     UUID grantedBy,
+    UUID revokedBy,
     LocalDateTime createdAt,
     LocalDateTime deletedAt
 ) {

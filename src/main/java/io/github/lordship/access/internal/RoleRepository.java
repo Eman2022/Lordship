@@ -15,10 +15,10 @@ public class RoleRepository {
     public Optional<RoleRow> findByName(String roleName) {
         return jdbc.sql("""
                 SELECT * FROM agent_role
-                WHERE role_name = :permissionName
+                WHERE role_name = :roleName
                 and deleted_at IS NULL
                 """)
-                .param("permissionName", roleName)
+                .param("roleName", roleName)
                 .query(RoleRow.class)
                 .optional();
     }
@@ -26,7 +26,7 @@ public class RoleRepository {
     public RoleRow save(RoleRow row) {
         return jdbc.sql("""
                 INSERT INTO agent_role (role_name)
-                VALUES (:permissionName)
+                VALUES (:roleName)
                 RETURNING *
                 """)
                 .paramSource(row)

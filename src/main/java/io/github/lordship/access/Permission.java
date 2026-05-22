@@ -10,7 +10,6 @@ public record Permission(
         LocalDateTime createdAt,
         LocalDateTime deletedAt
     ) {
-
     public boolean isSoftDeleted() {
         return deletedAt != null;
     }

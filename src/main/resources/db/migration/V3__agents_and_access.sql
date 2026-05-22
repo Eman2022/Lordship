@@ -64,11 +64,13 @@ CREATE TABLE granted_role (
     agent_id UUID NOT NULL,
     role_id UUID NOT NULL,
     granted_by UUID NOT NULL,
+    revoked_by UUID,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,
     FOREIGN KEY (agent_id) REFERENCES agent(uuid),
     FOREIGN KEY (role_id) REFERENCES agent_role(uuid),
-    FOREIGN KEY (granted_by) REFERENCES agent(uuid)
+    FOREIGN KEY (granted_by) REFERENCES agent(uuid),
+    FOREIGN KEY (revoked_by) REFERENCES agent(uuid)
 );
 
 -- Prevents the same role from being granted to the same agent more than once.

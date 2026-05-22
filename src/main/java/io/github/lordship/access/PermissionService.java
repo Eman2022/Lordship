@@ -17,7 +17,7 @@ public class PermissionService {
         this.permissionRepository = permissionRepository;
     }
 
-    // note that the scope is narrow- the permissionService WILL NOT make sure the agent exists ect
+    // note that the scope is narrow - the permissionService WILL NOT make sure the agent exists ect
     public Set<Permission> findPermissionsForAgent(UUID agentId) {
         return permissionRepository.findActivePermissionsForAgent(agentId)
                 .stream()

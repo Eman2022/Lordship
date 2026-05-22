@@ -6,6 +6,8 @@ INSERT INTO permission (uuid, permission_name) VALUES
     -- Agents
     (uuidv7(), 'agents:view'),
     (uuidv7(), 'agents:edit'),
+    (uuidv7(), 'agents:view_own'),
+    (uuidv7(), 'agents:edit_own'),
 
     -- Permissions
     (uuidv7(), 'permissions:view'),
@@ -34,6 +36,8 @@ INSERT INTO permission (uuid, permission_name) VALUES
     (uuidv7(), 'persons_ssn:edit'),
     (uuidv7(), 'persons:view'),
     (uuidv7(), 'persons:edit'),
+    (uuidv7(), 'persons:view_own'), -- note: just because they have these two permissions
+    (uuidv7(), 'persons:edit_own'), -- doesn't mean that things can be completely freely edited
 
     -- Audit log
     (uuidv7(), 'audit:view'),          -- see the full audit trail
@@ -44,6 +48,7 @@ INSERT INTO permission (uuid, permission_name) VALUES
 INSERT INTO agent_role (uuid, role_name) VALUES
     (uuidv7(), 'Admin'),
     (uuidv7(), 'Office Staff'),
+    (uuidv7(), 'Unassigned'),
     (uuidv7(), 'Property Manager');
 
 
@@ -62,6 +67,10 @@ WHERE r.role_name = 'Office Staff'
   AND p.permission_name IN (
         'agents:view',
         'agents:edit',
+        'agents:view_own',
+        'agents:edit_own',
+        'persons:view_own',
+        'persons:edit_own',
         'persons:view',
         'persons:edit',
         'pets:view',

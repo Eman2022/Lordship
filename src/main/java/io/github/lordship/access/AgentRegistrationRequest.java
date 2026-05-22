@@ -1,4 +1,4 @@
-package io.github.lordship.access.internal;
+package io.github.lordship.access;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -27,4 +27,6 @@ public record AgentRegistrationRequest (
     @Size(min = 12, message = "Password must be at least 12 characters")
     String password
 
-) {}
+) {
+
+}

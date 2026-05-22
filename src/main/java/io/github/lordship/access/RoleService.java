@@ -15,7 +15,7 @@ public class RoleService {
 
     private final RoleRepository roleRepository;
 
-    private static final Logger log = LoggerFactory.getLogger(ApplicationInitializer.class);
+    private static final Logger log = LoggerFactory.getLogger(RoleService.class);
 
     public RoleService(RoleRepository roleRepository){
         this.roleRepository = roleRepository;
@@ -25,7 +25,7 @@ public class RoleService {
     @Transactional
     public int ensureDefaultRoles() {
         int count = 0;
-        for (String roleName : List.of("Admin", "Office Staff", "Property Manager")) {
+        for (String roleName : List.of("Admin", "Office Staff", "Unassigned", "Property Manager")) {
             if (roleRepository.findByName(roleName).isEmpty()) {
                 roleRepository.save(new RoleRow(roleName));
                 log.warn("Re-seeded missing role: {}", roleName);

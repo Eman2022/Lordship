@@ -1,7 +1,8 @@
 package io.github.lordship.access.internal;
 
+import io.github.lordship.access.AgentRegistrationRequest;
+import io.github.lordship.access.AgentResponse;
 import io.github.lordship.access.AgentService;
-import io.github.lordship.access.AgentWithPerson;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,14 +23,14 @@ public class AgentController {
 
     @PostMapping("/register")
     public ResponseEntity<AgentResponse> registerAgent(@Valid @RequestBody AgentRegistrationRequest request){
-        AgentWithPerson agent = agentService.registerAgent(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(AgentResponse.from(agent));
+        AgentResponse agentResponse = agentService.registerAgent(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(agentResponse);
     }
 
     @PostMapping("/login")
     public ResponseEntity<AgentResponse> login(@Valid @RequestBody AgentLoginRequest request){
         return agentService.verifyLogin(request.workEmail(), request.password())
-                .map(agent -> ResponseEntity.ok(AgentResponse.from(agent)))
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 

@@ -13,14 +13,14 @@ public record RoleRow(
 ) {
     public RoleRow(String name) {
         this(
-        null,
+            null,
             name,
-    null,
-    null
+            null,
+            null
         );
     }
 
-    public Role toRole(){
+    public Role toRole() {
         return new Role(
                 this.uuid,
                 this.roleName,
