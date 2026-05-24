@@ -1,4 +1,4 @@
-package io.github.lordship.access.internal;
+package io.github.lordship.config;
 
 import io.github.lordship.access.AgentWithPerson;
 import io.github.lordship.access.Permission;

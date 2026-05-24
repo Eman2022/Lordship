@@ -2,6 +2,7 @@ package io.github.lordship.access;
 
 
 import io.github.lordship.access.internal.*;
+import io.github.lordship.config.JwtService;
 import io.github.lordship.persons.Person;
 import io.github.lordship.persons.PersonService;
 import io.github.lordship.persons.internal.*;

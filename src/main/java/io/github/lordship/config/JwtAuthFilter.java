@@ -1,13 +1,14 @@
-package io.github.lordship.access;
+package io.github.lordship.config;
 
 
-import io.github.lordship.access.internal.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,12 +20,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 //NOTE: this class is NOT put in the internal folder because the SecurityConfig file needs it
-@Component
+
 public class JwtAuthFilter extends OncePerRequestFilter {
+
+    protected final Log logger = LogFactory.getLog(getClass());
 
     private final JwtService jwtService;
 
-    JwtAuthFilter(JwtService jwtService) {
+    public JwtAuthFilter(JwtService jwtService) {
         this.jwtService = jwtService;
     }
 
