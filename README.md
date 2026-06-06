@@ -43,11 +43,11 @@ Canonical records are current, relational, and the operational source of truth. 
 When companies adopt Lordship, they don't lose their historical data. They also don't corrupt their clean data trying to reconcile it.
 
 Contributing
-Pull requests are welcome. This project is intentionally generic — it is a platform, not a company's internal tool. If you want to contribute logic that is specific to a single operator's workflow, that belongs in a private fork, not here.
+Pull requests are welcome. This project is intentionally generic — it is a platform and engine first and foremost. If you want to contribute logic that is specific to a single operator's workflow, that belongs in a private fork, not here.
 If you work in property management, affordable housing, or mobile home park compliance and you want to contribute domain knowledge, that is especially welcome. Open an issue and start a conversation.
 
 License
 MIT. Use it, fork it, build on it.
 
 Status
-Early. The data pipeline exists and is running in production across a real portfolio. The platform is being built on top of it. This is not vaporware — it is software being built in the open from day one.
+Early
