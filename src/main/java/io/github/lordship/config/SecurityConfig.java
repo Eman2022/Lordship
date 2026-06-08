@@ -24,13 +24,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http,
-                                           @Qualifier("jwtAuthFilter") Filter jwtAuthFilter) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, @Qualifier("jwtAuthFilter") Filter jwtAuthFilter) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/agents/register", "/agents/login").permitAll()
+                        .requestMatchers("/agents/register", "/agents/login").permitAll() // TODO: remove /agents/register
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

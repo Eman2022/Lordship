@@ -40,7 +40,7 @@ public class PermissionRepository {
                  SELECT permission_id
                  FROM denied_permission
                  WHERE agent_id = :agentId
-                  AND deleted_at IS NULL
+                 AND deleted_at IS NULL
                 )
                 """).param("agentId", agentId)
                 .query(PermissionRow.class)

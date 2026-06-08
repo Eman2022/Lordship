@@ -13,7 +13,6 @@ public record AgentRegistrationRequest (
     String nameLast,
 
     @Email
-    @NotBlank
     String personalEmail,
 
     @Email

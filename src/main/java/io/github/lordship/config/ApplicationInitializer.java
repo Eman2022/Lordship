@@ -1,6 +1,7 @@
 package io.github.lordship.config;
 
 import io.github.lordship.access.*;
+import io.github.lordship.access.internal.AgentRegistrationResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,7 +17,6 @@ public class ApplicationInitializer implements ApplicationRunner {
 
     private final RoleService roleService;
     private final AgentService agentService;
-    private final GrantedRoleService grantedRoleService;
 
     @Value("${lordship.root.password}")
     private String rootPassword;
@@ -25,18 +25,18 @@ public class ApplicationInitializer implements ApplicationRunner {
     private String rootEmail;
 
     public ApplicationInitializer(RoleService roleService,
-                                  AgentService agentService,
-                                  GrantedRoleService grantedRoleService) {
+                                  AgentService agentService)
+    {
         this.roleService = roleService;
         this.agentService = agentService;
-        this.grantedRoleService = grantedRoleService;
     }
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
         log.info("Running application initializer");
+        printOutEnvironmentVars();
         ensureRolesExist();
-        ensureRootAgentExists();
+        agentService.ensureRootAgentExists(rootEmail, rootPassword);
         log.info("Application initializer completed");
     }
 
@@ -49,23 +49,13 @@ public class ApplicationInitializer implements ApplicationRunner {
         }
     }
 
-    private void ensureRootAgentExists(){
-        if (agentService.findByWorkEmail(rootEmail).isPresent()){
-            return;
-        }
+    private void printOutEnvironmentVars() {
+        System.out.println("DB_URL: " + System.getenv("DB_URL"));
+        System.out.println("DB_USERNAME: " + System.getenv("DB_USERNAME"));
+        System.out.println("DB_PASSWORD: " + System.getenv("DB_PASSWORD"));
+        System.out.println("ROOT_EMAIL: " + System.getenv("ROOT_EMAIL"));
+        System.out.println("ROOT_PASSWORD: " + System.getenv("ROOT_PASSWORD"));
 
-        AgentRegistrationRequest request = new AgentRegistrationRequest(
-                "Admin",
-                "Root",
-                rootEmail,
-                rootEmail,
-                null,
-                rootPassword
-        );
-
-        AgentResponse ar = agentService.registerAgent(request);
-        log.warn("Root agent with email {} has been created - change password ASAP", rootEmail);
-
-        grantedRoleService.grantRoleByName(ar.uuid(), "Admin", ar.uuid());
     }
+
 }
