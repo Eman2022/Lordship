@@ -56,4 +56,22 @@ public record PersonRow(
                 null
         );
     }
+
+    public PersonRow(String nameFirst, String nameLast) {
+        this(
+                null,
+                null,
+                nameFirst,
+                nameLast,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+    }
 }

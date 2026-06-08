@@ -23,6 +23,11 @@ public class PersonService {
         return personRepository.save(row).toPerson();
     }
 
+    @Transactional
+    public Person createPersonFromName(String firstName, String lastName) {
+        return personRepository.save(new PersonRow(firstName, lastName)).toPerson();
+    }
+
     public Optional<Person> findByID(UUID uuid) {
         return personRepository.findById(uuid).map(PersonRow::toPerson);
     }

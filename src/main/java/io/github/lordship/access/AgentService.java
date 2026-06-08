@@ -6,6 +6,8 @@ import io.github.lordship.config.JwtService;
 import io.github.lordship.persons.Person;
 import io.github.lordship.persons.PersonService;
 import io.github.lordship.persons.internal.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,28 +22,28 @@ public class AgentService {
     private final PasswordService passwordService;
     private final PermissionService permissionService;
     private final JwtService jwtService;
+    private final GrantedRoleService grantedRoleService;
+    private static final Logger log = LoggerFactory.getLogger(AgentService.class);
+
 
     public AgentService(
             AgentRepository agentRepository,
             PersonService personService,
             PasswordService passwordService,
             PermissionService permissionService,
-            JwtService jwtService) {
+            JwtService jwtService, GrantedRoleService grantedRoleService) {
         this.agentRepository = agentRepository;
         this.personService = personService;
         this.passwordService = passwordService;
         this.permissionService = permissionService;
         this.jwtService = jwtService;
+        this.grantedRoleService = grantedRoleService;
     }
 
     @Transactional
-    public AgentResponse registerAgent(AgentRegistrationRequest request){
+    public AgentRegistrationResponse registerAgent(AgentRegistrationRequest request){
 
-        Person person = personService.createPerson(new PersonRow(
-                request.nameFirst(),
-                request.nameLast(),
-                request.personalEmail()
-        ));
+        Person person = personService.createPersonFromName(request.nameFirst(), request.nameLast());
 
         // hash the pass before it enters the DB
         String hashed = passwordService.hash(request.password());
@@ -56,12 +58,11 @@ public class AgentService {
         Agent agent = agentRepository.save(agentRow).toAgent();
         AgentWithPerson agentWithPerson = new AgentWithPerson(agent, person);
 
-        String token = jwtService.generateToken(agentWithPerson, Set.of());
-        return AgentResponse.from(agentWithPerson, token);
+        return AgentRegistrationResponse.from(agentWithPerson);
     }
 
 
-    public Optional<AgentResponse> verifyLogin(String workEmail, String plainTextPassword){
+    public Optional<AgentLoginResponse> verifyLogin(String workEmail, String plainTextPassword){
         return findByWorkEmailForAuth(workEmail)
                 .filter(row -> passwordService.verify(plainTextPassword, row.agentPassword()))
                 .flatMap(row -> personService.findByID(row.personId())
@@ -69,10 +70,21 @@ public class AgentService {
                             AgentWithPerson agentWithPerson = new AgentWithPerson(row.toAgent(), person);
                             Set<Permission> permissions = permissionService.findPermissionsForAgent(row.uuid());
                             String token = jwtService.generateToken(agentWithPerson, permissions);
-                            return AgentResponse.from(agentWithPerson, token);
+                            return AgentLoginResponse.from(agentWithPerson, token);
                         })
 
                 );
+    }
+
+    public void ensureRootAgentExists(String email, String password) {
+        if (findByWorkEmail(email).isPresent()) return;
+
+        AgentRegistrationRequest arr = new AgentRegistrationRequest("Root", "Admin", "", email, "", password);
+        AgentRegistrationResponse resp = registerAgent(arr);
+
+        grantedRoleService.grantRoleByName(resp.uuid(), "Admin", resp.uuid());
+
+        log.warn("Root agent with email {} has been created - change password ASAP", email);
     }
 
     public Optional<Agent> findById(String uuid){
