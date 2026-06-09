@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+// We'll use this service to create roles and assign permissions to roles
+
 @Service
 public class RoleService {
 

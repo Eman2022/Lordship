@@ -1,7 +1,5 @@
-package io.github.lordship.config;
+package io.github.lordship.access;
 
-import io.github.lordship.access.AgentWithPerson;
-import io.github.lordship.access.Permission;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

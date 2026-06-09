@@ -9,11 +9,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class PermissionService {
+public class PermissionResolverService {
 
     private final PermissionRepository permissionRepository;
 
-    public PermissionService(PermissionRepository permissionRepository) {
+    public PermissionResolverService(PermissionRepository permissionRepository) {
         this.permissionRepository = permissionRepository;
     }
 
