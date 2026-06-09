@@ -2,10 +2,8 @@ package io.github.lordship.access;
 
 
 import io.github.lordship.access.internal.*;
-import io.github.lordship.config.JwtService;
 import io.github.lordship.persons.Person;
 import io.github.lordship.persons.PersonService;
-import io.github.lordship.persons.internal.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -20,9 +18,9 @@ public class AgentService {
     private final AgentRepository agentRepository;
     private final PersonService personService;
     private final PasswordService passwordService;
-    private final PermissionService permissionService;
+    private final PermissionResolverService permissionResolverService;
     private final JwtService jwtService;
-    private final GrantedRoleService grantedRoleService;
+    private final RoleAssignmentService roleAssignmentService;
     private static final Logger log = LoggerFactory.getLogger(AgentService.class);
 
 
@@ -30,14 +28,14 @@ public class AgentService {
             AgentRepository agentRepository,
             PersonService personService,
             PasswordService passwordService,
-            PermissionService permissionService,
-            JwtService jwtService, GrantedRoleService grantedRoleService) {
+            PermissionResolverService permissionResolverService,
+            JwtService jwtService, RoleAssignmentService roleAssignmentService) {
         this.agentRepository = agentRepository;
         this.personService = personService;
         this.passwordService = passwordService;
-        this.permissionService = permissionService;
+        this.permissionResolverService = permissionResolverService;
         this.jwtService = jwtService;
-        this.grantedRoleService = grantedRoleService;
+        this.roleAssignmentService = roleAssignmentService;
     }
 
     @Transactional
@@ -68,7 +66,7 @@ public class AgentService {
                 .flatMap(row -> personService.findByID(row.personId())
                         .map(person -> {
                             AgentWithPerson agentWithPerson = new AgentWithPerson(row.toAgent(), person);
-                            Set<Permission> permissions = permissionService.findPermissionsForAgent(row.uuid());
+                            Set<Permission> permissions = permissionResolverService.findPermissionsForAgent(row.uuid());
                             String token = jwtService.generateToken(agentWithPerson, permissions);
                             return AgentLoginResponse.from(agentWithPerson, token);
                         })
@@ -82,7 +80,7 @@ public class AgentService {
         AgentRegistrationRequest arr = new AgentRegistrationRequest("Root", "Admin", "", email, "", password);
         AgentRegistrationResponse resp = registerAgent(arr);
 
-        grantedRoleService.grantRoleByName(resp.uuid(), "Admin", resp.uuid());
+        roleAssignmentService.grantRoleByName(resp.uuid(), "Admin", resp.uuid());
 
         log.warn("Root agent with email {} has been created - change password ASAP", email);
     }

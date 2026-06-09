@@ -1,5 +1,6 @@
 package io.github.lordship.config;
 
+import io.github.lordship.access.JwtService;
 import jakarta.servlet.Filter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;

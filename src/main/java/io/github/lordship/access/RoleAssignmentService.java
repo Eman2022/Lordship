@@ -10,15 +10,15 @@ import java.util.List;
 import java.util.UUID;
 
 
-// assignes roles to agents
+// assigns roles to agents
 
 @Service
-public class GrantedRoleService {
+public class RoleAssignmentService {
 
     private final GrantedRoleRepository grantedRoleRepository;
     private final RoleRepository roleRepository;
 
-    public GrantedRoleService(GrantedRoleRepository grantedRoleRepository, RoleRepository roleRepository) {
+    public RoleAssignmentService(GrantedRoleRepository grantedRoleRepository, RoleRepository roleRepository) {
         this.grantedRoleRepository = grantedRoleRepository;
         this.roleRepository = roleRepository;
     }
@@ -41,5 +41,4 @@ public class GrantedRoleService {
                 .map(GrantedRoleRow::toGrantedRole)
                 .toList();
     }
-
 }
