@@ -1,5 +1,6 @@
 package io.github.lordship.access.internal;
 
+import io.github.lordship.access.AgentLoginRequest;
 import io.github.lordship.access.AgentRegistrationRequest;
 import io.github.lordship.access.AgentLoginResponse;
 import io.github.lordship.access.AgentService;
