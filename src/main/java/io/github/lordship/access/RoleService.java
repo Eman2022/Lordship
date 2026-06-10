@@ -1,6 +1,5 @@
 package io.github.lordship.access;
 
-import io.github.lordship.config.ApplicationInitializer;
 import io.github.lordship.access.internal.RoleRepository;
 import io.github.lordship.access.internal.RoleRow;
 import org.slf4j.Logger;
@@ -35,5 +34,11 @@ public class RoleService {
             }
         }
         return count;
+    }
+
+    @Transactional
+    public Role createRole(String roleName, String roleDescription) {
+        RoleRow roleRow = roleRepository.save(new RoleRow(roleName, roleDescription));
+        return roleRow.toRole();
     }
 }

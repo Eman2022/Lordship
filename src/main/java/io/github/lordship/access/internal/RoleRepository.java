@@ -25,8 +25,8 @@ public class RoleRepository {
 
     public RoleRow save(RoleRow row) {
         return jdbc.sql("""
-                INSERT INTO agent_role (role_name)
-                VALUES (:roleName)
+                INSERT INTO agent_role (role_name, role_description)
+                VALUES (:roleName, :roleDescription)
                 RETURNING *
                 """)
                 .paramSource(row)

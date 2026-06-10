@@ -7,6 +7,7 @@ import java.util.UUID;
 public record Role(
         UUID uuid,
         String roleName,
+        String roleDescription,
         LocalDateTime createdAt,
         LocalDateTime deletedAt
 ) {

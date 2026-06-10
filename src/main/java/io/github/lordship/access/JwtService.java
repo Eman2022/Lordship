@@ -29,13 +29,8 @@ public class JwtService {
     }
 
     public String generateToken(AgentWithPerson agentWithPerson, Set<Permission> permissions) {
-        String permissionsClaim = permissions.stream()
-                .map(Permission::permissionName)
-                .collect(Collectors.joining(","));
-
         return Jwts.builder()
                 .subject(agentWithPerson.agent().uuid().toString())
-                .claim("permissions", permissionsClaim)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(key)
@@ -44,15 +39,6 @@ public class JwtService {
 
     public UUID extractAgentId(String token) {
         return UUID.fromString(parseClaims(token).getSubject());
-    }
-
-    public Set<String> extractPermissions(String token) {
-        String permissions = parseClaims(token).get("permissions", String.class);
-        if (permissions == null || permissions.isBlank()) {
-            return Set.of();
-        }
-        return Arrays.stream(permissions.split(","))
-                .collect(Collectors.toUnmodifiableSet());
     }
 
     public boolean isTokenValid(String token) {

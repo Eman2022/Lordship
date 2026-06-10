@@ -2,6 +2,7 @@ package io.github.lordship.config;
 
 
 import io.github.lordship.access.JwtService;
+import io.github.lordship.access.PermissionResolverService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 //NOTE: this class is NOT put in the internal folder because the SecurityConfig file needs it
@@ -26,9 +28,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected final Log logger = LogFactory.getLog(getClass());
 
     private final JwtService jwtService;
+    private final PermissionResolverService permissionResolverService;
 
-    public JwtAuthFilter(JwtService jwtService) {
+    public JwtAuthFilter(JwtService jwtService, PermissionResolverService permissionResolverService) {
         this.jwtService = jwtService;
+        this.permissionResolverService = permissionResolverService;
     }
 
     @Override
@@ -52,9 +56,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        Set<SimpleGrantedAuthority> authorities = jwtService.extractPermissions(token)
+        UUID agentId = jwtService.extractAgentId(token);
+
+        Set<SimpleGrantedAuthority> authorities = permissionResolverService.findPermissionsForAgent(agentId)
                 .stream()
-                .map(SimpleGrantedAuthority::new)
+                .map(p -> new SimpleGrantedAuthority(p.permissionName()))
                 .collect(Collectors.toSet());
 
         UsernamePasswordAuthenticationToken authentication =

@@ -55,7 +55,6 @@ public class ApplicationInitializer implements ApplicationRunner {
         System.out.println("DB_PASSWORD: " + System.getenv("DB_PASSWORD"));
         System.out.println("ROOT_EMAIL: " + System.getenv("ROOT_EMAIL"));
         System.out.println("ROOT_PASSWORD: " + System.getenv("ROOT_PASSWORD"));
-
     }
 
 }
