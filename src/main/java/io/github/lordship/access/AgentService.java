@@ -39,28 +39,26 @@ public class AgentService {
     }
 
     @Transactional
-    public AgentRegistrationResponse registerAgent(AgentRegistrationRequest request){
+    public AgentWithPerson registerAgent(String nameFirst, String nameLast, String workPhone, String workEmail, String plainTextPassword) {
 
-        Person person = personService.createPersonFromName(request.nameFirst(), request.nameLast());
+        Person person = personService.createPersonFromName(nameFirst, nameLast);
 
         // hash the pass before it enters the DB
-        String hashed = passwordService.hash(request.password());
+        String hashed = passwordService.hash(plainTextPassword);
 
         AgentRow agentRow = new AgentRow(
                 person.uuid(),
-                request.workPhone(),
-                request.workEmail(),
+                workPhone,
+                workEmail,
                 hashed
         );
 
         Agent agent = agentRepository.save(agentRow).toAgent();
-        AgentWithPerson agentWithPerson = new AgentWithPerson(agent, person);
-
-        return AgentRegistrationResponse.from(agentWithPerson);
+        return new AgentWithPerson(agent, person);
     }
 
 
-    public Optional<AgentLoginResponse> verifyLogin(String workEmail, String plainTextPassword){
+    public Optional<AgentAuthResult> verifyLogin(String workEmail, String plainTextPassword){
         return findByWorkEmailForAuth(workEmail)
                 .filter(row -> passwordService.verify(plainTextPassword, row.agentPassword()))
                 .flatMap(row -> personService.findByID(row.personId())
@@ -68,19 +66,16 @@ public class AgentService {
                             AgentWithPerson agentWithPerson = new AgentWithPerson(row.toAgent(), person);
                             Set<Permission> permissions = permissionResolverService.findPermissionsForAgent(row.uuid());
                             String token = jwtService.generateToken(agentWithPerson, permissions);
-                            return AgentLoginResponse.from(agentWithPerson, token);
+                            return new AgentAuthResult(agentWithPerson, token);
                         })
-
                 );
     }
 
     public void ensureRootAgentExists(String email, String password) {
         if (findByWorkEmail(email).isPresent()) return;
 
-        AgentRegistrationRequest arr = new AgentRegistrationRequest("Root", "Admin", "", email, "", password);
-        AgentRegistrationResponse resp = registerAgent(arr);
-
-        roleAssignmentService.grantRoleByName(resp.uuid(), "Admin", resp.uuid());
+        AgentWithPerson agentWithPerson = registerAgent("Root", "Admin", null, email, password);
+        roleAssignmentService.grantRoleByName(agentWithPerson.agent().uuid(), "Admin", agentWithPerson.agent().uuid());
 
         log.warn("Root agent with email {} has been created - change password ASAP", email);
     }

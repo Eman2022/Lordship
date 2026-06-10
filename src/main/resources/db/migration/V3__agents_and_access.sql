@@ -25,6 +25,7 @@ CREATE UNIQUE INDEX uq_agent_email_active
 CREATE TABLE agent_role (
     uuid UUID PRIMARY KEY DEFAULT uuidv7(),
     role_name VARCHAR(60) NOT NULL UNIQUE,
+    role_description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP
 );
@@ -89,7 +90,7 @@ CREATE TABLE denied_permission (
     denied_by UUID NOT NULL,
     denial_removed_by UUID, -- who undid the permission denial?
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP,          -- soft delete = denial lifted; should be audited
+    deleted_at TIMESTAMP,   -- soft delete = denial lifted; should be audited
     FOREIGN KEY (agent_id) REFERENCES agent(uuid),
     FOREIGN KEY (denial_removed_by) REFERENCES agent(uuid),
     FOREIGN KEY (permission_id) REFERENCES permission(uuid),
@@ -101,7 +102,6 @@ CREATE UNIQUE INDEX uq_denied_permission_active
     ON denied_permission (agent_id, permission_id) WHERE deleted_at IS NULL;
 
 CREATE INDEX idx_denied_permission_agent_id ON denied_permission(agent_id) WHERE deleted_at IS NULL;
-
 
 -- Assigns an agent to a specific property. Tracks who made the assignment.
 CREATE TABLE agent_property_assignment (

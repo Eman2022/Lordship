@@ -1,4 +1,18 @@
 package io.github.lordship.access.internal;
 
-public record RoleCreationResponse() {
+import io.github.lordship.access.Role;
+
+import java.util.UUID;
+
+public record RoleCreationResponse(UUID uuid,
+                                   String roleName,
+                                   String roleDescription) {
+
+    public static RoleCreationResponse from(Role role) {
+        return new RoleCreationResponse(
+                role.uuid(),
+                role.roleName(),
+                role.roleDescription()
+        );
+    }
 }

@@ -8,15 +8,28 @@ import java.util.UUID;
 public record RoleRow(
         UUID uuid,
         String roleName,
+        String roleDescription,
         LocalDateTime createdAt,
         LocalDateTime deletedAt
 ) {
+
     public RoleRow(String name) {
         this(
             null,
             name,
             null,
+            null,
             null
+        );
+    }
+
+    public RoleRow(String name, String roleDescription) {
+        this(
+                null,
+                name,
+                roleDescription,
+                null,
+                null
         );
     }
 
@@ -24,6 +37,7 @@ public record RoleRow(
         return new Role(
                 this.uuid,
                 this.roleName,
+                this.roleDescription,
                 this.createdAt,
                 this.deletedAt
         );

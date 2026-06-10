@@ -3,6 +3,7 @@ package io.github.lordship;
 
 import io.github.lordship.access.AgentRegistrationRequest;
 import io.github.lordship.access.AgentLoginRequest;
+import io.github.lordship.access.internal.RoleCreationRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -57,6 +58,7 @@ public class AgentAuthFlowTest {
         String responseBody = mvcResult.getResponse().getContentAsString();
         return objectMapper.readTree(responseBody).get("token").asString();
     }
+
 
 
     @Test
@@ -133,10 +135,26 @@ public class AgentAuthFlowTest {
 
     @Test
     void rootUserCanDefineNewRole() throws Exception {
-        String testRoleName = "SuperLoser";
-
-
+        String testRoleName = "Super Loser";
+        String testRoleDesc = "A role to know you're a loser";
         String rootUserToken = loginAsRoot();
+
+        RoleCreationRequest rcr = new RoleCreationRequest(testRoleName, testRoleDesc);
+
+        // first make sure the role can't be created if we're not logged in
+        mockMvc.perform(post("/roles/create")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(rcr)))
+                .andExpect(status().isForbidden());
+
+        // second make sure the role can be created by the authorized user
+        mockMvc.perform(post("/roles/create")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(rcr))
+                    .header("Authorization", "Bearer " + rootUserToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.roleName").value(testRoleName))
+                .andExpect(jsonPath("$.uuid").exists());
     }
 
 }

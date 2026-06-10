@@ -1,6 +1,8 @@
 package io.github.lordship.config;
 
 import io.github.lordship.access.JwtService;
+import io.github.lordship.access.PermissionResolverService;
+import io.github.lordship.access.RoleService;
 import jakarta.servlet.Filter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -20,8 +22,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     @Bean
-    public JwtAuthFilter jwtAuthFilter(JwtService jwtService) {
-        return new JwtAuthFilter(jwtService);
+    public JwtAuthFilter jwtAuthFilter(JwtService jwtService, PermissionResolverService permissionResolverService) {
+        return new JwtAuthFilter(jwtService, permissionResolverService);
     }
 
     @Bean
