@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Transactional // do more tests to confirm this annotation rolls back database changes.
+@Transactional //TODO: do more tests to confirm this annotation rolls back database changes.
 public class AgentAuthFlowTest {
 
     @Value("${lordship.root.password}")
@@ -38,20 +38,14 @@ public class AgentAuthFlowTest {
     @Autowired
     ObjectMapper objectMapper;
 
-    @Test
-    void registrationAndLoginReturnsJwtToken() throws Exception {
-        // an agent that needs a superuser to help them register
-        String testAgentNameFirst = "Bilbo";
-        String testAgentNameLast = "Baggins";
-        String testAgentEmail = "baggins@lordship.com";
-        String testAgentPass = "pass123456789";
-
+    // helper method
+    private String loginAsRoot() throws Exception {
         // --- Step 1: Log in as root user (root user will create agent accounts)
         AgentLoginRequest agentLoginRequest = new AgentLoginRequest(rootEmail, rootPassword);
 
         MvcResult mvcResult = mockMvc.perform(post("/agents/login")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(agentLoginRequest)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(agentLoginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.workEmail").value(rootEmail))
                 .andExpect(jsonPath("$.fullName").value("Root Admin"))
@@ -61,14 +55,27 @@ public class AgentAuthFlowTest {
 
         // --- Step 2: get token to use to authenticate registering another user
         String responseBody = mvcResult.getResponse().getContentAsString();
-        String token = objectMapper.readTree(responseBody).get("token").asString();
+        return objectMapper.readTree(responseBody).get("token").asString();
+    }
+
+
+    @Test
+    void rootAgentLogsInAndRegistersANewAgent() throws Exception {
+        // an agent that needs a superuser to help them register
+        String testAgentNameFirst = "Bilbo";
+        String testAgentNameLast = "Baggins";
+        String testAgentEmail = "baggins@lordship.com";
+        String testAgentPass = "pass123456789";
+
+        // steps 1 & 2: login and get token
+        String rootUserToken = loginAsRoot();
 
         // --- Step 3: register another user
         AgentRegistrationRequest agentRegistrationRequest = new AgentRegistrationRequest(testAgentNameFirst, testAgentNameLast, null,
                 testAgentEmail, null, testAgentPass);
 
         mockMvc.perform(post("/agents/register")
-                     .header("Authorization", "Bearer " + token) // don't forget your token!
+                     .header("Authorization", "Bearer " + rootUserToken) // don't forget your token!
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(agentRegistrationRequest)))
                 .andExpect(status().isCreated())
@@ -93,6 +100,43 @@ public class AgentAuthFlowTest {
         String userLoginToken = objectMapper.readTree(testUserLoginResponseBody).get("token").asString();
 
         assertFalse(userLoginToken.isEmpty());
+    }
+
+    @Test
+    void unauthorizedStrangerCantRegisterAsNewAgent() throws Exception {
+        String testAgentNameFirst = "Bilbo";
+        String testAgentNameLast = "Baggins";
+        String testAgentNameEmail = "BigBaggins@gmail.com";
+        String testAgentPassword = "pass123456789";
+
+        AgentRegistrationRequest agentRegistrationRequest = new AgentRegistrationRequest(testAgentNameFirst, testAgentNameLast, null, testAgentNameEmail, null, testAgentPassword);
+
+        mockMvc.perform(post("/agents/register")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(agentRegistrationRequest)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void rootUserCantLoginWithWrongPassword() throws Exception {
+
+        String wrongPassword = rootPassword + "123";
+
+        AgentLoginRequest agentLoginRequest = new AgentLoginRequest(rootEmail, wrongPassword);
+
+        mockMvc.perform(post("/agents/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(agentLoginRequest)))
+                .andExpect(status().isUnauthorized())
+                .andReturn();
+    }
+
+    @Test
+    void rootUserCanDefineNewRole() throws Exception {
+        String testRoleName = "SuperLoser";
+
+
+        String rootUserToken = loginAsRoot();
     }
 
 }

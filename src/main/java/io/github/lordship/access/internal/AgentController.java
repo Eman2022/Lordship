@@ -34,5 +34,4 @@ public class AgentController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
-
 }
