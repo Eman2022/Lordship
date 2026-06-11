@@ -16,6 +16,20 @@ CREATE TABLE agent (
 
 CREATE INDEX idx_agent_person_id ON agent(person_id) WHERE deleted_at IS NULL;
 
+
+CREATE TABLE login_event (
+    uuid UUID PRIMARY KEY DEFAULT uuidv7(),
+    agent_id UUID NOT NULL,
+    occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(45),
+    browser_client TEXT, -- what did they use to log in?
+    browserOs TEXT, -- what OS did they use to log in?
+    outcome SMALLINT NOT NULL, -- use an HTTP status code
+    FOREIGN KEY (agent_id) REFERENCES agent(uuid)
+);
+CREATE INDEX idx_login_event_agent ON login_event(agent_id, occurred_at DESC);
+
+
 -- Ensures no two active agents share the same login email.
 CREATE UNIQUE INDEX uq_agent_email_active
     ON agent (work_email) WHERE deleted_at IS NULL;
