@@ -1,8 +1,11 @@
 package io.github.lordship;
 
 
+import io.github.lordship.access.Agent;
 import io.github.lordship.access.AgentRegistrationRequest;
 import io.github.lordship.access.AgentLoginRequest;
+import io.github.lordship.access.AgentService;
+import io.github.lordship.access.internal.LoginEventRow;
 import io.github.lordship.access.internal.RoleCreationRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +19,11 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -39,6 +47,9 @@ public class AgentAuthFlowTest {
     @Autowired
     ObjectMapper objectMapper;
 
+    @Autowired
+    AgentService agentService;
+
     // helper method
     private String loginAsRoot() throws Exception {
         // --- Step 1: Log in as root user (root user will create agent accounts)
@@ -59,7 +70,22 @@ public class AgentAuthFlowTest {
         return objectMapper.readTree(responseBody).get("token").asString();
     }
 
+    @Test
+    void userLoginCreatesNewLog() throws Exception {
+        Optional<Agent>  agent = agentService.findByWorkEmail(rootEmail);
+        assertTrue(agent.isPresent());
+        Agent rootAgent = agent.get();
+        int logCount = agentService.getLoginEventsByAgentId(rootAgent.uuid()).size();
 
+        loginAsRoot();
+
+        List<LoginEventRow> loginEvents = agentService.getLoginEventsByAgentId(rootAgent.uuid());
+        int logCountPostLogin = loginEvents.size();
+
+        LoginEventRow topLog = loginEvents.getFirst();
+
+        assertTrue(logCountPostLogin > logCount);
+    }
 
     @Test
     void rootAgentLogsInAndRegistersANewAgent() throws Exception {

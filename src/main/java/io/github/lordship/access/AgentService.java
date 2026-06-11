@@ -1,16 +1,21 @@
 package io.github.lordship.access;
 
 
+import eu.bitwalker.useragentutils.UserAgent;
 import io.github.lordship.access.internal.*;
 import io.github.lordship.persons.Person;
 import io.github.lordship.persons.PersonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class AgentService {
@@ -21,6 +26,8 @@ public class AgentService {
     private final PermissionResolverService permissionResolverService;
     private final JwtService jwtService;
     private final RoleAssignmentService roleAssignmentService;
+    private final LoginEventRepository loginEventRepository;
+
     private static final Logger log = LoggerFactory.getLogger(AgentService.class);
 
 
@@ -29,13 +36,17 @@ public class AgentService {
             PersonService personService,
             PasswordService passwordService,
             PermissionResolverService permissionResolverService,
-            JwtService jwtService, RoleAssignmentService roleAssignmentService) {
+            JwtService jwtService,
+            RoleAssignmentService roleAssignmentService,
+            LoginEventRepository loginEventRepository
+    ) {
         this.agentRepository = agentRepository;
         this.personService = personService;
         this.passwordService = passwordService;
         this.permissionResolverService = permissionResolverService;
         this.jwtService = jwtService;
         this.roleAssignmentService = roleAssignmentService;
+        this.loginEventRepository = loginEventRepository;
     }
 
     @Transactional
@@ -58,17 +69,39 @@ public class AgentService {
     }
 
 
-    public Optional<AgentAuthResult> verifyLogin(String workEmail, String plainTextPassword){
-        return findByWorkEmailForAuth(workEmail)
-                .filter(row -> passwordService.verify(plainTextPassword, row.agentPassword()))
-                .flatMap(row -> personService.findByID(row.personId())
-                        .map(person -> {
-                            AgentWithPerson agentWithPerson = new AgentWithPerson(row.toAgent(), person);
-                            Set<Permission> permissions = permissionResolverService.findPermissionsForAgent(row.uuid());
-                            String token = jwtService.generateToken(agentWithPerson, permissions);
-                            return new AgentAuthResult(agentWithPerson, token);
-                        })
-                );
+    public Optional<AgentAuthResult> verifyLogin(String workEmail, String plainTextPassword, String userAgentHeader, String ipAddress){
+        UserAgent userAgent = UserAgent.parseUserAgentString(userAgentHeader);
+
+        Optional<AgentRow> agentRow = findByWorkEmailForAuth(workEmail);
+
+        if (agentRow.isEmpty()){
+            return Optional.empty();
+        }
+
+        AgentRow ar = agentRow.get();
+        boolean passwordCorrect = passwordService.verify(plainTextPassword, ar.agentPassword());
+
+        LoginEventRow loginEventRow = new LoginEventRow(
+                ar.uuid(),
+                LocalDateTime.now(),
+                ipAddress,
+                userAgent.getOperatingSystem().getName(),
+                userAgent.getBrowser().getName(),
+                passwordCorrect ? HttpStatus.OK.value() : HttpStatus.UNAUTHORIZED.value()
+        );
+
+        loginEventRepository.save(loginEventRow);
+
+        if (passwordCorrect){
+            return personService.findByID(ar.personId())
+                    .map(person -> {
+                        AgentWithPerson agentWithPerson = new AgentWithPerson(ar.toAgent(), person);
+                        Set<Permission> permissions = permissionResolverService.findPermissionsForAgent(ar.uuid());
+                        String token = jwtService.generateToken(agentWithPerson, permissions);
+                        return new AgentAuthResult(agentWithPerson, token);
+                    });
+        }
+        return Optional.empty();
     }
 
     public void ensureRootAgentExists(String email, String password) {
@@ -92,4 +125,7 @@ public class AgentService {
         return agentRepository.findByWorkEmail(workEmail);
     }
 
+    public List<LoginEventRow> getLoginEventsByAgentId(UUID agentId) {
+        return loginEventRepository.getLoginEventsByAgentId(agentId);
+    }
 }

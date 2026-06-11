@@ -36,8 +36,6 @@ public class GrantedRoleRepository {
                 .query(GrantedRoleRow.class)
                 .list();
     }
-
-
 }
 
 //CREATE TABLE granted_role (
@@ -50,4 +48,4 @@ public class GrantedRoleRepository {
 //FOREIGN KEY (agent_id) REFERENCES agent(uuid),
 //FOREIGN KEY (role_id) REFERENCES agent_role(uuid),
 //FOREIGN KEY (granted_by) REFERENCES agent(uuid)
-//        );
+//);
