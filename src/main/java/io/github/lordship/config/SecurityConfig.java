@@ -2,7 +2,7 @@ package io.github.lordship.config;
 
 import io.github.lordship.access.JwtService;
 import io.github.lordship.access.PermissionResolverService;
-import io.github.lordship.access.RoleService;
+import io.github.lordship.audit.AuditContext;
 import jakarta.servlet.Filter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -22,12 +22,19 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     @Bean
+    public AuditContextFilter auditContextFilter(AuditContext auditContext) {
+        return new AuditContextFilter(auditContext);
+    }
+
+    @Bean
     public JwtAuthFilter jwtAuthFilter(JwtService jwtService, PermissionResolverService permissionResolverService) {
         return new JwtAuthFilter(jwtService, permissionResolverService);
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, @Qualifier("jwtAuthFilter") Filter jwtAuthFilter) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           @Qualifier("jwtAuthFilter") Filter jwtAuthFilter,
+                                           @Qualifier("auditContextFilter") Filter auditContextFilter) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -35,7 +42,8 @@ public class SecurityConfig {
                         .requestMatchers("/agents/login").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(auditContextFilter, jwtAuthFilter.getClass());
         return http.build();
     }
 }
