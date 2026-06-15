@@ -84,6 +84,10 @@ public class AgentAuthFlowTest {
 
         LoginEventRow topLog = loginEvents.getFirst();
 
+        assertFalse(topLog.browserClient().isEmpty());
+        assertFalse(topLog.agentId().toString().isEmpty());
+        assertFalse(topLog.ipAddress().isEmpty());
+
         assertTrue(logCountPostLogin > logCount);
     }
 
@@ -137,7 +141,10 @@ public class AgentAuthFlowTest {
         String testAgentNameEmail = "BigBaggins@gmail.com";
         String testAgentPassword = "pass123456789";
 
-        AgentRegistrationRequest agentRegistrationRequest = new AgentRegistrationRequest(testAgentNameFirst, testAgentNameLast, null, testAgentNameEmail, null, testAgentPassword);
+        AgentRegistrationRequest agentRegistrationRequest = new AgentRegistrationRequest(
+                testAgentNameFirst, testAgentNameLast,
+                null, testAgentNameEmail,
+                null, testAgentPassword);
 
         mockMvc.perform(post("/agents/register")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -147,9 +154,7 @@ public class AgentAuthFlowTest {
 
     @Test
     void rootUserCantLoginWithWrongPassword() throws Exception {
-
         String wrongPassword = rootPassword + "123";
-
         AgentLoginRequest agentLoginRequest = new AgentLoginRequest(rootEmail, wrongPassword);
 
         mockMvc.perform(post("/agents/login")
