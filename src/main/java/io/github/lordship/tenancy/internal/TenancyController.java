@@ -21,6 +21,7 @@ public class TenancyController {
         this.tenancyService = tenancyService;
     }
 
+    // Instead of ResponseEntity<Tenancy> we should send bare minimum info
     @PreAuthorize("hasAuthority('tenancy:create')")
     @PostMapping("/create")
     ResponseEntity<Tenancy> createTenancy(@RequestBody @Valid Tenancy newTenancyRequest) {
