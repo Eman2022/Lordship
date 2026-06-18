@@ -18,7 +18,9 @@ public record LotUpdateRequest(
 
         String notes,
 
+        //optional
         Integer sortOrder
 
 ) {
 }
+//move to internal package

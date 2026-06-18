@@ -2,6 +2,7 @@ package io.github.lordship.lots;
 
 import java.util.UUID;
 
+//move to internal package
 public record LotResponse(
         UUID uuid,
         String propertyCode,
