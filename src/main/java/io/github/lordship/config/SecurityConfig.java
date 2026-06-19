@@ -1,5 +1,6 @@
 package io.github.lordship.config;
 
+import io.github.lordship.access.AgentService;
 import io.github.lordship.access.JwtService;
 import io.github.lordship.access.PermissionResolverService;
 import io.github.lordship.audit.AuditContext;
@@ -27,8 +28,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtAuthFilter jwtAuthFilter(JwtService jwtService, PermissionResolverService permissionResolverService) {
-        return new JwtAuthFilter(jwtService, permissionResolverService);
+    public JwtAuthFilter jwtAuthFilter(JwtService jwtService, PermissionResolverService permissionResolverService, AgentService agentService) {
+        return new JwtAuthFilter(jwtService, permissionResolverService, agentService);
     }
 
     @Bean

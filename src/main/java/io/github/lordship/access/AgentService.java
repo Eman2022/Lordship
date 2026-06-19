@@ -3,6 +3,7 @@ package io.github.lordship.access;
 
 import eu.bitwalker.useragentutils.UserAgent;
 import io.github.lordship.access.internal.*;
+import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
 import io.github.lordship.persons.Person;
 import io.github.lordship.persons.PersonService;
@@ -68,16 +69,11 @@ public class AgentService {
         Agent agent = agentRepository.save(agentRow).toAgent();
 
         // log the change
-        Map<String, Object> after = new HashMap<>();
-        after.put("work_email", workEmail);
-        after.put("work_phone", workPhone);
-        after.put("person_name_first", person.nameFirst());
-        after.put("person_name_last", person.nameLast());
-        auditService.recordInsert("agent", agent.uuid(), after);
+        auditService.recordInsert("agent", agent.uuid(), AuditMapper.toMap(agent));
+        auditService.recordInsert("person", agent.uuid(), AuditMapper.toMap(person));
 
         return new AgentWithPerson(agent, person);
     }
-
 
     public Optional<AgentAuthResult> verifyLogin(String workEmail, String plainTextPassword, String userAgentHeader, String ipAddress){
         UserAgent userAgent = UserAgent.parseUserAgentString(userAgentHeader);
@@ -118,7 +114,7 @@ public class AgentService {
     public void ensureRootAgentExists(String email, String password) {
         if (findByWorkEmail(email).isPresent()) return;
 
-        UUID correlationId = UUID.randomUUID();
+
         Person person = personService.createPersonFromName("Root", "Admin");
         String hashed = passwordService.hash(password);
 
@@ -130,24 +126,18 @@ public class AgentService {
         );
 
         Agent agent = agentRepository.save(agentRow).toAgent();
+        GrantedRole grantedRole = roleAssignmentService.grantRoleByName(agent.uuid(), "Admin", agent.uuid());
 
-        Map<String, Object> personAfter = new HashMap<>();
-        personAfter.put("name_first", person.nameFirst());
-        personAfter.put("name_last", person.nameLast());
-        auditService.recordSystemInsert(correlationId,"person", agent.uuid(), personAfter);
-
-        // log the change
-        Map<String, Object> after = new HashMap<>();
-        after.put("work_email", email);
-        after.put("work_phone", null);
-        auditService.recordSystemInsert(correlationId,"agent", agent.uuid(), after);
-
-        roleAssignmentService.grantRoleByName(agent.uuid(), "Admin", agent.uuid());
+        // log the changes
+        UUID correlationId = UUID.randomUUID();
+        auditService.recordSystemInsert(correlationId,"person", person.uuid(), AuditMapper.toMap(person));
+        auditService.recordSystemInsert(correlationId,"agent", agent.uuid(), AuditMapper.toMap(agent));
+        auditService.recordSystemInsert(correlationId,"granted_role", grantedRole.uuid(), AuditMapper.toMap(grantedRole));
 
         log.warn("Root agent with email {} has been created - change password ASAP", email);
     }
 
-    public Optional<Agent> findById(String uuid){
+    public Optional<Agent> findById(UUID uuid) {
         return agentRepository.findById(uuid).map(AgentRow::toAgent);
     }
 

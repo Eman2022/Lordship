@@ -21,9 +21,10 @@ public class AgentController {
         this.agentService = agentService;
     }
 
-    @PreAuthorize("hasAuthority('agents:edit')")
+    @PreAuthorize("hasAuthority('agents:create')")
     @PostMapping("/register")
     public ResponseEntity<AgentRegistrationResponse> registerAgent(@Valid @RequestBody AgentRegistrationRequest request){
+
         AgentWithPerson agentWithPerson = agentService.registerAgent(request.nameFirst(), request.nameLast(), request.workPhone(), request.workEmail(), request.password());
         return ResponseEntity
                 .status(HttpStatus.CREATED)

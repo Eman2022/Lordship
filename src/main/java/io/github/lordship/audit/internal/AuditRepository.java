@@ -21,7 +21,7 @@ public class AuditRepository {
         this.jdbc = jdbc;
     }
 
-    private static final RowMapper<AuditLogRow> ROW_MAPPER = (rs, rowNum) -> new AuditLogRow(
+    private static final RowMapper<AuditLogRow> ROW_MAPPER = (rs, _) -> new AuditLogRow(
             rs.getObject("uuid", UUID.class),
             rs.getObject("correlation_id", UUID.class),
             rs.getObject("user_id", UUID.class),

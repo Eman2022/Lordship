@@ -25,7 +25,7 @@ CREATE TABLE person (
     primary_property VARCHAR(5),   -- Either the place of their tenancy, residence, or primary agent location
     mailing_address TEXT,
     emergency_contact UUID,
-    social VARCHAR(72),            -- BCrypt hash of SSN
+    social VARCHAR(72),            -- AES-256 encrypted SSN
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,
     FOREIGN KEY (emergency_contact) REFERENCES person(uuid),
