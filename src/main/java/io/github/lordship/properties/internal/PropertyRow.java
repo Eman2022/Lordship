@@ -1,7 +1,6 @@
-package io.github.lordship.access.internal;
+package io.github.lordship.properties.internal;
 
 import io.github.lordship.properties.Property;
-import jakarta.validation.constraints.Null;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,8 +39,6 @@ public PropertyRow(String propertyName, String propertyAddress){
                 null,
                 null,
                 null
-
-
         );
 }
 

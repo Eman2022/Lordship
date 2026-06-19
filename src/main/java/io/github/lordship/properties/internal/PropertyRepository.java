@@ -1,9 +1,5 @@
 package io.github.lordship.properties.internal;
 
-import io.github.lordship.access.internal.PropertyRow;
-import org.flywaydb.core.internal.jdbc.JdbcTemplate;
-import org.hibernate.mapping.Property;
-import org.hibernate.sql.Insert;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 

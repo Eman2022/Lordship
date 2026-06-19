@@ -1,6 +1,6 @@
 package io.github.lordship.properties;
 
-import io.github.lordship.access.internal.PropertyRow;
+import io.github.lordship.properties.internal.PropertyRow;
 import io.github.lordship.properties.internal.PropertyRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
