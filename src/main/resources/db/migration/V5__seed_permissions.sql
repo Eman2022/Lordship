@@ -51,8 +51,14 @@ INSERT INTO permission (uuid, permission_name) VALUES
 
     -- Audit log
     (uuidv7(), 'audit:view'),          -- see the full audit trail
-    (uuidv7(), 'audit:view_own');      -- agents can only see their own history
+    (uuidv7(), 'audit:view_own'),      -- agents can only see their own history
 
+    -- Tenancy
+    (uuidv7(), 'tenancy:view'),
+    (uuidv7(), 'tenancy:edit'),
+    (uuidv7(), 'tenancy:view_own'),
+    (uuidv7(), 'tenancy:create'),
+    (uuidv7(), 'tenancy:delete');
 
 -- Default roles
 INSERT INTO agent_role (uuid, role_name) VALUES
