@@ -1,39 +1,41 @@
 package io.github.lordship.shared;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.SecureRandom;
+import java.time.YearMonth;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class EncryptionService {
 
-    private final String algorithm;
-
     private static final int GCM_IV_LENGTH  = 12;
     private static final int GCM_TAG_LENGTH = 128;
 
-    private final SecretKeySpec key;
+    private final String algorithm;
+    private final Map<Integer, SecretKeySpec> keys;
 
-    public EncryptionService(
-            @Value("${lordship.encryption.algorithm}") String algorithm,
-            @Value("${lordship.encryption.key}") String secret)
+    public EncryptionService(EncryptionProperties encryptionProperties)
     {
-        this.algorithm = algorithm;
+        this.algorithm = encryptionProperties.algorithm();
+        this.keys = new HashMap<>();
 
-        byte[] keyBytes = Base64.getDecoder().decode(secret);
-        if (keyBytes.length != 32){
-            throw new IllegalArgumentException("Secret key length must be 256 bits (32 bytes base64-encoded)");
-        }
-        this.key = new SecretKeySpec(keyBytes, "AES");
+        encryptionProperties.keyMap().forEach((number, base64key) -> {
+            byte[] keyBytes = Base64.getDecoder().decode(base64key);
+            this.keys.put(number, new SecretKeySpec(keyBytes, "AES"));
+        });
     }
 
     public String encrypt(String plainText) {
         try {
+            int keyNumber = currentKeyNumber();
+            SecretKeySpec key = keys.get(keyNumber);
+
             byte[] iv = new byte[GCM_IV_LENGTH];
             new SecureRandom().nextBytes(iv);
 
@@ -47,14 +49,28 @@ public class EncryptionService {
             System.arraycopy(iv, 0, combined, 0, iv.length);
             System.arraycopy(cipherText, 0, combined, iv.length, cipherText.length);
 
-            return Base64.getEncoder().encodeToString(combined);
+            String base64Body = Base64.getEncoder().encodeToString(combined);
+            return keyNumber + ":" + base64Body;
         } catch (Exception e) {
             throw new RuntimeException("Encryption failed", e);
         }
     }
 
-    public String decrypt(String base64CipherText) {
+    public String decrypt(String stored) {
         try {
+            int separatorIndex = stored.indexOf(':');
+            if (separatorIndex == -1) {
+                throw new IllegalArgumentException("Stored value is missing key version");
+            }
+
+            int keyNumber = Integer.parseInt(stored.substring(0, separatorIndex));
+            SecretKeySpec key = keys.get(keyNumber);
+
+            if (key == null){
+                throw new IllegalStateException("No key loaded for version " + keyNumber);
+            }
+
+            String base64CipherText = stored.substring(separatorIndex + 1);
             byte[] combined = Base64.getDecoder().decode(base64CipherText);
 
             byte[] iv = new byte[GCM_IV_LENGTH];
@@ -69,5 +85,11 @@ public class EncryptionService {
         }  catch (Exception e) {
             throw new RuntimeException("Decryption failed", e);
         }
+    }
+
+    private int currentKeyNumber() {
+        YearMonth now = YearMonth.now();
+        int monthIndex = now.getYear() * 12 + now.getMonthValue();
+        return (monthIndex % keys.size()) + 1;
     }
 }

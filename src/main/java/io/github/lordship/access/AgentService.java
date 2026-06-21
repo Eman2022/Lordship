@@ -70,7 +70,7 @@ public class AgentService {
 
         // log the change
         auditService.recordInsert("agent", agent.uuid(), AuditMapper.toMap(agent));
-        auditService.recordInsert("person", agent.uuid(), AuditMapper.toMap(person));
+        auditService.recordInsert("person", person.uuid(), AuditMapper.toMap(person));
 
         return new AgentWithPerson(agent, person);
     }
@@ -114,8 +114,9 @@ public class AgentService {
     public void ensureRootAgentExists(String email, String password) {
         if (findByWorkEmail(email).isPresent()) return;
 
+        UUID correlationId = UUID.randomUUID();
 
-        Person person = personService.createPersonFromName("Root", "Admin");
+        Person person = personService.systemInsertRootPerson("Root", "Admin", correlationId);
         String hashed = passwordService.hash(password);
 
         AgentRow agentRow = new AgentRow(
@@ -129,8 +130,6 @@ public class AgentService {
         GrantedRole grantedRole = roleAssignmentService.grantRoleByName(agent.uuid(), "Admin", agent.uuid());
 
         // log the changes
-        UUID correlationId = UUID.randomUUID();
-        auditService.recordSystemInsert(correlationId,"person", person.uuid(), AuditMapper.toMap(person));
         auditService.recordSystemInsert(correlationId,"agent", agent.uuid(), AuditMapper.toMap(agent));
         auditService.recordSystemInsert(correlationId,"granted_role", grantedRole.uuid(), AuditMapper.toMap(grantedRole));
 

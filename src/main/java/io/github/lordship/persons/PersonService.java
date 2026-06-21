@@ -1,5 +1,7 @@
 package io.github.lordship.persons;
 
+import io.github.lordship.audit.AuditMapper;
+import io.github.lordship.audit.AuditService;
 import io.github.lordship.persons.internal.PersonPatchRequest;
 import io.github.lordship.persons.internal.PersonRepository;
 import io.github.lordship.persons.internal.PersonRow;
@@ -17,17 +19,29 @@ public class PersonService {
     // NOTE: spring injects this repository
     private final PersonRepository personRepository;
     private final EncryptionService encryptionService;
+    private final AuditService auditService;
 
     public PersonService(PersonRepository personRepository,
-                         EncryptionService encryptionService) {
+                         EncryptionService encryptionService,
+                         AuditService auditService) {
         this.personRepository = personRepository;
         this.encryptionService = encryptionService;
+        this.auditService = auditService;
     }
 
 
     @Transactional
     public Person createPersonFromName(String firstName, String lastName) {
-        return personRepository.save(new PersonRow(firstName, lastName)).toPerson(encryptionService);
+        PersonRow row = personRepository.save(new PersonRow(firstName, lastName));
+        auditService.recordInsert("person", row.uuid(), AuditMapper.toMap(row));
+        return row.toPerson(encryptionService);
+    }
+
+    @Transactional
+    public Person systemInsertRootPerson(String firstName, String lastName, UUID correlationId) {
+        PersonRow row = personRepository.save(new PersonRow(firstName, lastName));
+        auditService.recordSystemInsert(correlationId, "person", row.uuid(), AuditMapper.toMap(row));
+        return row.toPerson(encryptionService);
     }
 
     public Optional<Person> findByID(UUID uuid) {

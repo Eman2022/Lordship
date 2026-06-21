@@ -21,10 +21,6 @@ public record PersonResponse(
         LocalDateTime createdAt
 ) {
 
-    public static PersonResponse from(Person person) {
-        return from(person, false);
-    }
-
     public static PersonResponse from(Person person, boolean canViewSsn) {
         return new PersonResponse(
                 person.uuid(),
