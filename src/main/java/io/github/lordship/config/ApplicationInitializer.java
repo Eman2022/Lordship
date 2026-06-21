@@ -1,7 +1,6 @@
 package io.github.lordship.config;
 
 import io.github.lordship.access.*;
-import io.github.lordship.access.internal.AgentRegistrationResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

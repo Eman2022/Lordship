@@ -52,7 +52,7 @@ public class PersonController {
     public ResponseEntity<PersonResponse> getSelf(Authentication authentication) {
         LordshipPrincipal principal = (LordshipPrincipal) authentication.getPrincipal();
         return personService.findByID(principal.personUuid())
-                .map(person -> ResponseEntity.ok(PersonResponse.from(person)))
+                .map(person -> ResponseEntity.ok(PersonResponse.from(person, true)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -81,4 +81,5 @@ public class PersonController {
                 .map(person -> ResponseEntity.ok(PersonResponse.from(person, canViewSsn)))
                 .orElse(ResponseEntity.notFound().build());
     }
+
 }
