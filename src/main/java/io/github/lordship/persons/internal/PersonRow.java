@@ -1,6 +1,7 @@
 package io.github.lordship.persons.internal;
 
 import io.github.lordship.persons.Person;
+import io.github.lordship.shared.EncryptionService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,7 +22,7 @@ public record PersonRow(
     LocalDateTime createdAt,
     LocalDateTime deletedAt
 ) {
-    public Person toPerson() {
+    public Person toPerson(EncryptionService encryptionService) {
         return new Person(
                 this.uuid,
                 this.nameRaw,
@@ -33,7 +34,7 @@ public record PersonRow(
                 this.primaryProperty,
                 this.mailingAddress,
                 this.emergencyContact,
-                this.social,
+                social != null ? encryptionService.decrypt(social) : null,
                 this.createdAt,
                 this.deletedAt
         );

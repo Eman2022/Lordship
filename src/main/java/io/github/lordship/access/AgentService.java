@@ -3,6 +3,8 @@ package io.github.lordship.access;
 
 import eu.bitwalker.useragentutils.UserAgent;
 import io.github.lordship.access.internal.*;
+import io.github.lordship.audit.AuditMapper;
+import io.github.lordship.audit.AuditService;
 import io.github.lordship.persons.Person;
 import io.github.lordship.persons.PersonService;
 import org.slf4j.Logger;
@@ -12,10 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class AgentService {
@@ -27,6 +26,7 @@ public class AgentService {
     private final JwtService jwtService;
     private final RoleAssignmentService roleAssignmentService;
     private final LoginEventRepository loginEventRepository;
+    private final AuditService auditService;
 
     private static final Logger log = LoggerFactory.getLogger(AgentService.class);
 
@@ -38,7 +38,8 @@ public class AgentService {
             PermissionResolverService permissionResolverService,
             JwtService jwtService,
             RoleAssignmentService roleAssignmentService,
-            LoginEventRepository loginEventRepository
+            LoginEventRepository loginEventRepository,
+            AuditService auditService
     ) {
         this.agentRepository = agentRepository;
         this.personService = personService;
@@ -47,6 +48,7 @@ public class AgentService {
         this.jwtService = jwtService;
         this.roleAssignmentService = roleAssignmentService;
         this.loginEventRepository = loginEventRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -65,9 +67,13 @@ public class AgentService {
         );
 
         Agent agent = agentRepository.save(agentRow).toAgent();
+
+        // log the change
+        auditService.recordInsert("agent", agent.uuid(), AuditMapper.toMap(agent));
+        auditService.recordInsert("person", person.uuid(), AuditMapper.toMap(person));
+
         return new AgentWithPerson(agent, person);
     }
-
 
     public Optional<AgentAuthResult> verifyLogin(String workEmail, String plainTextPassword, String userAgentHeader, String ipAddress){
         UserAgent userAgent = UserAgent.parseUserAgentString(userAgentHeader);
@@ -104,16 +110,33 @@ public class AgentService {
         return Optional.empty();
     }
 
+    @Transactional
     public void ensureRootAgentExists(String email, String password) {
         if (findByWorkEmail(email).isPresent()) return;
 
-        AgentWithPerson agentWithPerson = registerAgent("Root", "Admin", null, email, password);
-        roleAssignmentService.grantRoleByName(agentWithPerson.agent().uuid(), "Admin", agentWithPerson.agent().uuid());
+        UUID correlationId = UUID.randomUUID();
+
+        Person person = personService.systemInsertRootPerson("Root", "Admin", correlationId);
+        String hashed = passwordService.hash(password);
+
+        AgentRow agentRow = new AgentRow(
+                person.uuid(),
+                null,
+                email,
+                hashed
+        );
+
+        Agent agent = agentRepository.save(agentRow).toAgent();
+        GrantedRole grantedRole = roleAssignmentService.grantRoleByName(agent.uuid(), "Admin", agent.uuid());
+
+        // log the changes
+        auditService.recordSystemInsert(correlationId,"agent", agent.uuid(), AuditMapper.toMap(agent));
+        auditService.recordSystemInsert(correlationId,"granted_role", grantedRole.uuid(), AuditMapper.toMap(grantedRole));
 
         log.warn("Root agent with email {} has been created - change password ASAP", email);
     }
 
-    public Optional<Agent> findById(String uuid){
+    public Optional<Agent> findById(UUID uuid) {
         return agentRepository.findById(uuid).map(AgentRow::toAgent);
     }
 

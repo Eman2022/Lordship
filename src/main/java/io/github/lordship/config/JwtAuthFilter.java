@@ -1,16 +1,15 @@
 package io.github.lordship.config;
 
 
-import io.github.lordship.access.JwtService;
-import io.github.lordship.access.PermissionResolverService;
+import io.github.lordship.access.*;
+import io.github.lordship.identity.AgentPrincipal;
+import io.github.lordship.identity.LordshipPrincipal;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,14 +24,19 @@ import java.util.stream.Collectors;
 
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    protected final Log logger = LogFactory.getLog(getClass());
+    //protected final Log logger = LogFactory.getLog(getClass());
 
     private final JwtService jwtService;
     private final PermissionResolverService permissionResolverService;
+    private final AgentService agentService;
 
-    public JwtAuthFilter(JwtService jwtService, PermissionResolverService permissionResolverService) {
+
+    public JwtAuthFilter(JwtService jwtService,
+                         PermissionResolverService permissionResolverService,
+                         AgentService agentService) {
         this.jwtService = jwtService;
         this.permissionResolverService = permissionResolverService;
+        this.agentService = agentService;
     }
 
     @Override
@@ -57,18 +61,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         UUID agentId = jwtService.extractAgentId(token);
+        String userType = jwtService.extractUserType(token);
 
-        Set<SimpleGrantedAuthority> authorities = permissionResolverService.findPermissionsForAgent(agentId)
-                .stream()
-                .map(p -> new SimpleGrantedAuthority(p.permissionName()))
-                .collect(Collectors.toSet());
+        Set<SimpleGrantedAuthority> authorities;
+        LordshipPrincipal principal;
 
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(
-                        jwtService.extractAgentId(token),
-                        null,
-                        authorities
-                );
+        if ("AGENT".equals(userType)) {
+            Agent agent = agentService.findById(agentId).orElseThrow();
+            principal = new AgentPrincipal(agent.uuid(), agent.personId());
+            authorities = permissionResolverService.findPermissionsForAgent(agentId)
+                    .stream()
+                    .map(p -> new SimpleGrantedAuthority(p.permissionName()))
+                    .collect(Collectors.toSet());
+        } else {
+            throw new IllegalArgumentException("Unsupported user type: " + userType);
+        }
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(principal, null, authorities);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);

@@ -31,6 +31,8 @@ public class JwtService {
     public String generateToken(AgentWithPerson agentWithPerson, Set<Permission> permissions) {
         return Jwts.builder()
                 .subject(agentWithPerson.agent().uuid().toString())
+                .claim("user_type", "AGENT")
+                .claim("person_uuid", agentWithPerson.person().uuid().toString())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(key)
@@ -39,6 +41,14 @@ public class JwtService {
 
     public UUID extractAgentId(String token) {
         return UUID.fromString(parseClaims(token).getSubject());
+    }
+
+    public String extractUserType(String token) {
+        return parseClaims(token).get("user_type", String.class);
+    }
+
+    public UUID extractPersonUuid(String token) {
+        return UUID.fromString(parseClaims(token).get("person_uuid", String.class));
     }
 
     public boolean isTokenValid(String token) {

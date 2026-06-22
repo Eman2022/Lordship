@@ -4,6 +4,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public class AgentRepository {
@@ -27,7 +28,7 @@ public class AgentRepository {
         .single();
     }
 
-    public Optional<AgentRow> findById(String uuid) {
+    public Optional<AgentRow> findById(UUID uuid) {
         return jdbc.sql("SELECT * FROM agent WHERE uuid = :uuid AND deleted_at IS NULL")
                 .param("uuid", uuid)
                 .query(AgentRow.class)

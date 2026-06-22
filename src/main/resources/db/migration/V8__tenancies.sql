@@ -1,26 +1,50 @@
--- A tenancy represents the legal rental relationship between a tenant and a lot.
--- Tenants OWN their home but RENT the lot beneath it (RCW 59.20).
--- Tracks rent increase history for 5% annual cap compliance and 90-day notice requirements.
--- Depends on: lot (V7), person (V1)
-
+-- Correct rent from lease table?
+-- Add foreign key for lotNumber (V7_Lots)
+-- Foreign key for accountNumber (V9_Accounts)
+-- Lots may have two tenancies in certain circumstances
 CREATE TABLE tenancy (
     uuid UUID PRIMARY KEY DEFAULT uuidv7(),
-    lot_id UUID NOT NULL,
-    primary_tenant_id UUID NOT NULL,
-    lease_start DATE NOT NULL,
-    lease_end DATE,
-    monthly_rent NUMERIC(10,2) NOT NULL,
-    rent_last_increased DATE,
-    notice_given_date DATE,
+    lot_number UUID NOT NULL,
+    account_number UUID NOT NULL,
+    start_date DATE,
+    end_date DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP,
-    FOREIGN KEY (lot_id) REFERENCES lot(uuid),
-    FOREIGN KEY (primary_tenant_id) REFERENCES person(uuid)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP
 );
 
--- Only one active tenancy per lot at a time
-CREATE UNIQUE INDEX uq_tenancy_lot_active
-    ON tenancy (lot_id) WHERE deleted_at IS NULL;
+-- Enforces one tenancy per lot
+CREATE UNIQUE INDEX uix_tenancy_lot_active
+    ON tenancy (lot_number)
+    WHERE end_date IS NULL AND deleted_at IS NULL;
 
-CREATE INDEX idx_tenancy_lot_id ON tenancy(lot_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_tenancy_tenant_id ON tenancy(primary_tenant_id) WHERE deleted_at IS NULL;
+
+-- Foreign key for account rent?
+-- Add timestamps for tenant?
+CREATE TABLE tenant (
+    uuid UUID PRIMARY KEY DEFAULT uuidv7(),
+    tenancy UUID NOT NULL,
+    person UUID NOT NULL,
+    start_date DATE,
+    end_date DATE,
+    FOREIGN KEY (person) REFERENCES person(uuid),
+    FOREIGN KEY (tenancy) REFERENCES tenancy(uuid)
+);
+
+-- Prevents duplicate permissions
+CREATE UNIQUE INDEX uix_permission_name ON permission(permission_name);
+
+
+-- Sets an update timestamp when a row information is updated
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_tenancy_updated_at
+    BEFORE UPDATE ON tenancy
+    FOR EACH ROW
+    EXECUTE FUNCTION set_updated_at();

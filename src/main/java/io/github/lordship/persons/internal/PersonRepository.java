@@ -4,11 +4,17 @@ package io.github.lordship.persons.internal;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Repository
 public class PersonRepository {
+
+
+    private static final Set<String> ALLOWED_COLUMNS = Set.of(
+            "name_raw", "name_first", "name_last", "birthday",
+            "personal_phone", "personal_email", "primary_property",
+            "mailing_address", "emergency_contact", "social"
+    );
 
     private final JdbcClient jdbc;
 
@@ -45,6 +51,32 @@ public class PersonRepository {
     public Optional<PersonRow> findByEmail(String email){
         return jdbc.sql("SELECT * FROM person WHERE LOWER(personal_email) = LOWER(:email) AND deleted_at IS NULL")
                 .param("email", email)
+                .query(PersonRow.class)
+                .optional();
+    }
+
+    public Optional<PersonRow> patch(UUID uuid, Map<String, Object> changes){
+        if (changes.isEmpty()) return findById(uuid);
+
+        for (String col : changes.keySet()) {
+            if (!ALLOWED_COLUMNS.contains(col)) {
+                throw new IllegalArgumentException("Invalid column: " + col);
+            }
+        }
+
+        StringBuilder sql = new StringBuilder("UPDATE person SET ");
+
+        changes.forEach((col,val)-> sql.append(col).append("= :").append(col).append(", "));
+
+        // trim trialing comma and space
+        sql.setLength(sql.length() - 2);
+        sql.append(" WHERE uuid = :uuid AND deleted_at IS NULL RETURNING *");
+
+        Map<String, Object> params = new HashMap<>(changes);
+        params.put("uuid", uuid);
+
+        return jdbc.sql(sql.toString())
+                .params(params)
                 .query(PersonRow.class)
                 .optional();
     }
