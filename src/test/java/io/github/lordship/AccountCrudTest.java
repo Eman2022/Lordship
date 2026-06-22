@@ -69,20 +69,10 @@ public class AccountCrudTest {
         return "TST01";
     }
 
-    private UUID insertTestPerson() {
-        return jdbc.sql("""
-                INSERT INTO person (name_first, name_last)
-                VALUES ('Test', 'Tenant')
-                RETURNING uuid
-                """)
-                .query(UUID.class)
-                .single();
-    }
-
     private UUID insertTestLot(String propertyCode) {
         return jdbc.sql("""
-                INSERT INTO lot (property_code, lot_number, monthly_rent)
-                VALUES (:propertyCode, '1', 650.00)
+                INSERT INTO lot (property_code, lot_number)
+                VALUES (:propertyCode, '1')
                 RETURNING uuid
                 """)
                 .param("propertyCode", propertyCode)
@@ -90,23 +80,22 @@ public class AccountCrudTest {
                 .single();
     }
 
-    private UUID insertTestTenancy(UUID lotId, UUID personId) {
+    private UUID insertTestTenancy(UUID lotId) {
         return jdbc.sql("""
-                INSERT INTO tenancy (lot_id, primary_tenant_id, lease_start, monthly_rent)
-                VALUES (:lotId, :personId, CURRENT_DATE, 650.00)
+                INSERT INTO tenancy (lot_number, account_number, start_date)
+                VALUES (:lotId, :placeholderAccountId, CURRENT_DATE)
                 RETURNING uuid
                 """)
                 .param("lotId", lotId)
-                .param("personId", personId)
+                .param("placeholderAccountId", UUID.randomUUID())
                 .query(UUID.class)
                 .single();
     }
 
     private UUID setupFullChain() {
         String propertyCode = insertTestProperty();
-        UUID personId = insertTestPerson();
         UUID lotId = insertTestLot(propertyCode);
-        return insertTestTenancy(lotId, personId);
+        return insertTestTenancy(lotId);
     }
 
     // -------------------------------------------------------------------------

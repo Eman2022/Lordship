@@ -46,7 +46,7 @@ public class AccountRepository {
         return jdbc.sql("""
                 SELECT a.* FROM account a
                 JOIN tenancy t ON a.tenancy_id = t.uuid
-                JOIN lot l ON t.lot_id = l.uuid
+                JOIN lot l ON t.lot_number = l.uuid
                 WHERE l.property_code = :propertyCode
                 AND a.deleted_at IS NULL
                 """)
