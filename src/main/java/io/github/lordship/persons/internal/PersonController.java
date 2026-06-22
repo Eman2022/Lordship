@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 
@@ -60,19 +61,20 @@ public class PersonController {
     @PatchMapping("/{uuid}")
     public ResponseEntity<PersonResponse> editPerson(
             @PathVariable UUID uuid,
-            @Valid @RequestBody PersonPatchRequest request,
+            @RequestBody Map<String, Object> request,
             Authentication authentication)
     {
         Map<String, Object> changes = new HashMap<>();
-        request.nameRaw().ifPresent(v -> changes.put("name_raw", v));
-        request.nameFirst().ifPresent(v -> changes.put("name_first", v));
-        request.nameLast().ifPresent(v -> changes.put("name_last", v));
-        request.birthday().ifPresent(v -> changes.put("birthday", v));
-        request.personalEmail().ifPresent(v -> changes.put("personal_email", v));
-        request.personalPhone().ifPresent(v -> changes.put("personal_phone", v));
-        request.mailingAddress().ifPresent(v -> changes.put("mailing_address", v));
-        request.emergencyContact().ifPresent(v -> changes.put("emergency_contact", v));
-        request.social().ifPresent(v -> changes.put("social", v));
+
+        if (request.containsKey("nameRaw")) changes.put("name_raw", request.get("nameRaw"));
+        if (request.containsKey("nameFirst")) changes.put("name_first", request.get("nameFirst"));
+        if (request.containsKey("nameLast")) changes.put("name_last", request.get("nameLast"));
+        if (request.containsKey("birthday")) changes.put("birthday", request.get("birthday"));
+        if (request.containsKey("personalEmail")) changes.put("personal_email", request.get("personalEmail"));
+        if (request.containsKey("personalPhone")) changes.put("personal_phone", request.get("personalPhone"));
+        if (request.containsKey("mailingAddress")) changes.put("mailing_address", request.get("mailingAddress"));
+        if (request.containsKey("emergencyContact")) changes.put("emergency_contact", request.get("emergencyContact"));
+        if (request.containsKey("social")) changes.put("social", request.get("social"));
 
         boolean canViewSsn = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("persons_ssn:view"));
