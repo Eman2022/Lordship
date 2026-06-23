@@ -2,13 +2,13 @@ package io.github.lordship.audit.internal;
 
 
 import io.github.lordship.shared.UserType;
-import io.github.lordship.audit.AuditLogRow;
 import io.github.lordship.audit.OperationType;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -37,15 +37,15 @@ public class AuditRepository {
 
     public AuditLogRow save(AuditLogRow auditLogRow) {
         return jdbc.sql("""
-                insert into audit_log (
-                    correlation_id, user_id, user_type, ip_address,
-                    table_name, record_id, operation, value_before, value_after
-                )
-                values (
-                    :correlationId, :userId, :userType::user_type, :ipAddress,
-                    :tableName, :recordId, :operation::operation_type, :valueBefore, :valueAfter
-                )
-                RETURNING *
+                    insert into audit_log (
+                        correlation_id, user_id, user_type, ip_address,
+                        table_name, record_id, operation, value_before, value_after
+                    )
+                    values (
+                        :correlationId, :userId, :userType::user_type, :ipAddress,
+                        :tableName, :recordId, :operation::operation_type, :valueBefore, :valueAfter
+                    )
+                    RETURNING *
                 """)
                 .param("correlationId", auditLogRow.correlationId())
                 .param("userId", auditLogRow.userId())
@@ -58,5 +58,17 @@ public class AuditRepository {
                 .param("valueAfter", auditLogRow.valueAfter())
                 .query(ROW_MAPPER)
                 .single();
+    }
+
+    public List<AuditLogRow> findAllAgentAuditLogs(UUID agentId) {
+        return jdbc.sql("""
+                    SELECT * FROM audit_log
+                    WHERE user_id = :agentId
+                    AND user_type = 'AGENT'
+                    ORDER BY changed_at DESC
+                    """)
+                .param("agentId", agentId)
+                .query(ROW_MAPPER)
+                .list();
     }
 }

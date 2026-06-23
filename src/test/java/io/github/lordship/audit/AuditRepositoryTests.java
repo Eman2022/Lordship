@@ -1,5 +1,6 @@
 package io.github.lordship.audit;
 
+import io.github.lordship.audit.internal.AuditLogRow;
 import io.github.lordship.shared.UserType;
 import io.github.lordship.audit.internal.AuditRepository;
 import org.junit.jupiter.api.Test;
