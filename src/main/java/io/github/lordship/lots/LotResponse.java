@@ -5,7 +5,7 @@ import java.util.UUID;
 //move to internal package
 public record LotResponse(
         UUID uuid,
-        String propertyCode,
+        UUID propertyId,
         String lotNumber,
         String lotTypeCode,
         String description,
@@ -15,7 +15,7 @@ public record LotResponse(
     public static LotResponse from(Lot lot) {
         return new LotResponse(
                 lot.uuid(),
-                lot.propertyCode(),
+                lot.propertyId(),
                 lot.lotNumber(),
                 lot.lotTypeCode(),
                 lot.description(),

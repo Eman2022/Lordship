@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record Lot(
     UUID uuid,
-    String propertyCode,
+    UUID propertyId,
     String lotNumber,
     String lotTypeCode,
     String description,

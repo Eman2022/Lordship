@@ -3,11 +3,12 @@ package io.github.lordship.lots;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.util.UUID;
+
 public record LotCreationRequest(
 
         @NotBlank
-        @Size(max = 5)
-        String propertyCode,
+        UUID propertyId,
 
         @NotBlank
         String lotNumber,

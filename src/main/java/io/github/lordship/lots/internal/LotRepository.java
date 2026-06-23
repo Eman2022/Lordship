@@ -68,19 +68,19 @@ public class LotRepository {
     // Surfaces lots that share a number within a property (e.g. duplicate "DF"
     // labels seen in real park data). The application flags these rather than
     // the DB rejecting them.
-    public List<LotRow> findDuplicateNumbers(String propertyCode) {
+    public List<LotRow> findDuplicateNumbers(String propertyId) {
         return jdbc.sql("""
             SELECT * FROM lot
             WHERE deleted_at IS NULL
-              AND property_code = :propertyCode
+              AND property_id = :property_id
               AND LOWER(lot_number) IN (
                   SELECT LOWER(lot_number) FROM lot
-                  WHERE property_code = :propertyCode AND deleted_at IS NULL
+                  WHERE property_id = :propertyId AND deleted_at IS NULL
                   GROUP BY LOWER(lot_number) HAVING COUNT(*) > 1
               )
             ORDER BY LOWER(lot_number)
             """)
-                .param("propertyCode", propertyCode)
+                .param("propertyId", propertyId)
                 .query(LotRow.class)
                 .list();
     }

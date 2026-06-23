@@ -121,14 +121,14 @@ CREATE INDEX idx_denied_permission_agent_id ON denied_permission(agent_id) WHERE
 CREATE TABLE agent_property_assignment (
     uuid UUID PRIMARY KEY DEFAULT uuidv7(),
     agent_id UUID NOT NULL,
-    property_code VARCHAR(5) NOT NULL,
+    property_id UUID NOT NULL,
     assigned_by UUID NOT NULL,
     assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     removed_at TIMESTAMP,
     FOREIGN KEY (agent_id) REFERENCES agent(uuid),
-    FOREIGN KEY (property_code) REFERENCES property(property_code),
+    FOREIGN KEY (property_id) REFERENCES property(uuid),
     FOREIGN KEY (assigned_by) REFERENCES agent(uuid)
 );
 
 CREATE INDEX idx_assignment_agent    ON agent_property_assignment(agent_id)      WHERE removed_at IS NULL;
-CREATE INDEX idx_assignment_property ON agent_property_assignment(property_code) WHERE removed_at IS NULL;
+CREATE INDEX idx_assignment_property ON agent_property_assignment(property_id)   WHERE removed_at IS NULL;

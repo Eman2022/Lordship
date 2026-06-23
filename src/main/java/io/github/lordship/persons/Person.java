@@ -12,7 +12,7 @@ public record Person(
         LocalDate birthday,
         String personalPhone,
         String personalEmail,
-        String primaryProperty,
+        UUID primaryProperty,
         String mailingAddress,
         UUID emergencyContact,
         String social,

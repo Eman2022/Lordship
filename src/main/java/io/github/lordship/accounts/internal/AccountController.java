@@ -40,8 +40,8 @@ public class AccountController {
 
     @PreAuthorize("hasAuthority('accounts:view')")
     @GetMapping("/property/{propertyCode}")
-    public ResponseEntity<List<AccountResponse>> getAccountsByProperty(@PathVariable String propertyCode) {
-        List<AccountResponse> responses = accountService.getAccountsByProperty(propertyCode)
+    public ResponseEntity<List<AccountResponse>> getAccountsByProperty(@PathVariable UUID propertyId) {
+        List<AccountResponse> responses = accountService.getAccountsByProperty(propertyId)
                 .stream()
                 .map(AccountResponse::from)
                 .toList();

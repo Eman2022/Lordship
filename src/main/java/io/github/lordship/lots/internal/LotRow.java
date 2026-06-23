@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public record LotRow(
         UUID uuid,
-        String propertyCode,
+        UUID propertyId,
         String lotNumber,
         String lotTypeCode,
         String description,
@@ -19,7 +19,7 @@ public record LotRow(
     public Lot toLot() {
         return new Lot(
                 this.uuid,
-                this.propertyCode,
+                this.propertyId,
                 this.lotNumber,
                 this.lotTypeCode,
                 this.description,
@@ -31,8 +31,8 @@ public record LotRow(
     }
 
     // Convenience constructor for inserts (DB fills uuid, created_at).
-    public LotRow(String propertyCode, String lotNumber, String lotTypeCode,
+    public LotRow(UUID propertyId, String lotNumber, String lotTypeCode,
                   String description, String notes, Integer sortOrder) {
-        this(null, propertyCode, lotNumber, lotTypeCode, description, notes, sortOrder, null, null);
+        this(null, propertyId, lotNumber, lotTypeCode, description, notes, sortOrder, null, null);
     }
 }

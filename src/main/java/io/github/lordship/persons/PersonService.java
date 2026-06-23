@@ -56,6 +56,7 @@ public class PersonService {
 
     @Transactional //TODO: REMEMBER: sensitive fields may need same encryption logic as SSN
     public Optional<Person> patchPerson(UUID uuid, Map<String, Object> changes) {
+
         if (changes.containsKey("social")) {
             String social = (String) changes.get("social");
             if (social != null && !social.isBlank()) {
@@ -83,7 +84,42 @@ public class PersonService {
             }
         }
 
-        return personRepository.patch(uuid, changes)
-                .map(row -> row.toPerson(encryptionService));
+        if (changes.containsKey("primary_property")) {
+            Object ec = changes.get("primary_property");
+            if (ec instanceof String s && !s.isBlank()) {
+                changes.put("primary_property", UUID.fromString(s));
+            } else {
+                changes.put("primary_property", null);
+            }
+        }
+
+        Optional<PersonRow> personBeforeOpt = personRepository.findById(uuid);
+        if (personBeforeOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        PersonRow personBefore = personBeforeOpt.get();
+        Optional<PersonRow> personAfterOpt = personRepository.patch(uuid, changes);
+        if (personAfterOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        PersonRow personAfter = personAfterOpt.get();
+
+        var diff = AuditMapper.diff(personBefore, personAfter);
+        if (!diff.before().isEmpty()) {
+            auditService.recordUpdate("person", uuid, diff.before(), diff.after());
+        }
+
+        auditService.recordUpdate("person", uuid, AuditMapper.toMap(personBefore), AuditMapper.toMap(personAfter));
+
+        return Optional.of(personAfter.toPerson(encryptionService));
+    }
+
+    @Transactional
+    public boolean deletePerson(UUID uuid) {
+        return personRepository.findById(uuid).map(person -> {
+            personRepository.softDelete(uuid);
+            auditService.recordDelete("person", uuid, AuditMapper.toMap(person));
+            return true;
+        }).orElse(false);
     }
 }

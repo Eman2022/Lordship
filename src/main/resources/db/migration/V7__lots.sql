@@ -31,7 +31,7 @@ INSERT INTO lot_type (code, label, sort_order) VALUES
 -- is not stored separately.
 CREATE TABLE lot (
                      uuid          UUID PRIMARY KEY DEFAULT uuidv7(),
-                     property_code VARCHAR(5) NOT NULL,
+                     property_id   UUID NOT NULL,
                      lot_number    TEXT NOT NULL,        -- human-facing id; numeric OR lettered (e.g. "DF"); mutable
                      lot_type_code CHAR(3),              -- nullable: legacy import may not know the type yet
                      description   TEXT,
@@ -39,15 +39,15 @@ CREATE TABLE lot (
                      sort_order    INT,                  -- manual ordering for the map/menu view
                      created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                      deleted_at    TIMESTAMP,
-                     FOREIGN KEY (property_code) REFERENCES property(property_code),
+                     FOREIGN KEY (property_id) REFERENCES property(uuid),
                      FOREIGN KEY (lot_type_code) REFERENCES lot_type(code)
 );
 
 -- NOT unique: real park data has duplicate labels (e.g. two "DF" lots in one
 -- park). Duplicates are flagged at the application layer, not rejected here.
 CREATE INDEX idx_lot_number_per_property
-    ON lot (property_code, LOWER(lot_number)) WHERE deleted_at IS NULL;
-CREATE INDEX idx_lot_property ON lot (property_code) WHERE deleted_at IS NULL;
+    ON lot (property_id, LOWER(lot_number)) WHERE deleted_at IS NULL;
+CREATE INDEX idx_lot_property ON lot (property_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_lot_type     ON lot (lot_type_code);
 
 -- ── Lot map geometry ─────────────────────────────────────────────────
