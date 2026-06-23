@@ -151,4 +151,6 @@ public class AgentService {
     public List<LoginEventRow> getLoginEventsByAgentId(UUID agentId) {
         return loginEventRepository.getLoginEventsByAgentId(agentId);
     }
+
+
 }

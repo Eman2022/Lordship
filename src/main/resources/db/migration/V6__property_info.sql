@@ -4,13 +4,13 @@ ALTER TABLE property ADD CONSTRAINT fk_agent_id FOREIGN KEY (property_manager) R
 -- Property-person relationship (tracks multiple persons associated with a property)
 CREATE TABLE property_person (
     uuid UUID PRIMARY KEY DEFAULT uuidv7(),
-    property_code VARCHAR(5) NOT NULL,
+    property_id UUID NOT NULL,
     person_uuid UUID NOT NULL,
     contact_phone VARCHAR(120),
     contact_email VARCHAR(120),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,
-    FOREIGN KEY (property_code) REFERENCES property(property_code),
+    FOREIGN KEY (property_id) REFERENCES property(uuid),
     FOREIGN KEY (person_uuid) REFERENCES person(uuid)
 );
 
@@ -24,7 +24,7 @@ CREATE TABLE property_person_role (
     FOREIGN KEY (property_person_uuid) REFERENCES property_person(uuid)
 );
 
-CREATE INDEX idx_property_person_property ON property_person(property_code) WHERE deleted_at IS NULL;
+CREATE INDEX idx_property_person_property ON property_person(property_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_property_person_person ON property_person(person_uuid) WHERE deleted_at IS NULL;
 
 

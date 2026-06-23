@@ -41,6 +41,18 @@ public class PersonRepository {
                 .single();
     }
 
+    public void softDelete(UUID uuid) {
+        jdbc.sql("""
+            UPDATE person
+            SET deleted_at = now()
+            WHERE uuid = :uuid
+            RETURNING *
+            """)
+            .param("uuid", uuid)
+            .query(PersonRow.class)
+            .single();
+    }
+
     public Optional<PersonRow> findById(UUID uuid){
         return jdbc.sql("SELECT * FROM person WHERE uuid = :uuid AND deleted_at IS NULL")
                 .param("uuid", uuid)

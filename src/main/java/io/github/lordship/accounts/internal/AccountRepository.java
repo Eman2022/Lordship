@@ -42,15 +42,15 @@ public class AccountRepository {
                 .optional();
     }
 
-    public List<AccountRow> findActiveByPropertyCode(String propertyCode) {
+    public List<AccountRow> findActiveByPropertyId(UUID propertyId) {
         return jdbc.sql("""
                 SELECT a.* FROM account a
                 JOIN tenancy t ON a.tenancy_id = t.uuid
                 JOIN lot l ON t.lot_number = l.uuid
-                WHERE l.property_code = :propertyCode
+                WHERE l.property_id = :propertyId
                 AND a.deleted_at IS NULL
                 """)
-                .param("propertyCode", propertyCode)
+                .param("propertyId", propertyId)
                 .query(AccountRow.class)
                 .list();
     }

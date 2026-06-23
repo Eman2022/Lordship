@@ -31,7 +31,7 @@ public class LotService {
     @Transactional
     public Lot createLot(LotCreationRequest request) {
         LotRow saved = lotRepository.save(new LotRow(
-                request.propertyCode(),
+                request.propertyId(),
                 request.lotNumber(),
                 request.lotTypeCode(),
                 request.description(),
@@ -48,7 +48,7 @@ public class LotService {
         return lotRepository.findById(uuid).map(existing -> {
             LotRow updated = lotRepository.update(new LotRow(
                     existing.uuid(),
-                    existing.propertyCode(),
+                    existing.propertyId(),
                     request.lotNumber(),
                     request.lotTypeCode(),
                     request.description(),
@@ -97,7 +97,7 @@ public class LotService {
 
     private static Map<String, Object> snapshot(LotRow row) {
         Map<String, Object> map = new HashMap<>();
-        map.put("property_code", row.propertyCode());
+        map.put("property_code", row.propertyId());
         map.put("lot_number", row.lotNumber());
         map.put("lot_type_code", row.lotTypeCode());
         map.put("description", row.description());

@@ -29,8 +29,8 @@ public class AccountService {
         return accountRepository.findById(uuid).map(AccountRow::toAccount);
     }
 
-    public List<Account> getAccountsByProperty(String propertyCode) {
-        return accountRepository.findActiveByPropertyCode(propertyCode)
+    public List<Account> getAccountsByProperty(UUID propertyId) {
+        return accountRepository.findActiveByPropertyId(propertyId)
                 .stream()
                 .map(AccountRow::toAccount)
                 .toList();

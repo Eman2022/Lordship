@@ -4,8 +4,10 @@ import io.github.lordship.properties.Property;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record PropertyRow(
+        UUID uuid,
         String propertyCode,
         String propertyName,
         String propertyAddress,
@@ -19,6 +21,7 @@ public record PropertyRow(
 
     public Property toProperty() {
         return new Property(
+                this.uuid,
                 this.propertyCode,
                 this.propertyName,
                 this.propertyAddress,
@@ -33,6 +36,7 @@ public record PropertyRow(
 public PropertyRow(String propertyName, String propertyAddress){
         this(
                 null,
+                null,
                 propertyName,
                 propertyAddress,
                 null,
@@ -42,10 +46,11 @@ public PropertyRow(String propertyName, String propertyAddress){
         );
 }
 
-public PropertyRow(String propertyCode, String propertyName, String propertyAddress,
+public PropertyRow(UUID uuid, String propertyCode, String propertyName, String propertyAddress,
                    String propertyCity, String propertyState,
                    LocalDate purchaseDate, Integer yearBuilt) {
     this(
+            uuid,
             propertyCode,
             propertyName,
             propertyAddress,

@@ -1,7 +1,8 @@
 -- Properties must exist before persons, since person references property.
 
 CREATE TABLE property (
-    property_code VARCHAR(5) PRIMARY KEY,
+    uuid UUID PRIMARY KEY DEFAULT uuidv7(),
+    property_code VARCHAR(5),
     property_name TEXT NOT NULL,
     property_address TEXT NOT NULL,
     property_city VARCHAR(255),
@@ -22,14 +23,14 @@ CREATE TABLE person (
     birthday DATE,
     personal_phone VARCHAR(120),
     personal_email VARCHAR(120),
-    primary_property VARCHAR(5),   -- Either the place of their tenancy, residence, or primary agent location
+    primary_property UUID,   -- Either the place of their tenancy, residence, or primary agent location
     mailing_address TEXT,
     emergency_contact UUID,
     social VARCHAR(72),            -- AES-256 encrypted SSN
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,
     FOREIGN KEY (emergency_contact) REFERENCES person(uuid),
-    FOREIGN KEY (primary_property) REFERENCES property(property_code)
+    FOREIGN KEY (primary_property) REFERENCES property(uuid)
 );
 
 CREATE INDEX idx_person_name_last  ON person(LOWER(name_last))      WHERE deleted_at IS NULL;

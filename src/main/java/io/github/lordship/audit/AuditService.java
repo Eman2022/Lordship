@@ -36,21 +36,6 @@ public class AuditService {
         auditRepository.save(row);
     }
 
-    public void recordSystemInsert(String tableName, UUID recordId, Map<String, Object> after) {
-        AuditLogRow row = new AuditLogRow(
-                UUID.randomUUID(),
-                null,
-                UserType.SYSTEM,
-                "system",
-                tableName,
-                recordId.toString(),
-                OperationType.INSERT,
-                null,
-                toJson(after)
-        );
-        auditRepository.save(row);
-    }
-
     public void recordSystemInsert(UUID correlationId, String tableName, UUID recordId, Map<String, Object> after) {
         AuditLogRow row = new AuditLogRow(
                 correlationId,
@@ -81,7 +66,7 @@ public class AuditService {
         auditRepository.save(row);
     }
 
-    private void recordDelete(String tableName, UUID recordId, Map<String, Object> before) {
+    public void recordDelete(String tableName, UUID recordId, Map<String, Object> before) {
         var row = new AuditLogRow(
                 auditContext.getCorrelationId(),
                 auditContext.getActingUserId(),
@@ -103,4 +88,6 @@ public class AuditService {
         }
         return objectMapper.writeValueAsString(map);
     }
+
+
 }
