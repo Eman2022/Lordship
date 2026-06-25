@@ -1,6 +1,7 @@
 package io.github.lordship.lots.internal;
 
 import io.github.lordship.lots.Lot;
+import io.github.lordship.shared.EncryptionService;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -16,14 +17,14 @@ public record LotRow(
         LocalDateTime createdAt,
         LocalDateTime deletedAt
 ) {
-    public Lot toLot() {
+    public Lot toLot(EncryptionService encryptionService) {
         return new Lot(
                 this.uuid,
                 this.propertyId,
                 this.lotNumber,
                 this.lotTypeCode,
                 this.description,
-                this.notes,
+                this.notes == null ? null : encryptionService.decrypt(this.notes),
                 this.sortOrder,
                 this.createdAt,
                 this.deletedAt

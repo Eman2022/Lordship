@@ -2,10 +2,8 @@ package io.github.lordship.lots.internal;
 
 import io.github.lordship.lots.Lot;
 import io.github.lordship.lots.LotCreationRequest;
-import io.github.lordship.lots.LotResponse;
 import io.github.lordship.lots.LotService;
 import io.github.lordship.lots.LotType;
-import io.github.lordship.lots.LotUpdateRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package io.github.lordship.lots;
+package io.github.lordship.lots.internal;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -23,4 +23,3 @@ public record LotUpdateRequest(
 
 ) {
 }
-//move to internal package
