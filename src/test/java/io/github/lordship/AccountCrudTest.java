@@ -85,12 +85,11 @@ public class AccountCrudTest {
 
     private UUID insertTestTenancy(UUID lotId) {
         return jdbc.sql("""
-                INSERT INTO tenancy (lot_number, account_number, start_date)
-                VALUES (:lotId, :placeholderAccountId, CURRENT_DATE)
+                INSERT INTO tenancy (lot_id, start_date)
+                VALUES (:lotId, CURRENT_DATE)
                 RETURNING uuid
                 """)
                 .param("lotId", lotId)
-                .param("placeholderAccountId", UUID.randomUUID())
                 .query(UUID.class)
                 .single();
     }

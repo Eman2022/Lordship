@@ -1,18 +1,17 @@
 package io.github.lordship.tenancy.internal;
 
 import io.github.lordship.tenancy.Tenancy;
-import org.springframework.cglib.core.Local;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.UUID;
 
 public record TenancyRow(
     UUID uuid,
-    UUID lotNumber,
-    UUID accountNumber,
-    Date startDate,
-    Date endDate,
+    UUID lotId,
+    LocalDate startDate,
+    LocalDate endDate,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     LocalDateTime deletedAt
@@ -22,8 +21,7 @@ public record TenancyRow(
     public Tenancy toTenancy(){
         return new Tenancy(
                 this.uuid,
-                this.lotNumber,
-                this.accountNumber,
+                this.lotId,
                 this.startDate,
                 this.endDate,
                 this.createdAt,
@@ -33,15 +31,13 @@ public record TenancyRow(
     }
 
     public static TenancyRow forInsert(
-            UUID lotNumber,
-            UUID accountNumber,
-            Date startDate,
-            Date endDate
+            UUID lotId,
+            LocalDate startDate,
+            LocalDate endDate
     ) {
         return new TenancyRow(
                 null,
-                lotNumber,
-                accountNumber,
+                lotId,
                 startDate,
                 endDate,
                 null,
