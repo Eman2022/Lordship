@@ -17,7 +17,7 @@ CREATE TABLE agent (
 CREATE INDEX idx_agent_person_id ON agent(person_id) WHERE deleted_at IS NULL;
 
 
-CREATE TABLE login_event (
+CREATE TABLE agent_login_event (
     uuid UUID PRIMARY KEY DEFAULT uuidv7(),
     agent_id UUID NOT NULL,
     occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -27,7 +27,7 @@ CREATE TABLE login_event (
     outcome SMALLINT NOT NULL, -- use an HTTP status code
     FOREIGN KEY (agent_id) REFERENCES agent(uuid)
 );
-CREATE INDEX idx_login_event_agent ON login_event(agent_id, occurred_at DESC);
+CREATE INDEX idx_login_event_agent ON agent_login_event(agent_id, occurred_at DESC);
 
 
 -- Ensures no two active agents share the same login email.

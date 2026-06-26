@@ -121,5 +121,6 @@ AND p.permission_name IN (
     'pets:delete',
     'properties:view',
     'assignments:view',
-    'audit:view_own'
+    'audit:view_own',
+    'audit:view'
 );

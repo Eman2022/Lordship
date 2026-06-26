@@ -13,12 +13,12 @@ import java.util.UUID;
 // assigns roles to agents
 
 @Service
-public class RoleAssignmentService {
+public class GrantedRoleService {
 
     private final GrantedRoleRepository grantedRoleRepository;
     private final RoleRepository roleRepository;
 
-    public RoleAssignmentService(GrantedRoleRepository grantedRoleRepository, RoleRepository roleRepository) {
+    public GrantedRoleService(GrantedRoleRepository grantedRoleRepository, RoleRepository roleRepository) {
         this.grantedRoleRepository = grantedRoleRepository;
         this.roleRepository = roleRepository;
     }
