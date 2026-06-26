@@ -115,6 +115,7 @@ public class LotService {
         return map;
     }
 
+    //encryption mandatory
     private String encryptNotes(String notes) {
         return notes == null ? null : encryptionService.encrypt(notes);
     }
