@@ -1,8 +1,8 @@
-package io.github.lordship.lots;
+package io.github.lordship.lots.internal;
 
+import io.github.lordship.lots.Lot;
 import java.util.UUID;
 
-//move to internal package
 public record LotResponse(
         UUID uuid,
         UUID propertyId,
