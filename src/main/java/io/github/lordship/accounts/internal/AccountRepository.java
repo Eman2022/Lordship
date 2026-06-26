@@ -3,7 +3,6 @@ package io.github.lordship.accounts.internal;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,8 +18,10 @@ public class AccountRepository {
 
     public AccountRow save(AccountRow row) {
         return jdbc.sql("""
-                INSERT INTO account (tenancy_id, account_status, balance, autopay_enabled, notes)
-                VALUES (:tenancyId, :accountStatus, :balance, :autopayEnabled, :notes)
+                INSERT INTO account (tenancy_id, account_status, balance, autopay_enabled, notes,
+                                     no_personal_checks, no_partial_payments, eviction_in_progress)
+                VALUES (:tenancyId, :accountStatus, :balance, :autopayEnabled, :notes,
+                        :noPersonalChecks, :noPartialPayments, :evictionInProgress)
                 RETURNING *
                 """)
                 .paramSource(row)
@@ -55,21 +56,19 @@ public class AccountRepository {
                 .list();
     }
 
-    public Optional<AccountRow> update(UUID uuid, String accountStatus, BigDecimal balance, boolean autopayEnabled, String notes) {
+    public Optional<AccountRow> update(AccountRow row) {
         return jdbc.sql("""
                 UPDATE account
-                SET account_status = :accountStatus,
-                    balance        = :balance,
-                    autopay_enabled = :autopayEnabled,
-                    notes          = :notes
+                SET account_status       = :accountStatus,
+                    autopay_enabled      = :autopayEnabled,
+                    notes                = :notes,
+                    no_personal_checks   = :noPersonalChecks,
+                    no_partial_payments  = :noPartialPayments,
+                    eviction_in_progress = :evictionInProgress
                 WHERE uuid = :uuid AND deleted_at IS NULL
                 RETURNING *
                 """)
-                .param("uuid", uuid)
-                .param("accountStatus", accountStatus)
-                .param("balance", balance)
-                .param("autopayEnabled", autopayEnabled)
-                .param("notes", notes)
+                .paramSource(row)
                 .query(AccountRow.class)
                 .optional();
     }

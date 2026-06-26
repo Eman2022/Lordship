@@ -1,8 +1,8 @@
 package io.github.lordship;
 
 import io.github.lordship.access.AgentLoginRequest;
-import io.github.lordship.accounts.AccountCreationRequest;
 import io.github.lordship.accounts.AccountStatus;
+import io.github.lordship.accounts.internal.AccountCreationRequest;
 import io.github.lordship.accounts.internal.AccountUpdateRequest;
 import io.github.lordship.properties.Property;
 import io.github.lordship.properties.internal.PropertyRow;
@@ -19,7 +19,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -129,7 +128,7 @@ public class AccountCrudTest {
 
     @Test
     void unauthorizedUpdateReturns403() throws Exception {
-        AccountUpdateRequest request = new AccountUpdateRequest(AccountStatus.ACTIVE, BigDecimal.ZERO, false, null);
+        AccountUpdateRequest request = new AccountUpdateRequest(AccountStatus.ACTIVE, false, null, false, false, false);
 
         mockMvc.perform(put("/accounts/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -230,9 +229,11 @@ public class AccountCrudTest {
 
         AccountUpdateRequest updateRequest = new AccountUpdateRequest(
                 AccountStatus.DELINQUENT,
-                new BigDecimal("325.00"),
                 true,
-                "Tenant missed payment"
+                "Tenant missed payment",
+                false,
+                false,
+                false
         );
 
         mockMvc.perform(put("/accounts/" + accountId)
@@ -241,7 +242,7 @@ public class AccountCrudTest {
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountStatus").value("DELINQUENT"))
-                .andExpect(jsonPath("$.balance").value(325.00))
+                .andExpect(jsonPath("$.balance").value(0))
                 .andExpect(jsonPath("$.autopayEnabled").value(true))
                 .andExpect(jsonPath("$.notes").value("Tenant missed payment"));
     }

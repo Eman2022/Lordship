@@ -13,6 +13,9 @@ public record AccountResponse(
         BigDecimal balance,
         boolean autopayEnabled,
         String notes,
+        boolean noPersonalChecks,
+        boolean noPartialPayments,
+        boolean evictionInProgress,
         LocalDateTime createdAt
 ) {
     public static AccountResponse from(Account account) {
@@ -23,6 +26,9 @@ public record AccountResponse(
                 account.balance(),
                 account.autopayEnabled(),
                 account.notes(),
+                account.noPersonalChecks(),
+                account.noPartialPayments(),
+                account.evictionInProgress(),
                 account.createdAt()
         );
     }

@@ -5,7 +5,6 @@ import io.github.lordship.accounts.internal.AccountRow;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +28,10 @@ public class AccountService {
         return accountRepository.findById(uuid).map(AccountRow::toAccount);
     }
 
+    public Optional<Account> getAccountByTenancyId(UUID tenancyId) {
+        return accountRepository.findByTenancyId(tenancyId).map(AccountRow::toAccount);
+    }
+
     public List<Account> getAccountsByProperty(UUID propertyId) {
         return accountRepository.findActiveByPropertyId(propertyId)
                 .stream()
@@ -37,9 +40,21 @@ public class AccountService {
     }
 
     @Transactional
-    public Optional<Account> updateAccount(UUID uuid, AccountStatus status, BigDecimal balance, boolean autopayEnabled, String notes) {
-        return accountRepository.update(uuid, status.name(), balance, autopayEnabled, notes)
-                .map(AccountRow::toAccount);
+    public Optional<Account> updateAccount(Account account) {
+        AccountRow row = new AccountRow(
+                account.uuid(),
+                account.tenancyId(),
+                account.accountStatus().name(),
+                account.balance(),
+                account.autopayEnabled(),
+                account.notes(),
+                account.noPersonalChecks(),
+                account.noPartialPayments(),
+                account.evictionInProgress(),
+                account.createdAt(),
+                account.deletedAt()
+        );
+        return accountRepository.update(row).map(AccountRow::toAccount);
     }
 
     @Transactional

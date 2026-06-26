@@ -14,6 +14,9 @@ public record AccountRow(
         BigDecimal balance,
         boolean autopayEnabled,
         String notes,
+        boolean noPersonalChecks,
+        boolean noPartialPayments,
+        boolean evictionInProgress,
         LocalDateTime createdAt,
         LocalDateTime deletedAt
 ) {
@@ -25,6 +28,9 @@ public record AccountRow(
                 this.balance,
                 this.autopayEnabled,
                 this.notes,
+                this.noPersonalChecks,
+                this.noPartialPayments,
+                this.evictionInProgress,
                 this.createdAt,
                 this.deletedAt
         );
@@ -38,6 +44,9 @@ public record AccountRow(
                 BigDecimal.ZERO,
                 false,
                 notes,
+                false,
+                false,
+                false,
                 null,
                 null
         );

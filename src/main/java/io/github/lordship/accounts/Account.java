@@ -11,6 +11,9 @@ public record Account(
         BigDecimal balance,
         boolean autopayEnabled,
         String notes,
+        boolean noPersonalChecks,
+        boolean noPartialPayments,
+        boolean evictionInProgress,
         LocalDateTime createdAt,
         LocalDateTime deletedAt
 ) {
