@@ -1,6 +1,7 @@
 package io.github.lordship.persons.internal;
 
 import io.github.lordship.persons.Person;
+import io.github.lordship.shared.SensitiveDataMasker;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -33,14 +34,9 @@ public record PersonResponse(
                 person.primaryProperty(),
                 person.mailingAddress(),
                 person.emergencyContact(),
-                canViewSsn ? person.social() : maskSsn(person.social()),
+                canViewSsn ? person.social() : SensitiveDataMasker.maskSsn(person.social()),
                 person.createdAt()
         );
     }
 
-    private static String maskSsn(String social) {
-        if (social == null) return null;
-        if (social.isEmpty()) return social;
-        return "***-**-" + social.substring(social.length() - 4);
-    }
 }

@@ -1,5 +1,7 @@
 package io.github.lordship.access;
 
+import io.github.lordship.access.internal.GrantedRoleResponse;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -13,4 +15,8 @@ public record GrantedRole(
     LocalDateTime createdAt,
     LocalDateTime deletedAt
 ) {
+
+    public GrantedRoleResponse toResponse() {
+        return new GrantedRoleResponse(uuid, agentId, roleId, grantedBy);
+    }
 }
