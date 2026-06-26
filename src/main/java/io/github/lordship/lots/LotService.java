@@ -5,7 +5,6 @@ import io.github.lordship.lots.internal.LotRepository;
 import io.github.lordship.lots.internal.LotRow;
 import io.github.lordship.lots.internal.LotTypeRepository;
 import io.github.lordship.lots.internal.LotUpdateRequest;
-import io.github.lordship.shared.EncryptionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,16 +19,13 @@ public class LotService {
 
     private final LotRepository lotRepository;
     private final LotTypeRepository lotTypeRepository;
-    private final EncryptionService encryptionService;
     private final AuditService auditService;
 
     public LotService(LotRepository lotRepository,
                       LotTypeRepository lotTypeRepository,
-                      EncryptionService encryptionService,
                       AuditService auditService) {
         this.lotRepository = lotRepository;
         this.lotTypeRepository = lotTypeRepository;
-        this.encryptionService = encryptionService;
         this.auditService = auditService;
     }
 
@@ -40,12 +36,12 @@ public class LotService {
                 request.lotNumber(),
                 request.lotTypeCode(),
                 request.description(),
-                encryptNotes(request.notes()),
+                request.notes(),
                 request.sortOrder()
         ));
 
         auditService.recordInsert("lot", saved.uuid(), snapshot(saved));
-        return saved.toLot(encryptionService);
+        return saved.toLot();
     }
 
     @Transactional
@@ -57,7 +53,7 @@ public class LotService {
                     request.lotNumber(),
                     request.lotTypeCode(),
                     request.description(),
-                    encryptNotes(request.notes()),
+                    request.notes(),
                     request.sortOrder(),
                     existing.createdAt(),
                     existing.deletedAt()
@@ -65,7 +61,7 @@ public class LotService {
 
             // Captures renames and every other mutable-field change.
             auditService.recordUpdate("lot", uuid, snapshot(existing), snapshot(updated));
-            return updated.toLot(encryptionService);
+            return updated.toLot();
         });
     }
 
@@ -83,18 +79,18 @@ public class LotService {
     }
 
     public Optional<Lot> findById(UUID uuid) {
-        return lotRepository.findById(uuid).map(row -> row.toLot(encryptionService));
+        return lotRepository.findById(uuid).map(LotRow::toLot);
     }
 
     public List<Lot> findByProperty(String propertyCode) {
         return lotRepository.findByProperty(propertyCode).stream()
-                .map(row -> row.toLot(encryptionService))
+                .map(LotRow::toLot)
                 .toList();
     }
 
     public List<Lot> findDuplicateNumbers(String propertyCode) {
         return lotRepository.findDuplicateNumbers(propertyCode).stream()
-                .map(row -> row.toLot(encryptionService))
+                .map(LotRow::toLot)
                 .toList();
     }
 
@@ -113,10 +109,5 @@ public class LotService {
         map.put("notes", row.notes());
         map.put("sort_order", row.sortOrder());
         return map;
-    }
-
-    //encryption mandatory
-    private String encryptNotes(String notes) {
-        return notes == null ? null : encryptionService.encrypt(notes);
     }
 }

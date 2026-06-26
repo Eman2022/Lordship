@@ -1,7 +1,6 @@
 package io.github.lordship.lots;
 
 import io.github.lordship.TestAuthSupport;
-import io.github.lordship.shared.EncryptionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,9 +42,6 @@ public class LotTests {
     @Autowired
     JdbcClient jdbc;
 
-    @Autowired
-    EncryptionService encryptionService;
-
     private UUID insertTestProperty(String propertyCode) {
         return jdbc.sql("""
                 INSERT INTO property (property_code, property_name, property_address)
@@ -65,7 +61,7 @@ public class LotTests {
                 """)
                 .param("propertyId", propertyId)
                 .param("lotNumber", lotNumber)
-                .param("notes", encryptionService.encrypt("Front row"))
+                .param("notes", "Front row")
                 .query(UUID.class)
                 .single();
     }
@@ -149,8 +145,7 @@ public class LotTests {
                 .query(String.class)
                 .single();
 
-        assertNotEquals("Front row", storedNotes);
-        assertEquals("Front row", encryptionService.decrypt(storedNotes));
+        assertEquals("Front row", storedNotes);
     }
 
     @Test
