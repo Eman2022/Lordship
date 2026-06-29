@@ -9,7 +9,6 @@ import java.util.*;
 @Repository
 public class PersonRepository {
 
-
     private static final Set<String> ALLOWED_COLUMNS = Set.of(
             "name_raw", "name_first", "name_last", "birthday",
             "personal_phone", "personal_email", "primary_property",

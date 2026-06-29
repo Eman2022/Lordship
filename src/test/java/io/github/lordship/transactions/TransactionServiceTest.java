@@ -8,8 +8,8 @@ import io.github.lordship.lots.LotCreationRequest;
 import io.github.lordship.lots.LotService;
 import io.github.lordship.properties.Property;
 import io.github.lordship.properties.PropertyService;
-import io.github.lordship.tenancy.Tenancy;
 import io.github.lordship.tenancy.TenancyService;
+import io.github.lordship.tenancy.internal.TenancyCreateRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -56,8 +55,7 @@ public class TransactionServiceTest {
     private Account createTestAccount() {
         Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
         Lot lot = lotService.createLot(new LotCreationRequest(property.uuid(), "1", null, null, null, null));
-        Tenancy tenancy = tenancyService.create(new Tenancy(null, lot.uuid(), UUID.randomUUID(), new Date(), null, null, null, null));
-        return accountService.createAccount(tenancy.uuid(), null);
+        return accountService.createAccount(tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid(), null);
     }
 
     // -------------------------------------------------------------------------

@@ -10,8 +10,8 @@ import io.github.lordship.lots.LotCreationRequest;
 import io.github.lordship.lots.LotService;
 import io.github.lordship.properties.Property;
 import io.github.lordship.properties.PropertyService;
-import io.github.lordship.tenancy.Tenancy;
 import io.github.lordship.tenancy.TenancyService;
+import io.github.lordship.tenancy.internal.TenancyCreateRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,7 +25,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
-import java.util.Date;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -81,8 +80,7 @@ public class AccountCrudTest {
     private UUID setupFullChain() {
         Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
         Lot lot = lotService.createLot(new LotCreationRequest(property.uuid(), "1", null, null, null, null));
-        Tenancy tenancy = tenancyService.create(new Tenancy(null, lot.uuid(), UUID.randomUUID(), new Date(), null, null, null, null));
-        return tenancy.uuid();
+        return tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid();
     }
 
     // -------------------------------------------------------------------------

@@ -1,15 +1,14 @@
 package io.github.lordship.tenancy;
 
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.UUID;
 
 public record Tenancy(
     UUID uuid,
-    UUID lotNumber,
-    UUID accountNumber,
-    Date startDate,
-    Date endDate,
+    UUID lotID,
+    LocalDate startDate,
+    LocalDate endDate,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     LocalDateTime deletedAt

@@ -1,18 +1,15 @@
 package io.github.lordship.access.internal;
 
 
+import io.github.lordship.IntegrationTest;
 import io.github.lordship.TestAuthSupport;
 import io.github.lordship.access.Agent;
-import io.github.lordship.access.AgentRegistrationRequest;
 import io.github.lordship.access.AgentLoginRequest;
 import io.github.lordship.access.AgentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,11 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
 @Transactional
-public class AgentControllerIT {
+public class AgentControllerIT extends IntegrationTest {
 
     @Value("${lordship.root.password}")
     private String rootPassword;
@@ -49,13 +43,13 @@ public class AgentControllerIT {
     AgentService agentService;
 
     @Test
-    void userLoginCreatesNewLog() throws Exception {
+    void shouldCreateNewLoginEvent_whenUserLogsIn() throws Exception {
         Optional<Agent> agent = agentService.findByWorkEmail(rootEmail);
         assertTrue(agent.isPresent());
         Agent rootAgent = agent.get();
         int logCount = agentService.getLoginEventsByAgentId(rootAgent.uuid()).size();
 
-        TestAuthSupport.loginAsRoot(mockMvc,objectMapper,rootEmail,rootPassword);
+        TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
 
         List<LoginEventRow> loginEvents = agentService.getLoginEventsByAgentId(rootAgent.uuid());
         int logCountPostLogin = loginEvents.size();
@@ -70,7 +64,7 @@ public class AgentControllerIT {
     }
 
     @Test
-    void rootAgentLogsInAndRegistersANewAgent() throws Exception {
+    void shouldAllowRootAgentToRegisterNewAgent_afterSuccessfulLogin() throws Exception {
         // an agent that needs a superuser to help them register
         String testAgentNameFirst = "Bilbo";
         String testAgentNameLast = "Baggins";
@@ -113,7 +107,7 @@ public class AgentControllerIT {
     }
 
     @Test
-    void unauthorizedStrangerCantRegisterAsNewAgent() throws Exception {
+    void shouldRejectAgentRegistration_whenUserIsUnauthorized() throws Exception {
         String testAgentNameFirst = "Bilbo";
         String testAgentNameLast = "Baggins";
         String testAgentNameEmail = "BigBaggins@gmail.com";
@@ -131,7 +125,7 @@ public class AgentControllerIT {
     }
 
     @Test
-    void rootUserCantLoginWithWrongPassword() throws Exception {
+    void shouldRejectLogin_whenPasswordIsIncorrect() throws Exception {
         String wrongPassword = rootPassword + "123";
         AgentLoginRequest agentLoginRequest = new AgentLoginRequest(rootEmail, wrongPassword);
 
@@ -143,7 +137,7 @@ public class AgentControllerIT {
     }
 
     @Test
-    void rootUserCanDefineNewRole() throws Exception {
+    void shouldAllowRootUserToCreateRole_whenAuthorized() throws Exception {
         String testRoleName = "Super Loser";
         String testRoleDesc = "A role to know you're a loser";
         String rootUserToken = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
@@ -165,5 +159,4 @@ public class AgentControllerIT {
                 .andExpect(jsonPath("$.roleName").value(testRoleName))
                 .andExpect(jsonPath("$.uuid").exists());
     }
-
 }

@@ -1,4 +1,4 @@
-package io.github.lordship.access;
+package io.github.lordship.access.internal;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

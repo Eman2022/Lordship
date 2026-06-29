@@ -97,6 +97,7 @@ public class PersonService {
         if (personBeforeOpt.isEmpty()) {
             return Optional.empty();
         }
+
         PersonRow personBefore = personBeforeOpt.get();
         Optional<PersonRow> personAfterOpt = personRepository.patch(uuid, changes);
         if (personAfterOpt.isEmpty()) {
@@ -108,8 +109,6 @@ public class PersonService {
         if (!diff.before().isEmpty()) {
             auditService.recordUpdate("person", uuid, diff.before(), diff.after());
         }
-
-        auditService.recordUpdate("person", uuid, AuditMapper.toMap(personBefore), AuditMapper.toMap(personAfter));
 
         return Optional.of(personAfter.toPerson(encryptionService));
     }

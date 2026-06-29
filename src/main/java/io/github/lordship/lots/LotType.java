@@ -4,8 +4,8 @@ public record LotType(
         String code,
         String label,
         String description,
-        // account status -> code -> active tenancy
-        // soft delete if not exist
+        // Retired types stay in the table for historical lot references, but
+        // inactive types are hidden from create/edit dropdowns.
         boolean active,
         Integer sortOrder
 ) {

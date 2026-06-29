@@ -1,6 +1,7 @@
 package io.github.lordship.persons.internal;
 
 
+import io.github.lordship.IntegrationTest;
 import io.github.lordship.TestAuthSupport;
 import io.github.lordship.access.Agent;
 import io.github.lordship.access.AgentService;
@@ -25,11 +26,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
 @Transactional
-public class PersonControllerIT {
+public class PersonControllerIT extends IntegrationTest {
 
     @Value("${lordship.root.email}")
     private String rootEmail;
@@ -50,15 +48,14 @@ public class PersonControllerIT {
     PersonService personService;
 
     @Test
-    public void editPerson_omittedFieldsAreNotChanged() throws Exception {
+    public void shouldNotModifyOmittedFields_whenEditingPerson() throws Exception {
+        // Arrange
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
-
         Optional<Agent> rootAgent = agentService.findByWorkEmail(rootEmail);
         assertTrue(rootAgent.isPresent());
         Optional<Person> personOptional = personService.findByID(rootAgent.get().personId());
         assertTrue(personOptional.isPresent());
         Person person = personOptional.get();
-
         String originalNameLast = person.nameLast();
         UUID personUuid = person.uuid();
 
@@ -68,31 +65,33 @@ public class PersonControllerIT {
                     "nameFirst": "Erich"
                 }
                 """;
+
+        // Act
         mockMvc.perform(patch("/persons/{uuid}", personUuid)
                 .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
+        // Assert
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nameFirst").value("Erich"))
                 .andExpect(jsonPath("$.nameLast").value(originalNameLast));
-
-        // also check DB:
+           // also check DB:
         Person personUpdated = personService.findByID(person.uuid()).orElseThrow();
         assertEquals("Erich", personUpdated.nameFirst());
         assertEquals(originalNameLast, personUpdated.nameLast());
     }
 
     @Test
-    public void editPerson_explicitNullClearsExistingValue() throws Exception {
+    public void shouldClearField_whenExplicitNullIsProvided() throws Exception {
+        // Arrange
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
-
         Optional<Agent> rootAgent = agentService.findByWorkEmail(rootEmail);
         assertTrue(rootAgent.isPresent());
         Optional<Person> personOptional = personService.findByID(rootAgent.get().personId());
         assertTrue(personOptional.isPresent());
         Person person = personOptional.get();
 
-        // --- Step 1: set birthday to a known non-null value first
+          // Step 1: set birthday
         String setBirthdayBody = """
             {
                 "birthday": "1990-01-01"
@@ -106,21 +105,23 @@ public class PersonControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.birthday").value("1990-01-01"));
 
-        // --- Step 2: now explicitly null it out
+          // --- Step 2: now explicitly null it out
         String clearBirthdayBody = """
             {
                 "birthday": null
             }
             """;
 
+        // Act
         mockMvc.perform(patch("/persons/{uuid}", person.uuid())
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(clearBirthdayBody))
+        // Assert
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.birthday").doesNotExist());
 
-        // --- Step 3: verify against the actual DB-backed service too, not just the response DTO
+          // --- Step 3: verify against the actual DB-backed service too, not just the response DTO
         Person updated = personService.findByID(person.uuid()).orElseThrow();
         assertNull(updated.birthday());
     }
