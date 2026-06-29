@@ -1,5 +1,6 @@
 package io.github.lordship.transactions;
 
+import io.github.lordship.accounts.Account;
 import io.github.lordship.accounts.AccountService;
 import io.github.lordship.transactions.internal.TransactionRepository;
 import io.github.lordship.transactions.internal.TransactionRow;
@@ -35,12 +36,10 @@ public class TransactionService {
                 && (description == null || description.isBlank())) {
             throw new IllegalArgumentException("Description is required for transaction type: " + type);
         }
-        if (type == TransactionType.PAYMENT) {
-            accountService.getAccount(accountId)
-                    .filter(a -> !a.acceptPayments())
-                    .ifPresent(a -> {
-                        throw new IllegalStateException("Account does not accept payments: " + accountId);
-                    });
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new NoSuchElementException("Account not found: " + accountId));
+        if (type == TransactionType.PAYMENT && !account.acceptPayments()) {
+            throw new IllegalStateException("Account does not accept payments: " + accountId);
         }
         TransactionRow row = new TransactionRow(accountId, type, amount, description, billingPeriod);
         Transaction tx = transactionRepository.save(row).toTransaction();

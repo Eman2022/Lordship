@@ -8,6 +8,7 @@ public enum TransactionType {
     UTILITY_WATER,
     VEHICLE_FEE,
     LATE_FEE,
+    NOTICE_FEE,
     CREDIT,
     BALANCE_ADJUSTMENT,
     MISC_CHARGE,

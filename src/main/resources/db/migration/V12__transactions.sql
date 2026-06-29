@@ -1,7 +1,9 @@
 -- Transaction ledger for tenant accounts.
 -- Charges are stored as positive amounts; credits and payments are semantically negative
 -- (applied via sign logic in the application layer when computing balance).
--- billed = true means the transaction is locked and cannot be deleted or edited.
+-- NOTE: billed column and amount > 0 constraint are altered by V16.
+--   V16 drops billed and replaces immutability with billing period finalization.
+--   V16 also updates the CHECK to allow negative amounts for BALANCE_ADJUSTMENT.
 -- Depends on: account (V9)
 
 CREATE TABLE transaction (

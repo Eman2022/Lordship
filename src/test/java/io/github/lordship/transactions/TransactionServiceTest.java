@@ -169,7 +169,7 @@ public class TransactionServiceTest {
                 false, // acceptPayments = false
                 account.exemptFromLateFees(), account.createdAt(), account.deletedAt()
         );
-        accountService.updateAccount(blocked);
+        assertTrue(accountService.updateAccount(blocked).isPresent());
 
         assertThrows(IllegalStateException.class, () ->
                 transactionService.postTransaction(account.uuid(), TransactionType.PAYMENT, new BigDecimal("100.00"), null, LocalDate.now())

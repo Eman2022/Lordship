@@ -54,6 +54,9 @@ public class TransactionRepository {
                 .optional();
     }
 
+    // Use sparingly — full ledger scan across all transactions for the account.
+    // For reads, prefer account.balanceCached(). Only call this after a mutation
+    // (post or delete transaction) to refresh the cached value on the account.
     public BigDecimal computeBalance(UUID accountId) {
         return jdbc.sql("""
                 SELECT COALESCE(SUM(
