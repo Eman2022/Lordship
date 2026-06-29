@@ -42,6 +42,8 @@ public PropertyRow(String propertyName, String propertyAddress){
                 null,
                 null,
                 null,
+                null,
+                null,
                 null
         );
 }
