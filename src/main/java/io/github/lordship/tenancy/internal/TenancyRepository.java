@@ -5,7 +5,7 @@ import io.github.lordship.tenancy.internal.TenancyRow;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,9 +23,9 @@ public class TenancyRepository {
     public TenancyRow save(TenancyRow row) {
         return jdbc.sql("""
                 INSERT INTO tenancy (
-                        lot_number, account_number, start_date, end_date
+                        lot_id, start_date, end_date
                     ) VALUES (
-                        :lotNumber, :accountNumber, :startDate, :endDate
+                        :lotId, :startDate, :endDate
                     ) RETURNING *
                 """)
                 .paramSource(row)
@@ -41,18 +41,18 @@ public class TenancyRepository {
     }
 
     // Some lots may have two tenancies at a time
-    public List<TenancyRow> findActiveByLot(UUID lotNumber) {
+    public List<TenancyRow> findActiveByLot(UUID lotId) {
         return jdbc.sql("""
-                SELECT * from tenancy WHERE lot_number = :lotNumber
+                SELECT * from tenancy WHERE lot_id = :lotId
                 AND end_date IS NULL AND deleted_at IS NULL
                 """)
-                .param("lotNumber", lotNumber)
+                .param("lotId", lotId)
                 .query(TenancyRow.class)
                 .list();
     }
 
-    // Determines when a tenancy closes
-    public TenancyRow close(UUID uuid, Date endDate) {
+    // Determines when a tenancyId closes
+    public TenancyRow close(UUID uuid, LocalDate endDate) {
         return jdbc.sql("""
                 UPDATE tenancy
                 SET end_date = :endDate

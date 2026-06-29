@@ -4,6 +4,7 @@ import io.github.lordship.audit.AuditService;
 import io.github.lordship.lots.internal.LotRepository;
 import io.github.lordship.lots.internal.LotRow;
 import io.github.lordship.lots.internal.LotTypeRepository;
+import io.github.lordship.lots.internal.LotUpdateRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,11 +83,15 @@ public class LotService {
     }
 
     public List<Lot> findByProperty(String propertyCode) {
-        return lotRepository.findByProperty(propertyCode).stream().map(LotRow::toLot).toList();
+        return lotRepository.findByProperty(propertyCode).stream()
+                .map(LotRow::toLot)
+                .toList();
     }
 
     public List<Lot> findDuplicateNumbers(String propertyCode) {
-        return lotRepository.findDuplicateNumbers(propertyCode).stream().map(LotRow::toLot).toList();
+        return lotRepository.findDuplicateNumbers(propertyCode).stream()
+                .map(LotRow::toLot)
+                .toList();
     }
 
     public List<LotType> findActiveLotTypes() {
@@ -97,7 +102,7 @@ public class LotService {
 
     private static Map<String, Object> snapshot(LotRow row) {
         Map<String, Object> map = new HashMap<>();
-        map.put("property_code", row.propertyId());
+        map.put("property_id", row.propertyId());
         map.put("lot_number", row.lotNumber());
         map.put("lot_type_code", row.lotTypeCode());
         map.put("description", row.description());

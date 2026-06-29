@@ -1,21 +1,20 @@
 -- Correct rent from lease table?
--- Add foreign key for lotNumber (V7_Lots)
 -- Foreign key for accountNumber (V9_Accounts)
 -- Lots may have two tenancies in certain circumstances
 CREATE TABLE tenancy (
     uuid UUID PRIMARY KEY DEFAULT uuidv7(),
-    lot_number UUID NOT NULL,
-    account_number UUID NOT NULL,
+    lot_id UUID NOT NULL,
     start_date DATE,
     end_date DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP
+    deleted_at TIMESTAMP,
+    FOREIGN KEY (lot_id) REFERENCES lot(uuid) -- references lot
 );
 
--- Enforces one tenancy per lot
+-- Enforces one tenancyId per lot
 CREATE UNIQUE INDEX uix_tenancy_lot_active
-    ON tenancy (lot_number)
+    ON tenancy (lot_id)
     WHERE end_date IS NULL AND deleted_at IS NULL;
 
 
@@ -23,12 +22,15 @@ CREATE UNIQUE INDEX uix_tenancy_lot_active
 -- Add timestamps for tenant?
 CREATE TABLE tenant (
     uuid UUID PRIMARY KEY DEFAULT uuidv7(),
-    tenancy UUID NOT NULL,
-    person UUID NOT NULL,
+    tenancy_id UUID NOT NULL,
+    person_id UUID NOT NULL,
     start_date DATE,
     end_date DATE,
-    FOREIGN KEY (person) REFERENCES person(uuid),
-    FOREIGN KEY (tenancy) REFERENCES tenancy(uuid)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP,
+    FOREIGN KEY (person_id) REFERENCES person(uuid),
+    FOREIGN KEY (tenancy_id) REFERENCES tenancy(uuid)
 );
 
 -- Prevents duplicate permissions

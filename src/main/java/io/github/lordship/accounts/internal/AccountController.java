@@ -1,7 +1,6 @@
 package io.github.lordship.accounts.internal;
 
 import io.github.lordship.accounts.Account;
-import io.github.lordship.accounts.AccountCreationRequest;
 import io.github.lordship.accounts.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -51,7 +50,24 @@ public class AccountController {
     @PreAuthorize("hasAuthority('accounts:edit')")
     @PutMapping("/{id}")
     public ResponseEntity<AccountResponse> updateAccount(@PathVariable UUID id, @Valid @RequestBody AccountUpdateRequest request) {
-        return accountService.updateAccount(id, request.accountStatus(), request.balance(), request.autopayEnabled(), request.notes())
+        return accountService.getAccount(id)
+                .flatMap(existing -> {
+                    Account toUpdate = new Account(
+                            existing.uuid(),
+                            existing.tenancyId(),
+                            request.accountStatus(),
+                            existing.balanceCached(),
+                            request.autopayEnabled(),
+                            request.notes(),
+                            request.noPersonalChecks(),
+                            request.noPartialPayments(),
+                            request.acceptPayments(),
+                            request.exemptFromLateFees(),
+                            existing.createdAt(),
+                            existing.deletedAt()
+                    );
+                    return accountService.updateAccount(toUpdate);
+                })
                 .map(AccountResponse::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

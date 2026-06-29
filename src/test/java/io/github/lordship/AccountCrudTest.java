@@ -1,25 +1,30 @@
 package io.github.lordship;
 
 import io.github.lordship.access.AgentLoginRequest;
-import io.github.lordship.accounts.AccountCreationRequest;
 import io.github.lordship.accounts.AccountStatus;
+import io.github.lordship.accounts.internal.AccountCreationRequest;
 import io.github.lordship.accounts.internal.AccountUpdateRequest;
+import io.github.lordship.audit.AuditService;
+import io.github.lordship.lots.Lot;
+import io.github.lordship.lots.LotCreationRequest;
+import io.github.lordship.lots.LotService;
 import io.github.lordship.properties.Property;
-import io.github.lordship.properties.internal.PropertyRow;
+import io.github.lordship.properties.PropertyService;
+import io.github.lordship.tenancy.TenancyService;
+import io.github.lordship.tenancy.internal.TenancyCreateRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -44,7 +49,16 @@ public class AccountCrudTest {
     ObjectMapper objectMapper;
 
     @Autowired
-    JdbcClient jdbc;
+    PropertyService propertyService;
+
+    @Autowired
+    LotService lotService;
+
+    @Autowired
+    TenancyService tenancyService;
+
+    @MockitoBean
+    AuditService auditService;
 
     // -------------------------------------------------------------------------
     // Helpers
@@ -63,42 +77,10 @@ public class AccountCrudTest {
         return objectMapper.readTree(body).get("token").asString();
     }
 
-    private UUID insertTestProperty() {
-        PropertyRow propertyRow = jdbc.sql("""
-                INSERT INTO property (property_code, property_name, property_address)
-                VALUES ('TST01', 'Test Mobile Park', '999 Test Ave') RETURNING *
-                """).query(PropertyRow.class)
-                .single();
-        return propertyRow.uuid();
-    }
-
-    private UUID insertTestLot(UUID propertyId) {
-        return jdbc.sql("""
-                INSERT INTO lot (property_id, lot_number)
-                VALUES (:propertyId, '1')
-                RETURNING uuid
-                """)
-                .param("propertyId", propertyId)
-                .query(UUID.class)
-                .single();
-    }
-
-    private UUID insertTestTenancy(UUID lotId) {
-        return jdbc.sql("""
-                INSERT INTO tenancy (lot_number, account_number, start_date)
-                VALUES (:lotId, :placeholderAccountId, CURRENT_DATE)
-                RETURNING uuid
-                """)
-                .param("lotId", lotId)
-                .param("placeholderAccountId", UUID.randomUUID())
-                .query(UUID.class)
-                .single();
-    }
-
     private UUID setupFullChain() {
-        UUID propertyId = insertTestProperty();
-        UUID lotId = insertTestLot(propertyId);
-        return insertTestTenancy(lotId);
+        Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
+        Lot lot = lotService.createLot(new LotCreationRequest(property.uuid(), "1", null, null, null, null));
+        return tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid();
     }
 
     // -------------------------------------------------------------------------
@@ -129,7 +111,7 @@ public class AccountCrudTest {
 
     @Test
     void unauthorizedUpdateReturns403() throws Exception {
-        AccountUpdateRequest request = new AccountUpdateRequest(AccountStatus.ACTIVE, BigDecimal.ZERO, false, null);
+        AccountUpdateRequest request = new AccountUpdateRequest(AccountStatus.ACTIVE, false, null, false, false, true, false);
 
         mockMvc.perform(put("/accounts/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -162,7 +144,7 @@ public class AccountCrudTest {
                 .andExpect(jsonPath("$.uuid").exists())
                 .andExpect(jsonPath("$.tenancyId").value(tenancyId.toString()))
                 .andExpect(jsonPath("$.accountStatus").value("ACTIVE"))
-                .andExpect(jsonPath("$.balance").value(0))
+                .andExpect(jsonPath("$.balanceCached").value(0))
                 .andExpect(jsonPath("$.autopayEnabled").value(false));
     }
 
@@ -191,27 +173,6 @@ public class AccountCrudTest {
                 .andExpect(jsonPath("$.accountStatus").value("ACTIVE"));
     }
 
-//    @Test
-//    void authorizedGetByPropertyReturns200WithAccounts() throws Exception {
-//        String token = loginAsRoot();
-//        UUID tenancyId = setupFullChain();
-//
-//        UUID testPropertyId = insertTestProperty();
-//
-//        AccountCreationRequest createRequest = new AccountCreationRequest(tenancyId, null);
-//        mockMvc.perform(post("/accounts/create")
-//                        .header("Authorization", "Bearer " + token)
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(createRequest)))
-//                .andExpect(status().isCreated());
-//
-//        mockMvc.perform(get("/accounts/property/" + testPropertyId.toString())
-//                        .header("Authorization", "Bearer " + token))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$[0].uuid").exists())
-//                .andExpect(jsonPath("$[0].accountStatus").value("ACTIVE"));
-//    }
-
     @Test
     void authorizedUpdateReturns200() throws Exception {
         String token = loginAsRoot();
@@ -230,9 +191,12 @@ public class AccountCrudTest {
 
         AccountUpdateRequest updateRequest = new AccountUpdateRequest(
                 AccountStatus.DELINQUENT,
-                new BigDecimal("325.00"),
                 true,
-                "Tenant missed payment"
+                "Tenant missed payment",
+                false,
+                false,
+                true,
+                false
         );
 
         mockMvc.perform(put("/accounts/" + accountId)
@@ -241,7 +205,7 @@ public class AccountCrudTest {
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountStatus").value("DELINQUENT"))
-                .andExpect(jsonPath("$.balance").value(325.00))
+                .andExpect(jsonPath("$.balanceCached").value(0))
                 .andExpect(jsonPath("$.autopayEnabled").value(true))
                 .andExpect(jsonPath("$.notes").value("Tenant missed payment"));
     }

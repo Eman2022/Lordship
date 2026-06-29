@@ -19,7 +19,7 @@ public class LoginEventRepository {
     public LoginEventRow save(LoginEventRow loginEventRow) {
 
         return jdbc.sql("""
-                INSERT INTO login_event (agent_id, occurred_at, ip_address, browser_client, browserOs, outcome)
+                INSERT INTO agent_login_event (agent_id, occurred_at, ip_address, browser_client, browserOs, outcome)
                 VALUES (:agentId, :occurredAt, :ipAddress, :browserClient, :browserOs, :outcome)
                 RETURNING *
                 """)
@@ -31,7 +31,7 @@ public class LoginEventRepository {
     public List<LoginEventRow> getLoginEventsByAgentId(UUID agentId) {
         return jdbc.sql("""
                     SELECT *
-                    FROM login_event
+                    FROM agent_login_event
                     WHERE agent_id = :agentId
                     ORDER BY occurred_at DESC
                     """)
@@ -43,7 +43,7 @@ public class LoginEventRepository {
 }
 
 
-//CREATE TABLE login_event (
+//CREATE TABLE agent_login_event (
 //        uuid UUID PRIMARY KEY DEFAULT uuidv7(),
 //agent_id UUID NOT NULL,
 //occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

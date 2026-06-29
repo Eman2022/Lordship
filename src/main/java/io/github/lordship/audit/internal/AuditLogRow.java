@@ -73,6 +73,7 @@ public record AuditLogRow(
         }
     }
 
+
     public AuditLog toAuditLog(EncryptionService encryptionService) {
         return new AuditLog(
                 uuid,
@@ -84,7 +85,7 @@ public record AuditLogRow(
                 recordId,
                 operation,
                 decryptJson(this.valueBefore, encryptionService),
-                decryptJson(this.valueAfter, encryptionService),
+                decryptJson(this.valueAfter,  encryptionService),
                 changedAt
         );
     }

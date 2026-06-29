@@ -3,7 +3,6 @@ package io.github.lordship.accounts.internal;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,8 +18,10 @@ public class AccountRepository {
 
     public AccountRow save(AccountRow row) {
         return jdbc.sql("""
-                INSERT INTO account (tenancy_id, account_status, balance, autopay_enabled, notes)
-                VALUES (:tenancyId, :accountStatus, :balance, :autopayEnabled, :notes)
+                INSERT INTO account (tenancy_id, account_status, balance_cached, autopay_enabled, notes,
+                                     no_personal_checks, no_partial_payments, accept_payments, exempt_from_late_fees)
+                VALUES (:tenancyId, :accountStatus, :balanceCached, :autopayEnabled, :notes,
+                        :noPersonalChecks, :noPartialPayments, :acceptPayments, :exemptFromLateFees)
                 RETURNING *
                 """)
                 .paramSource(row)
@@ -46,7 +47,7 @@ public class AccountRepository {
         return jdbc.sql("""
                 SELECT a.* FROM account a
                 JOIN tenancy t ON a.tenancy_id = t.uuid
-                JOIN lot l ON t.lot_number = l.uuid
+                JOIN lot l ON t.lot_id = l.uuid
                 WHERE l.property_id = :propertyId
                 AND a.deleted_at IS NULL
                 """)
@@ -55,21 +56,20 @@ public class AccountRepository {
                 .list();
     }
 
-    public Optional<AccountRow> update(UUID uuid, String accountStatus, BigDecimal balance, boolean autopayEnabled, String notes) {
+    public Optional<AccountRow> update(AccountRow row) {
         return jdbc.sql("""
                 UPDATE account
-                SET account_status = :accountStatus,
-                    balance        = :balance,
-                    autopay_enabled = :autopayEnabled,
-                    notes          = :notes
+                SET account_status       = :accountStatus,
+                    autopay_enabled      = :autopayEnabled,
+                    notes                = :notes,
+                    no_personal_checks   = :noPersonalChecks,
+                    no_partial_payments  = :noPartialPayments,
+                    accept_payments      = :acceptPayments,
+                    exempt_from_late_fees = :exemptFromLateFees
                 WHERE uuid = :uuid AND deleted_at IS NULL
                 RETURNING *
                 """)
-                .param("uuid", uuid)
-                .param("accountStatus", accountStatus)
-                .param("balance", balance)
-                .param("autopayEnabled", autopayEnabled)
-                .param("notes", notes)
+                .paramSource(row)
                 .query(AccountRow.class)
                 .optional();
     }

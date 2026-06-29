@@ -8,9 +8,13 @@ public record Account(
         UUID uuid,
         UUID tenancyId,
         AccountStatus accountStatus,
-        BigDecimal balance,
+        BigDecimal balanceCached,
         boolean autopayEnabled,
         String notes,
+        boolean noPersonalChecks,
+        boolean noPartialPayments,
+        boolean acceptPayments,
+        boolean exemptFromLateFees,
         LocalDateTime createdAt,
         LocalDateTime deletedAt
 ) {

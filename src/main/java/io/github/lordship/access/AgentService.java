@@ -24,7 +24,7 @@ public class AgentService {
     private final PasswordService passwordService;
     private final PermissionResolverService permissionResolverService;
     private final JwtService jwtService;
-    private final RoleAssignmentService roleAssignmentService;
+    private final GrantedRoleService grantedRoleService;
     private final LoginEventRepository loginEventRepository;
     private final AuditService auditService;
 
@@ -37,7 +37,7 @@ public class AgentService {
             PasswordService passwordService,
             PermissionResolverService permissionResolverService,
             JwtService jwtService,
-            RoleAssignmentService roleAssignmentService,
+            GrantedRoleService grantedRoleService,
             LoginEventRepository loginEventRepository,
             AuditService auditService
     ) {
@@ -46,7 +46,7 @@ public class AgentService {
         this.passwordService = passwordService;
         this.permissionResolverService = permissionResolverService;
         this.jwtService = jwtService;
-        this.roleAssignmentService = roleAssignmentService;
+        this.grantedRoleService = grantedRoleService;
         this.loginEventRepository = loginEventRepository;
         this.auditService = auditService;
     }
@@ -127,7 +127,7 @@ public class AgentService {
         );
 
         Agent agent = agentRepository.save(agentRow).toAgent();
-        GrantedRole grantedRole = roleAssignmentService.grantRoleByName(agent.uuid(), "Admin", agent.uuid());
+        GrantedRole grantedRole = grantedRoleService.grantRoleByName(agent.uuid(), "Admin", agent.uuid());
 
         // log the changes
         auditService.recordSystemInsert(correlationId,"agent", agent.uuid(), AuditMapper.toMap(agent));

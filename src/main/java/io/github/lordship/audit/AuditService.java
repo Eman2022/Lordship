@@ -1,7 +1,10 @@
 package io.github.lordship.audit;
 
+import io.github.lordship.audit.internal.AuditLogResponse;
 import io.github.lordship.audit.internal.AuditLogRow;
 import io.github.lordship.audit.internal.AuditRepository;
+import io.github.lordship.shared.PageRequest;
+import io.github.lordship.shared.PageResult;
 import io.github.lordship.shared.UserType;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
@@ -82,9 +85,10 @@ public class AuditService {
         auditRepository.save(row);
     }
 
-//    public List<AuditLog> getRecordsByAgentId(UUID agentId){
-//
-//    }
+    public PageResult<AuditLog> findAgentAuditLogs(UUID agentId, Integer page, Integer pageSize, String sortBy, boolean ascending) {
+        PageRequest pageRequest = PageRequest.of(page, pageSize, sortBy, ascending);
+        return auditRepository.findAllAgentAuditLogs(agentId, pageRequest);
+    }
 
     private String toJson(Map<String, Object> map) {
         if (map == null || map.isEmpty()) {
@@ -92,7 +96,4 @@ public class AuditService {
         }
         return objectMapper.writeValueAsString(map);
     }
-
-
-
 }
