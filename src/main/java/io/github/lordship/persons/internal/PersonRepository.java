@@ -1,8 +1,11 @@
 package io.github.lordship.persons.internal;
 
 
+import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
@@ -44,12 +47,11 @@ public class PersonRepository {
         jdbc.sql("""
             UPDATE person
             SET deleted_at = now()
-            WHERE uuid = :uuid
+            WHERE uuid = :uuid and deleted_at IS NULL
             RETURNING *
             """)
             .param("uuid", uuid)
-            .query(PersonRow.class)
-            .single();
+            .update();
     }
 
     public Optional<PersonRow> findById(UUID uuid){
@@ -66,6 +68,7 @@ public class PersonRepository {
                 .optional();
     }
 
+    //NOTE: On this func, the repo gave up type safety in exchange for generality- which is why the social is encrypted at service layer
     public Optional<PersonRow> patch(UUID uuid, Map<String, Object> changes){
         if (changes.isEmpty()) return findById(uuid);
 
