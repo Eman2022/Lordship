@@ -1,4 +1,4 @@
-package io.github.lordship.accounts;
+package io.github.lordship.accounts.internal;
 
 import jakarta.validation.constraints.NotNull;
 

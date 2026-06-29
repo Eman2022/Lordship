@@ -11,9 +11,13 @@ public record AccountRow(
         UUID uuid,
         UUID tenancyId,
         String accountStatus,
-        BigDecimal balance,
+        BigDecimal balanceCached,
         boolean autopayEnabled,
         String notes,
+        boolean noPersonalChecks,
+        boolean noPartialPayments,
+        boolean acceptPayments,
+        boolean exemptFromLateFees,
         LocalDateTime createdAt,
         LocalDateTime deletedAt
 ) {
@@ -22,9 +26,13 @@ public record AccountRow(
                 this.uuid,
                 this.tenancyId,
                 AccountStatus.valueOf(this.accountStatus),
-                this.balance,
+                this.balanceCached,
                 this.autopayEnabled,
                 this.notes,
+                this.noPersonalChecks,
+                this.noPartialPayments,
+                this.acceptPayments,
+                this.exemptFromLateFees,
                 this.createdAt,
                 this.deletedAt
         );
@@ -38,6 +46,10 @@ public record AccountRow(
                 BigDecimal.ZERO,
                 false,
                 notes,
+                false,
+                false,
+                true,
+                false,
                 null,
                 null
         );
