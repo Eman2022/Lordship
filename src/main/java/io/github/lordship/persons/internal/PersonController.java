@@ -60,7 +60,7 @@ public class PersonController {
     @PatchMapping("/{uuid}")
     public ResponseEntity<PersonResponse> editPerson(
             @PathVariable UUID uuid,
-            @RequestBody Map<String, Object> request,
+            @RequestBody Map<String, Object> request, //Note: @Valid will not work here
             Authentication authentication)
     {
         Map<String, Object> changes = new HashMap<>();

@@ -7,6 +7,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+
+//TODO: rule: row layer owns encryption for typed constructors. service layer owns it for dynamic/patch paths on sensitive fields.
 public record PersonRow(
     UUID uuid,
     String nameRaw,
@@ -37,24 +39,6 @@ public record PersonRow(
                 social != null ? encryptionService.decrypt(social) : null,
                 this.createdAt,
                 this.deletedAt
-        );
-    }
-
-    public PersonRow(String nameFirst, String nameLast, String personalEmail) {
-        this(
-                null,
-                null,
-                nameFirst,
-                nameLast,
-                null,
-                null,
-                personalEmail,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
         );
     }
 

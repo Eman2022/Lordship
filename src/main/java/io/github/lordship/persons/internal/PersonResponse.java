@@ -34,7 +34,7 @@ public record PersonResponse(
                 person.primaryProperty(),
                 person.mailingAddress(),
                 person.emergencyContact(),
-                canViewSsn ? person.social() : SensitiveDataMasker.maskSsn(person.social()),
+                canViewSsn ? person.social() : SensitiveDataMasker.maskSsn(person.social()), // Note: maskSSN can accept null values
                 person.createdAt()
         );
     }
