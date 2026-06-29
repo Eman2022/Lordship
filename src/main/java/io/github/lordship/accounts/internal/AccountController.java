@@ -56,12 +56,13 @@ public class AccountController {
                             existing.uuid(),
                             existing.tenancyId(),
                             request.accountStatus(),
-                            existing.balance(),
+                            existing.balanceCached(),
                             request.autopayEnabled(),
                             request.notes(),
                             request.noPersonalChecks(),
                             request.noPartialPayments(),
-                            request.evictionInProgress(),
+                            request.acceptPayments(),
+                            request.exemptFromLateFees(),
                             existing.createdAt(),
                             existing.deletedAt()
                     );

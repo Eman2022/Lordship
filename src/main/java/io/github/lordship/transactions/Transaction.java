@@ -13,7 +13,6 @@ public record Transaction(
         String description,
         LocalDate billingPeriod,
         LocalDateTime postedAt,
-        boolean billed,
         LocalDateTime deletedAt
 ) {
 }

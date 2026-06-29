@@ -1,13 +1,22 @@
 package io.github.lordship.accounts;
 
+import io.github.lordship.audit.AuditService;
+import io.github.lordship.lots.Lot;
+import io.github.lordship.lots.LotCreationRequest;
+import io.github.lordship.lots.LotService;
+import io.github.lordship.properties.Property;
+import io.github.lordship.properties.PropertyService;
+import io.github.lordship.tenancy.Tenancy;
+import io.github.lordship.tenancy.TenancyService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,48 +31,26 @@ public class AccountServiceTest {
     AccountService accountService;
 
     @Autowired
-    JdbcClient jdbc;
+    PropertyService propertyService;
+
+    @Autowired
+    LotService lotService;
+
+    @Autowired
+    TenancyService tenancyService;
+
+    @MockitoBean
+    AuditService auditService;
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
-    private UUID insertTestProperty() {
-        return jdbc.sql("""
-                INSERT INTO property (property_code, property_name, property_address)
-                VALUES ('TST01', 'Test Mobile Park', '999 Test Ave') RETURNING uuid
-                """)
-                .query(UUID.class)
-                .single();
-    }
-
-    private UUID insertTestLot(UUID propertyId) {
-        return jdbc.sql("""
-                INSERT INTO lot (property_id, lot_number)
-                VALUES (:propertyId, '1')
-                RETURNING uuid
-                """)
-                .param("propertyId", propertyId)
-                .query(UUID.class)
-                .single();
-    }
-
-    private UUID insertTestTenancy(UUID lotId) {
-        return jdbc.sql("""
-                INSERT INTO tenancy (lot_number, account_number, start_date)
-                VALUES (:lotId, :placeholderAccountId, CURRENT_DATE)
-                RETURNING uuid
-                """)
-                .param("lotId", lotId)
-                .param("placeholderAccountId", UUID.randomUUID())
-                .query(UUID.class)
-                .single();
-    }
-
     private UUID setupFullChain() {
-        UUID propertyId = insertTestProperty();
-        UUID lotId = insertTestLot(propertyId);
-        return insertTestTenancy(lotId);
+        Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
+        Lot lot = lotService.createLot(new LotCreationRequest(property.uuid(), "1", null, null, null, null));
+        Tenancy tenancy = tenancyService.create(new Tenancy(null, lot.uuid(), UUID.randomUUID(), new Date(), null, null, null, null));
+        return tenancy.uuid();
     }
 
     // -------------------------------------------------------------------------
@@ -79,11 +66,12 @@ public class AccountServiceTest {
         assertNotNull(account.uuid());
         assertEquals(tenancyId, account.tenancyId());
         assertEquals(AccountStatus.ACTIVE, account.accountStatus());
-        assertEquals(0, BigDecimal.ZERO.compareTo(account.balance()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(account.balanceCached()));
         assertFalse(account.autopayEnabled());
         assertFalse(account.noPersonalChecks());
         assertFalse(account.noPartialPayments());
-        assertFalse(account.evictionInProgress());
+        assertTrue(account.acceptPayments());
+        assertFalse(account.exemptFromLateFees());
         assertEquals("test notes", account.notes());
     }
 
@@ -115,10 +103,11 @@ public class AccountServiceTest {
                 created.uuid(),
                 created.tenancyId(),
                 AccountStatus.DELINQUENT,
-                created.balance(),
+                created.balanceCached(),
                 true,
                 "Late on payment",
                 true,
+                false,
                 false,
                 true,
                 created.createdAt(),
@@ -133,14 +122,15 @@ public class AccountServiceTest {
         assertEquals("Late on payment", updated.get().notes());
         assertTrue(updated.get().noPersonalChecks());
         assertFalse(updated.get().noPartialPayments());
-        assertTrue(updated.get().evictionInProgress());
+        assertFalse(updated.get().acceptPayments());
+        assertTrue(updated.get().exemptFromLateFees());
     }
 
     @Test
     void updateAccount_doesNotChangeBalance() {
         UUID tenancyId = setupFullChain();
         Account created = accountService.createAccount(tenancyId, null);
-        assertEquals(0, BigDecimal.ZERO.compareTo(created.balance()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(created.balanceCached()));
 
         // Pass an account with a different balance — the update SQL does not touch the balance column
         Account toUpdate = new Account(
@@ -152,6 +142,7 @@ public class AccountServiceTest {
                 null,
                 false,
                 false,
+                true,
                 false,
                 created.createdAt(),
                 created.deletedAt()
@@ -160,7 +151,7 @@ public class AccountServiceTest {
         Optional<Account> updated = accountService.updateAccount(toUpdate);
 
         assertTrue(updated.isPresent());
-        assertEquals(0, BigDecimal.ZERO.compareTo(updated.get().balance()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(updated.get().balanceCached()));
     }
 
     @Test

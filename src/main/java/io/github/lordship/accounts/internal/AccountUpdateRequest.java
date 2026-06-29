@@ -16,7 +16,9 @@ public record AccountUpdateRequest(
 
         boolean noPartialPayments,
 
-        boolean evictionInProgress
+        boolean acceptPayments,
+
+        boolean exemptFromLateFees
 
 ) {
 }

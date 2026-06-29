@@ -21,7 +21,7 @@ public class TransactionController {
         this.transactionService = transactionService;
     }
 
-    @PreAuthorize("hasAuthority('accounts:edit')")
+    @PreAuthorize("hasAuthority('transactions:edit')")
     @PostMapping("/post")
     public ResponseEntity<TransactionResponse> postTransaction(@Valid @RequestBody TransactionCreationRequest request) {
         TransactionResponse response = TransactionResponse.from(
@@ -36,7 +36,7 @@ public class TransactionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PreAuthorize("hasAuthority('accounts:view')")
+    @PreAuthorize("hasAuthority('transactions:view')")
     @GetMapping("/{uuid}")
     public ResponseEntity<TransactionResponse> getTransaction(@PathVariable UUID uuid) {
         try {
@@ -46,7 +46,7 @@ public class TransactionController {
         }
     }
 
-    @PreAuthorize("hasAuthority('accounts:view')")
+    @PreAuthorize("hasAuthority('transactions:view')")
     @GetMapping("/account/{accountId}")
     public ResponseEntity<List<TransactionResponse>> getByAccount(@PathVariable UUID accountId) {
         List<TransactionResponse> responses = transactionService.findByAccountId(accountId)
@@ -56,7 +56,7 @@ public class TransactionController {
         return ResponseEntity.ok(responses);
     }
 
-    @PreAuthorize("hasAuthority('accounts:edit')")
+    @PreAuthorize("hasAuthority('transactions:edit')")
     @DeleteMapping("/{uuid}")
     public ResponseEntity<Void> deleteTransaction(@PathVariable UUID uuid) {
         try {

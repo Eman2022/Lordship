@@ -1,16 +1,25 @@
 package io.github.lordship.transactions;
 
-import io.github.lordship.accounts.AccountService;
 import io.github.lordship.accounts.Account;
+import io.github.lordship.accounts.AccountService;
+import io.github.lordship.audit.AuditService;
+import io.github.lordship.lots.Lot;
+import io.github.lordship.lots.LotCreationRequest;
+import io.github.lordship.lots.LotService;
+import io.github.lordship.properties.Property;
+import io.github.lordship.properties.PropertyService;
+import io.github.lordship.tenancy.Tenancy;
+import io.github.lordship.tenancy.TenancyService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -29,53 +38,26 @@ public class TransactionServiceTest {
     AccountService accountService;
 
     @Autowired
-    JdbcClient jdbc;
+    PropertyService propertyService;
+
+    @Autowired
+    LotService lotService;
+
+    @Autowired
+    TenancyService tenancyService;
+
+    @MockitoBean
+    AuditService auditService;
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
-    private UUID insertTestProperty() {
-        return jdbc.sql("""
-                INSERT INTO property (property_code, property_name, property_address)
-                VALUES ('TST01', 'Test Mobile Park', '999 Test Ave') RETURNING uuid
-                """)
-                .query(UUID.class)
-                .single();
-    }
-
-    private UUID insertTestLot(UUID propertyId) {
-        return jdbc.sql("""
-                INSERT INTO lot (property_id, lot_number)
-                VALUES (:propertyId, '1')
-                RETURNING uuid
-                """)
-                .param("propertyId", propertyId)
-                .query(UUID.class)
-                .single();
-    }
-
-    private UUID insertTestTenancy(UUID lotId) {
-        return jdbc.sql("""
-                INSERT INTO tenancy (lot_number, account_number, start_date)
-                VALUES (:lotId, :placeholderAccountId, CURRENT_DATE)
-                RETURNING uuid
-                """)
-                .param("lotId", lotId)
-                .param("placeholderAccountId", UUID.randomUUID())
-                .query(UUID.class)
-                .single();
-    }
-
-    private UUID setupFullChain() {
-        UUID propertyId = insertTestProperty();
-        UUID lotId = insertTestLot(propertyId);
-        return insertTestTenancy(lotId);
-    }
-
     private Account createTestAccount() {
-        UUID tenancyId = setupFullChain();
-        return accountService.createAccount(tenancyId, null);
+        Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
+        Lot lot = lotService.createLot(new LotCreationRequest(property.uuid(), "1", null, null, null, null));
+        Tenancy tenancy = tenancyService.create(new Tenancy(null, lot.uuid(), UUID.randomUUID(), new Date(), null, null, null, null));
+        return accountService.createAccount(tenancy.uuid(), null);
     }
 
     // -------------------------------------------------------------------------
@@ -85,11 +67,11 @@ public class TransactionServiceTest {
     @Test
     void postTransaction_returnsTransactionWithCorrectFields() {
         Account account = createTestAccount();
-        LocalDate billingPeriod = LocalDate.of(2026, 1, 1);
+        LocalDate billingPeriod = LocalDate.now();
 
         Transaction tx = transactionService.postTransaction(
                 account.uuid(),
-                TransactionType.CHARGE,
+                TransactionType.RENT_CHARGE,
                 new BigDecimal("150.00"),
                 "Rent charge",
                 billingPeriod
@@ -97,11 +79,10 @@ public class TransactionServiceTest {
 
         assertNotNull(tx.uuid());
         assertEquals(account.uuid(), tx.accountId());
-        assertEquals(TransactionType.CHARGE, tx.type());
+        assertEquals(TransactionType.RENT_CHARGE, tx.type());
         assertEquals(0, new BigDecimal("150.00").compareTo(tx.amount()));
         assertEquals("Rent charge", tx.description());
         assertEquals(billingPeriod, tx.billingPeriod());
-        assertFalse(tx.billed());
         assertNull(tx.deletedAt());
     }
 
@@ -110,13 +91,13 @@ public class TransactionServiceTest {
         Account account = createTestAccount();
 
         Transaction posted = transactionService.postTransaction(
-                account.uuid(), TransactionType.CHARGE, new BigDecimal("200.00"), null, LocalDate.now()
+                account.uuid(), TransactionType.RENT_CHARGE, new BigDecimal("200.00"), null, LocalDate.now()
         );
 
         Transaction found = transactionService.findById(posted.uuid());
 
         assertEquals(posted.uuid(), found.uuid());
-        assertEquals(TransactionType.CHARGE, found.type());
+        assertEquals(TransactionType.RENT_CHARGE, found.type());
         assertEquals(0, new BigDecimal("200.00").compareTo(found.amount()));
     }
 
@@ -131,7 +112,7 @@ public class TransactionServiceTest {
     void findByAccountId_returnsAllTransactionsForAccount() {
         Account account = createTestAccount();
 
-        transactionService.postTransaction(account.uuid(), TransactionType.CHARGE, new BigDecimal("100.00"), "Charge 1", LocalDate.now());
+        transactionService.postTransaction(account.uuid(), TransactionType.RENT_CHARGE, new BigDecimal("100.00"), "Charge 1", LocalDate.now());
         transactionService.postTransaction(account.uuid(), TransactionType.PAYMENT, new BigDecimal("50.00"), "Payment 1", LocalDate.now());
 
         List<Transaction> transactions = transactionService.findByAccountId(account.uuid());
@@ -153,7 +134,7 @@ public class TransactionServiceTest {
         Account account = createTestAccount();
 
         Transaction tx = transactionService.postTransaction(
-                account.uuid(), TransactionType.CHARGE, new BigDecimal("75.00"), null, LocalDate.now()
+                account.uuid(), TransactionType.RENT_CHARGE, new BigDecimal("75.00"), null, LocalDate.now()
         );
 
         transactionService.deleteTransaction(tx.uuid());
@@ -164,17 +145,14 @@ public class TransactionServiceTest {
     }
 
     @Test
-    void deleteTransaction_throwsWhenBilled() {
+    void deleteTransaction_throwsWhenBillingPeriodClosed() {
         Account account = createTestAccount();
 
+        // Post a transaction with a billing period in a past month (closed period)
         Transaction tx = transactionService.postTransaction(
-                account.uuid(), TransactionType.CHARGE, new BigDecimal("75.00"), null, LocalDate.now()
+                account.uuid(), TransactionType.RENT_CHARGE, new BigDecimal("75.00"), null,
+                LocalDate.now().minusMonths(1)
         );
-
-        // Mark as billed directly via JDBC (no service method for billing)
-        jdbc.sql("UPDATE transaction SET billed = true WHERE uuid = :uuid")
-                .param("uuid", tx.uuid())
-                .update();
 
         assertThrows(IllegalStateException.class, () ->
                 transactionService.deleteTransaction(tx.uuid())
@@ -182,10 +160,44 @@ public class TransactionServiceTest {
     }
 
     @Test
+    void postTransaction_throwsWhenAccountDoesNotAcceptPayments() {
+        Account account = createTestAccount();
+
+        // Disable payments on the account
+        Account blocked = new Account(
+                account.uuid(), account.tenancyId(), account.accountStatus(),
+                account.balanceCached(), account.autopayEnabled(), account.notes(),
+                account.noPersonalChecks(), account.noPartialPayments(),
+                false, // acceptPayments = false
+                account.exemptFromLateFees(), account.createdAt(), account.deletedAt()
+        );
+        accountService.updateAccount(blocked);
+
+        assertThrows(IllegalStateException.class, () ->
+                transactionService.postTransaction(account.uuid(), TransactionType.PAYMENT, new BigDecimal("100.00"), null, LocalDate.now())
+        );
+    }
+
+    @Test
+    void postTransaction_throwsWhenDescriptionMissingForManualType() {
+        Account account = createTestAccount();
+
+        assertThrows(IllegalArgumentException.class, () ->
+                transactionService.postTransaction(account.uuid(), TransactionType.CREDIT, new BigDecimal("50.00"), null, LocalDate.now())
+        );
+        assertThrows(IllegalArgumentException.class, () ->
+                transactionService.postTransaction(account.uuid(), TransactionType.MISC_CHARGE, new BigDecimal("20.00"), "", LocalDate.now())
+        );
+        assertThrows(IllegalArgumentException.class, () ->
+                transactionService.postTransaction(account.uuid(), TransactionType.BALANCE_ADJUSTMENT, new BigDecimal("-25.00"), null, LocalDate.now())
+        );
+    }
+
+    @Test
     void computeBalance_correctlySumsChargesMinusCredits() {
         Account account = createTestAccount();
 
-        transactionService.postTransaction(account.uuid(), TransactionType.CHARGE, new BigDecimal("300.00"), null, LocalDate.now());
+        transactionService.postTransaction(account.uuid(), TransactionType.RENT_CHARGE, new BigDecimal("300.00"), null, LocalDate.now());
         transactionService.postTransaction(account.uuid(), TransactionType.PAYMENT, new BigDecimal("100.00"), null, LocalDate.now());
 
         BigDecimal balance = transactionService.computeBalance(account.uuid());
@@ -201,5 +213,18 @@ public class TransactionServiceTest {
         BigDecimal balance = transactionService.computeBalance(account.uuid());
 
         assertEquals(0, BigDecimal.ZERO.compareTo(balance));
+    }
+
+    @Test
+    void computeBalance_handlesSignedBalanceAdjustment() {
+        Account account = createTestAccount();
+
+        transactionService.postTransaction(account.uuid(), TransactionType.RENT_CHARGE, new BigDecimal("500.00"), null, LocalDate.now());
+        transactionService.postTransaction(account.uuid(), TransactionType.BALANCE_ADJUSTMENT, new BigDecimal("-100.00"), "Correction credit", LocalDate.now());
+
+        BigDecimal balance = transactionService.computeBalance(account.uuid());
+
+        // 500 charge + (-100 adjustment) = 400
+        assertEquals(0, new BigDecimal("400.00").compareTo(balance));
     }
 }

@@ -10,12 +10,13 @@ public record AccountResponse(
         UUID uuid,
         UUID tenancyId,
         String accountStatus,
-        BigDecimal balance,
+        BigDecimal balanceCached,
         boolean autopayEnabled,
         String notes,
         boolean noPersonalChecks,
         boolean noPartialPayments,
-        boolean evictionInProgress,
+        boolean acceptPayments,
+        boolean exemptFromLateFees,
         LocalDateTime createdAt
 ) {
     public static AccountResponse from(Account account) {
@@ -23,12 +24,13 @@ public record AccountResponse(
                 account.uuid(),
                 account.tenancyId(),
                 account.accountStatus().name(),
-                account.balance(),
+                account.balanceCached(),
                 account.autopayEnabled(),
                 account.notes(),
                 account.noPersonalChecks(),
                 account.noPartialPayments(),
-                account.evictionInProgress(),
+                account.acceptPayments(),
+                account.exemptFromLateFees(),
                 account.createdAt()
         );
     }

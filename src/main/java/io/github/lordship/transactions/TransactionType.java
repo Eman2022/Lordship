@@ -6,7 +6,6 @@ public enum TransactionType {
     UTILITY_TRASH,
     UTILITY_SEWER,
     UTILITY_WATER,
-    UTILITY_CREDIT,
     VEHICLE_FEE,
     LATE_FEE,
     CREDIT,

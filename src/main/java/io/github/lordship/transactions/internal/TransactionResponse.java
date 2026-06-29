@@ -15,7 +15,6 @@ public record TransactionResponse(
         String description,
         LocalDate billingPeriod,
         LocalDateTime postedAt,
-        boolean billed,
         LocalDateTime deletedAt
 ) {
     public static TransactionResponse from(Transaction transaction) {
@@ -27,7 +26,6 @@ public record TransactionResponse(
                 transaction.description(),
                 transaction.billingPeriod(),
                 transaction.postedAt(),
-                transaction.billed(),
                 transaction.deletedAt()
         );
     }

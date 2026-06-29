@@ -16,7 +16,6 @@ public record TransactionRow(
         String description,
         LocalDate billingPeriod,
         LocalDateTime postedAt,
-        boolean billed,
         LocalDateTime deletedAt
 ) {
     public Transaction toTransaction() {
@@ -28,7 +27,6 @@ public record TransactionRow(
                 this.description,
                 this.billingPeriod,
                 this.postedAt,
-                this.billed,
                 this.deletedAt
         );
     }
@@ -43,7 +41,6 @@ public record TransactionRow(
                 description,
                 billingPeriod,
                 null,
-                false,
                 null
         );
     }

@@ -16,11 +16,11 @@ public class PropertyRepository {
 
     public PropertyRow save(PropertyRow row) {
         return jdbc.sql("""
-                        Insert INTO property
-                            property_code, property_name, property_address
+                        INSERT INTO property (
+                            property_code, property_name, property_address,
                             property_city, property_state, purchase_date, year_built
                         ) VALUES (
-                            :propertyCode, :propertyName, :propertyAddress
+                            :propertyCode, :propertyName, :propertyAddress,
                             :propertyCity, :propertyState, :purchaseDate, :yearBuilt
                         ) RETURNING *
                         """)

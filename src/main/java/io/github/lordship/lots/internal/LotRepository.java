@@ -19,10 +19,10 @@ public class LotRepository {
     public LotRow save(LotRow row) {
         return jdbc.sql("""
             INSERT INTO lot (
-                property_code, lot_number, lot_type_code,
+                property_id, lot_number, lot_type_code,
                 description, notes, sort_order
             ) VALUES (
-                :propertyCode, :lotNumber, :lotTypeCode,
+                :propertyId, :lotNumber, :lotTypeCode,
                 :description, :notes, :sortOrder
             ) RETURNING *
             """)

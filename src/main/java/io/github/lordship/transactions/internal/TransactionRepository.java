@@ -57,7 +57,7 @@ public class TransactionRepository {
     public BigDecimal computeBalance(UUID accountId) {
         return jdbc.sql("""
                 SELECT COALESCE(SUM(
-                    CASE WHEN type IN ('CREDIT', 'UTILITY_CREDIT', 'PAYMENT', 'BALANCE_ADJUSTMENT')
+                    CASE WHEN type IN ('CREDIT', 'PAYMENT')
                          THEN -amount
                          ELSE amount
                     END
