@@ -2,7 +2,7 @@
 
 CREATE TABLE property (
     uuid UUID PRIMARY KEY DEFAULT uuidv7(),
-    property_code VARCHAR(5),
+    property_code VARCHAR(255),
     property_name TEXT NOT NULL,
     property_address TEXT NOT NULL,
     property_city VARCHAR(255),
