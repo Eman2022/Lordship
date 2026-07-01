@@ -23,7 +23,7 @@ public class PropertyRepositoryTest {
     private PropertyRow buildRow() {
         return new PropertyRow(
                 null,
-                "TST" + UUID.randomUUID().toString().substring(0, 5).toUpperCase(),
+                "TMP",
                 "Test Mobile Park",
                 "999 Test Ave",
                 null,
