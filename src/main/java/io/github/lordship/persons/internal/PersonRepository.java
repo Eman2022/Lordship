@@ -1,11 +1,9 @@
 package io.github.lordship.persons.internal;
 
 
-import org.springframework.data.crossstore.ChangeSetPersister;
-import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
-import org.springframework.web.server.ResponseStatusException;
+
 
 import java.util.*;
 
@@ -48,7 +46,6 @@ public class PersonRepository {
             UPDATE person
             SET deleted_at = now()
             WHERE uuid = :uuid and deleted_at IS NULL
-            RETURNING *
             """)
             .param("uuid", uuid)
             .update();

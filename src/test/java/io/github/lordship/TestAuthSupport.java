@@ -42,5 +42,19 @@ public final class TestAuthSupport {
         return objectMapper.readTree(responseBody).get("token").asString();
     }
 
+    public static String loginAsAgent(MockMvc mockMvc, ObjectMapper objectMapper, String email, String password) throws Exception {
+
+        AgentLoginRequest agentLoginRequest = new AgentLoginRequest(email, password);
+
+        MvcResult mvcResult = mockMvc.perform(post("/agents/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(agentLoginRequest)))
+            .andExpect(jsonPath("$.uuid").exists())
+            .andExpect(jsonPath("$.token").exists())
+            .andReturn();
+
+        String responseBody = mvcResult.getResponse().getContentAsString();
+        return objectMapper.readTree(responseBody).get("token").asString();
+    }
 
 }

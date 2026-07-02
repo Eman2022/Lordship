@@ -43,7 +43,6 @@ public class AuditContextFilter extends OncePerRequestFilter {
         }
 
         auditContext.setIpAddress(request.getRemoteAddr());
-
         filterChain.doFilter(request, response);
     }
 }

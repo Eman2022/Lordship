@@ -1,6 +1,7 @@
 package io.github.lordship.persons.internal;
 
 
+import com.jayway.jsonpath.JsonPath;
 import io.github.lordship.IntegrationTest;
 import io.github.lordship.TestAuthSupport;
 import io.github.lordship.access.Agent;
@@ -15,6 +16,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
@@ -22,7 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,7 +50,222 @@ public class PersonControllerIT extends IntegrationTest {
     PersonService personService;
 
     @Test
-    public void shouldNotModifyOmittedFields_whenEditingPerson() throws Exception {
+    void createPerson_shouldReturn201_withCorrectFields() throws Exception {
+        // Arrange
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        String requestBody = """
+                {
+                    "nameFirst" : "Linda",
+                    "nameLast" : "Belcher"
+                }
+                """;
+
+        // Act
+        mockMvc.perform(post("/persons/create")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+        // Assert
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.uuid").exists())
+            .andExpect(jsonPath("$.nameFirst").value("Linda"))
+            .andExpect(jsonPath("$.nameLast").value("Belcher"));
+    }
+
+    @Test
+    void createPerson_shouldReturn400_whenFirstNameIsBlank() throws Exception {
+        // Arrange
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        String requestBody = """
+                {
+                    "nameFirst" : "",
+                    "nameLast" : "Belcher"
+                }
+                """;
+
+        // Act
+        mockMvc.perform(post("/persons/create")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+        // Assert
+           .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getPerson_shouldReturn404_whenPersonDoesNotExist() throws Exception {
+        // Arrange
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        UUID randomUuid = UUID.randomUUID();
+
+        // Act
+        mockMvc.perform(get("/persons/{uuid}", randomUuid)
+                .header("Authorization", "Bearer " + token))
+        // Assert
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getPerson_shouldMaskSsn_whenUserLacksPersonsSsnViewPermission  () throws Exception {
+        // Arrange
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        String createPersonRequest = """
+                {
+                    "nameFirst" : "Private",
+                    "nameLast" : "Piggy"
+                }
+                """;
+
+        MvcResult createResult = mockMvc.perform(post("/persons/create")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(createPersonRequest))
+            .andExpect(status().isCreated())
+            .andReturn();
+
+        String personUuid = JsonPath.read(createResult.getResponse().getContentAsString(), "$.uuid");
+
+        // set ssn
+        mockMvc.perform(patch("/persons/{uuid}", personUuid)
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        { "social" : "123-45-6789" }
+                        """))
+                .andExpect(status().isOk());
+
+        // make an agent who by default doesn't have the view ssn permissions
+        MvcResult registerResult = mockMvc.perform(post("/agents/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + token)
+                .content("""
+                        {
+                            "nameFirst" : "Tony",
+                            "nameLast" : "Hawk",
+                            "workEmail" : "loser@lordship.com",
+                            "password" : "iLoveMyMommy"
+                        }
+                        """))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        // get Tony's id and grant him property manager permissions
+        String newAgentUuid = JsonPath.read(registerResult.getResponse().getContentAsString(), "$.uuid");
+        mockMvc.perform(post("/roles/grant")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(String.format("""
+                        {
+                            "agentId" : "%s",
+                            "roleName" : "Property Manager"
+                        }
+                        """, newAgentUuid)))
+                .andExpect(status().isCreated());
+
+        String newAgentToken = TestAuthSupport.loginAsAgent(mockMvc, objectMapper, "loser@lordship.com", "iLoveMyMommy");
+
+        // Act
+        mockMvc.perform(get("/persons/{uuid}", personUuid)
+                .header("Authorization", "Bearer " + newAgentToken)
+                .contentType(MediaType.APPLICATION_JSON))
+        // Assert
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.social").value("***-**-6789"));
+    }
+
+    @Test
+    void getPerson_shouldReturnPlaintextSsn_whenUserHasPersonsSsnViewPermission() throws Exception {
+        // Arrange
+        String rootToken = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+
+        MvcResult mvcResult = mockMvc.perform(post("/persons/create")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + rootToken)
+                .content("""
+                        {
+                            "nameFirst" : "Don",
+                            "nameLast" : "Social"
+                        }
+                        """))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String personUuid = JsonPath.read(mvcResult.getResponse().getContentAsString(), "$.uuid");
+
+        mockMvc.perform(patch("/persons/{uuid}", personUuid)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + rootToken)
+                .content("""
+                        {
+                            "social" : "123-45-6789"
+                        }
+                        """))
+                .andExpect(status().isOk());
+
+        // Act
+        mockMvc.perform(get("/persons/{uuid}", personUuid)
+                .header("Authorization", "Bearer " + rootToken)
+                .contentType(MediaType.APPLICATION_JSON))
+        // Assert
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.social").value("123-45-6789"));
+    }
+
+    @Test
+    void getPerson_shouldReturnUserOwnPersonRecord() throws Exception {
+        // Arrange
+        String rootToken = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        Optional<Agent> rootAgent = agentService.findByWorkEmail(rootEmail);
+        assertTrue(rootAgent.isPresent());
+
+        UUID rootPersonUuid = rootAgent.get().personId();
+
+        // Act
+        mockMvc.perform(get("/persons/self")
+                .header("Authorization", "Bearer " + rootToken))
+        // Assert
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.uuid").value(rootPersonUuid.toString()));
+    }
+
+    @Test
+    void deletePerson_shouldReturn204_andSubsequentGetReturns404() throws Exception {
+        // Arrange
+        String rootToken = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        MvcResult mvcResult = mockMvc.perform(post("/persons/create")
+                .header("Authorization", "Bearer " + rootToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "nameFirst" : "Don",
+                            "nameLast" : "Mock"
+                        }
+                        """))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String personUuid = JsonPath.read(mvcResult.getResponse().getContentAsString(), "$.uuid");
+
+        // Act
+        mockMvc.perform(delete("/persons/{uuid}", personUuid)
+                .header("Authorization", "Bearer " + rootToken))
+        // Assert
+            .andExpect(status().isNoContent());
+
+        mockMvc.perform(delete("/persons/{uuid}", personUuid)
+                .header("Authorization", "Bearer " + rootToken))
+           .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getAnyPerson_shouldReturn401_whenNoTokenProvided() throws Exception {
+        mockMvc.perform(get("/persons/{uuid}", UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+    }
+
+
+    @Test
+    public void patchPerson_shouldNotModifyOmittedFields_whenEditingPerson() throws Exception {
         // Arrange
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
         Optional<Agent> rootAgent = agentService.findByWorkEmail(rootEmail);
@@ -82,7 +299,7 @@ public class PersonControllerIT extends IntegrationTest {
     }
 
     @Test
-    public void shouldClearField_whenExplicitNullIsProvided() throws Exception {
+    public void patchPerson_shouldClearField_whenExplicitNullIsProvided() throws Exception {
         // Arrange
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
         Optional<Agent> rootAgent = agentService.findByWorkEmail(rootEmail);
@@ -121,7 +338,7 @@ public class PersonControllerIT extends IntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.birthday").doesNotExist());
 
-          // --- Step 3: verify against the actual DB-backed service too, not just the response DTO
+        // --- Step 3: verify against the actual DB-backed service too, not just the response DTO
         Person updated = personService.findByID(person.uuid()).orElseThrow();
         assertNull(updated.birthday());
     }
