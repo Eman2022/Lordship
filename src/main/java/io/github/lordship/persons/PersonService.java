@@ -109,7 +109,6 @@ public class PersonService {
         if (!diff.before().isEmpty()) {
             auditService.recordUpdate("person", uuid, diff.before(), diff.after());
         }
-
         return Optional.of(personAfter.toPerson(encryptionService));
     }
 
