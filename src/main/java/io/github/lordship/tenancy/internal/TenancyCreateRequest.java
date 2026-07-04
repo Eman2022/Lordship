@@ -7,6 +7,6 @@ import java.util.UUID;
 
 public record TenancyCreateRequest(
     @NotNull
-    UUID lotID
+    UUID lotId
 ) {
 }

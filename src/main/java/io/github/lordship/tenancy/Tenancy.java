@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public record Tenancy(
     UUID uuid,
-    UUID lotID,
+    UUID lotId,
     LocalDate startDate,
     LocalDate endDate,
     LocalDateTime createdAt,
