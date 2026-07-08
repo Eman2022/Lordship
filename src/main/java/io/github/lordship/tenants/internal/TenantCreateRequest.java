@@ -1,4 +1,4 @@
-package io.github.lordship.tenancy.internal;
+package io.github.lordship.tenants.internal;
 
 import jakarta.validation.constraints.NotNull;
 

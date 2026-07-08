@@ -18,8 +18,7 @@ CREATE UNIQUE INDEX uix_tenancy_lot_active
     WHERE end_date IS NULL AND deleted_at IS NULL;
 
 
--- Foreign key for account rent?
--- Add timestamps for tenant?
+-- the relation between a person and a tenancy; one person to one tenancy
 CREATE TABLE tenant (
     uuid UUID PRIMARY KEY DEFAULT uuidv7(),
     tenancy_id UUID NOT NULL,
