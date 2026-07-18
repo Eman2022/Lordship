@@ -66,10 +66,6 @@ public class AccountServiceTest {
         assertEquals(AccountStatus.ACTIVE, account.accountStatus());
         assertEquals(0, BigDecimal.ZERO.compareTo(account.balanceCached()));
         assertFalse(account.autopayEnabled());
-        assertFalse(account.noPersonalChecks());
-        assertFalse(account.noPartialPayments());
-        assertTrue(account.acceptPayments());
-        assertFalse(account.exemptFromLateFees());
         assertNull(account.notes());
     }
 
@@ -104,10 +100,6 @@ public class AccountServiceTest {
                 created.balanceCached(),
                 true,
                 "Late on payment",
-                true,
-                false,
-                false,
-                true,
                 created.createdAt(),
                 created.deletedAt()
         );
@@ -118,10 +110,6 @@ public class AccountServiceTest {
         assertEquals(AccountStatus.DELINQUENT, updated.get().accountStatus());
         assertTrue(updated.get().autopayEnabled());
         assertEquals("Late on payment", updated.get().notes());
-        assertTrue(updated.get().noPersonalChecks());
-        assertFalse(updated.get().noPartialPayments());
-        assertFalse(updated.get().acceptPayments());
-        assertTrue(updated.get().exemptFromLateFees());
     }
 
     @Test
@@ -138,10 +126,6 @@ public class AccountServiceTest {
                 new BigDecimal("500.00"),
                 false,
                 null,
-                false,
-                false,
-                true,
-                false,
                 created.createdAt(),
                 created.deletedAt()
         );

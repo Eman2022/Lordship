@@ -59,10 +59,6 @@ public class AccountController {
                             existing.balanceCached(),
                             request.autopayEnabled(),
                             request.notes(),
-                            request.noPersonalChecks(),
-                            request.noPartialPayments(),
-                            request.acceptPayments(),
-                            request.exemptFromLateFees(),
                             existing.createdAt(),
                             existing.deletedAt()
                     );

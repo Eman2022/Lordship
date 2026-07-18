@@ -14,10 +14,6 @@ public record AccountRow(
         BigDecimal balanceCached,
         boolean autopayEnabled,
         String notes,
-        boolean noPersonalChecks,
-        boolean noPartialPayments,
-        boolean acceptPayments,
-        boolean exemptFromLateFees,
         LocalDateTime createdAt,
         LocalDateTime deletedAt
 ) {
@@ -29,10 +25,6 @@ public record AccountRow(
                 this.balanceCached,
                 this.autopayEnabled,
                 this.notes,
-                this.noPersonalChecks,
-                this.noPartialPayments,
-                this.acceptPayments,
-                this.exemptFromLateFees,
                 this.createdAt,
                 this.deletedAt
         );
@@ -46,10 +38,6 @@ public record AccountRow(
                 BigDecimal.ZERO,
                 false,
                 notes,
-                false,
-                false,
-                true,
-                false,
                 null,
                 null
         );

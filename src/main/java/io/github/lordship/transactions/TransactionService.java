@@ -4,6 +4,8 @@ import io.github.lordship.accounts.Account;
 import io.github.lordship.accounts.AccountService;
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
+import io.github.lordship.tenancy.Tenancy;
+import io.github.lordship.tenancy.TenancyService;
 import io.github.lordship.transactions.internal.TransactionRepository;
 import io.github.lordship.transactions.internal.TransactionRow;
 import org.slf4j.Logger;
@@ -24,11 +26,13 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final AccountService accountService;
+    private final TenancyService tenancyService;
     private final AuditService auditService;
 
-    public TransactionService(TransactionRepository transactionRepository, AccountService accountService, AuditService auditService) {
+    public TransactionService(TransactionRepository transactionRepository, AccountService accountService, TenancyService tenancyService, AuditService auditService) {
         this.transactionRepository = transactionRepository;
         this.accountService = accountService;
+        this.tenancyService = tenancyService;
         this.auditService = auditService;
     }
 
@@ -51,8 +55,12 @@ public class TransactionService {
         }
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new NoSuchElementException("Account not found: " + accountId));
-        if (type == TransactionType.PAYMENT && !account.acceptPayments()) {
-            throw new IllegalStateException("Account does not accept payments: " + accountId);
+        if (type == TransactionType.PAYMENT) {
+            Tenancy tenancy = tenancyService.findTenancyById(account.tenancyId())
+                    .orElseThrow(() -> new NoSuchElementException("Tenancy not found for account: " + accountId));
+            if (!tenancy.acceptPayments()) {
+                throw new IllegalStateException("Account does not accept payments: " + accountId);
+            }
         }
         TransactionRow row = new TransactionRow(accountId, type, amount, description, billingPeriod);
         TransactionRow saved = transactionRepository.save(row);

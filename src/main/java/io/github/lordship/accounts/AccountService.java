@@ -60,10 +60,6 @@ public class AccountService {
                 account.balanceCached(),
                 account.autopayEnabled(),
                 account.notes(),
-                account.noPersonalChecks(),
-                account.noPartialPayments(),
-                account.acceptPayments(),
-                account.exemptFromLateFees(),
                 account.createdAt(),
                 account.deletedAt()
         );

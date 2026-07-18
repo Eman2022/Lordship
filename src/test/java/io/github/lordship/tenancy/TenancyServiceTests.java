@@ -1,5 +1,6 @@
 package io.github.lordship.tenancy;
 
+import io.github.lordship.accounts.AccountService;
 import io.github.lordship.audit.AuditService;
 import io.github.lordship.tenancy.internal.TenancyRepository;
 import io.github.lordship.tenancy.internal.TenancyCreateRequest;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.*;
 public class TenancyServiceTests {
     private TenancyRepository tenancyRepository;
     private AuditService auditService;
+    private AccountService accountService;
     private TenancyService tenancyService;
 
     private UUID lotId;
@@ -37,11 +39,13 @@ public class TenancyServiceTests {
     void setup() {
         tenancyRepository = mock(TenancyRepository.class);
         auditService = mock(AuditService.class);
+        accountService = mock(AccountService.class);
 
         tenancyService = new TenancyService(
                 tenancyRepository,
                 null,          // encryptionService unused
-                auditService
+                auditService,
+                accountService
         );
 
         lotId = UUID.randomUUID();
@@ -55,6 +59,10 @@ public class TenancyServiceTests {
                 lotId,
                 start,
                 end,
+                false,
+                false,
+                true,
+                false,
                 LocalDate.now().minusDays(10).atStartOfDay(),
                 LocalDate.now().minusDays(5).atStartOfDay(),
                 null

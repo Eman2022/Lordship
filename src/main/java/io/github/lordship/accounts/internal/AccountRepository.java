@@ -18,10 +18,8 @@ public class AccountRepository {
 
     public AccountRow save(AccountRow row) {
         return jdbc.sql("""
-                INSERT INTO account (tenancy_id, account_status, balance_cached, autopay_enabled, notes,
-                                     no_personal_checks, no_partial_payments, accept_payments, exempt_from_late_fees)
-                VALUES (:tenancyId, :accountStatus, :balanceCached, :autopayEnabled, :notes,
-                        :noPersonalChecks, :noPartialPayments, :acceptPayments, :exemptFromLateFees)
+                INSERT INTO account (tenancy_id, account_status, balance_cached, autopay_enabled, notes)
+                VALUES (:tenancyId, :accountStatus, :balanceCached, :autopayEnabled, :notes)
                 RETURNING *
                 """)
                 .paramSource(row)
@@ -59,13 +57,9 @@ public class AccountRepository {
     public Optional<AccountRow> update(AccountRow row) {
         return jdbc.sql("""
                 UPDATE account
-                SET account_status       = :accountStatus,
-                    autopay_enabled      = :autopayEnabled,
-                    notes                = :notes,
-                    no_personal_checks   = :noPersonalChecks,
-                    no_partial_payments  = :noPartialPayments,
-                    accept_payments      = :acceptPayments,
-                    exempt_from_late_fees = :exemptFromLateFees
+                SET account_status  = :accountStatus,
+                    autopay_enabled = :autopayEnabled,
+                    notes           = :notes
                 WHERE uuid = :uuid AND deleted_at IS NULL
                 RETURNING *
                 """)

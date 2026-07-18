@@ -8,6 +8,7 @@ import io.github.lordship.lots.LotCreationRequest;
 import io.github.lordship.lots.LotService;
 import io.github.lordship.properties.Property;
 import io.github.lordship.properties.PropertyService;
+import io.github.lordship.tenancy.Tenancy;
 import io.github.lordship.tenancy.TenancyService;
 import io.github.lordship.tenancy.internal.TenancyCreateRequest;
 import org.junit.jupiter.api.Test;
@@ -162,15 +163,9 @@ public class TransactionServiceTest {
     void postTransaction_throwsWhenAccountDoesNotAcceptPayments() {
         Account account = createTestAccount();
 
-        // Disable payments on the account
-        Account blocked = new Account(
-                account.uuid(), account.tenancyId(), account.accountStatus(),
-                account.balanceCached(), account.autopayEnabled(), account.notes(),
-                account.noPersonalChecks(), account.noPartialPayments(),
-                false, // acceptPayments = false
-                account.exemptFromLateFees(), account.createdAt(), account.deletedAt()
-        );
-        assertTrue(accountService.updateAccount(blocked).isPresent());
+        // Disable payments on the tenancy
+        Tenancy tenancy = tenancyService.findTenancyById(account.tenancyId()).orElseThrow();
+        tenancyService.patchTenancy(tenancy.uuid(), java.util.Map.of("accept_payments", false));
 
         assertThrows(IllegalStateException.class, () ->
                 transactionService.postTransaction(account.uuid(), TransactionType.PAYMENT, new BigDecimal("100.00"), null, LocalDate.now())

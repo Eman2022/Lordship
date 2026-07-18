@@ -119,7 +119,7 @@ public class AccountCrudTest {
 
     @Test
     void unauthorizedUpdateReturns403() throws Exception {
-        AccountUpdateRequest request = new AccountUpdateRequest(AccountStatus.ACTIVE, false, null, false, false, true, false);
+        AccountUpdateRequest request = new AccountUpdateRequest(AccountStatus.ACTIVE, false, null);
 
         mockMvc.perform(put("/accounts/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -175,11 +175,7 @@ public class AccountCrudTest {
         AccountUpdateRequest updateRequest = new AccountUpdateRequest(
                 AccountStatus.DELINQUENT,
                 true,
-                "Tenant missed payment",
-                false,
-                false,
-                true,
-                false
+                "Tenant missed payment"
         );
 
         mockMvc.perform(put("/accounts/" + accountId)
