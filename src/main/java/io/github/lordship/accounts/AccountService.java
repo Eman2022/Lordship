@@ -70,6 +70,9 @@ public class AccountService {
         Optional<AccountRow> result = accountRepository.update(row);
         result.ifPresent(after -> {
             if (before != null) {
+                // diff.before() holds the old values of only the fields that changed.
+                // diff.after() holds the new values for those same fields.
+                // isEmpty() guard prevents recording a no-op audit entry when nothing actually changed.
                 AuditMapper.Diff diff = AuditMapper.diff(before, after);
                 if (!diff.before().isEmpty()) {
                     log.info("Account updated uuid={}: changed fields={}", account.uuid(), diff.before().keySet());

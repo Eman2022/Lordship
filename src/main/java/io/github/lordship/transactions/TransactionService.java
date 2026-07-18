@@ -2,6 +2,8 @@ package io.github.lordship.transactions;
 
 import io.github.lordship.accounts.Account;
 import io.github.lordship.accounts.AccountService;
+import io.github.lordship.audit.AuditMapper;
+import io.github.lordship.audit.AuditService;
 import io.github.lordship.transactions.internal.TransactionRepository;
 import io.github.lordship.transactions.internal.TransactionRow;
 import org.slf4j.Logger;
@@ -22,10 +24,12 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final AccountService accountService;
+    private final AuditService auditService;
 
-    public TransactionService(TransactionRepository transactionRepository, AccountService accountService) {
+    public TransactionService(TransactionRepository transactionRepository, AccountService accountService, AuditService auditService) {
         this.transactionRepository = transactionRepository;
         this.accountService = accountService;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -36,13 +40,26 @@ public class TransactionService {
                 && (description == null || description.isBlank())) {
             throw new IllegalArgumentException("Description is required for transaction type: " + type);
         }
+        if (type == TransactionType.BALANCE_ADJUSTMENT) {
+            if (amount.compareTo(BigDecimal.ZERO) == 0) {
+                throw new IllegalArgumentException("BALANCE_ADJUSTMENT amount must not be zero");
+            }
+        } else {
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Amount must be positive for transaction type: " + type);
+            }
+        }
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new NoSuchElementException("Account not found: " + accountId));
         if (type == TransactionType.PAYMENT && !account.acceptPayments()) {
             throw new IllegalStateException("Account does not accept payments: " + accountId);
         }
         TransactionRow row = new TransactionRow(accountId, type, amount, description, billingPeriod);
-        Transaction tx = transactionRepository.save(row).toTransaction();
+        TransactionRow saved = transactionRepository.save(row);
+        Transaction tx = saved.toTransaction();
+        BigDecimal newBalance = transactionRepository.computeBalance(accountId);
+        transactionRepository.updateBalanceCached(accountId, newBalance);
+        auditService.recordInsert("transaction", saved.uuid(), AuditMapper.toMap(saved));
         log.info("Transaction posted: uuid={}, accountId={}, type={}, amount={}", tx.uuid(), tx.accountId(), tx.type(), tx.amount());
         return tx;
     }
@@ -69,10 +86,17 @@ public class TransactionService {
             throw new IllegalStateException("Cannot delete a transaction from a closed billing period: " + uuid);
         }
         transactionRepository.softDelete(uuid);
+        BigDecimal newBalance = transactionRepository.computeBalance(row.accountId());
+        transactionRepository.updateBalanceCached(row.accountId(), newBalance);
+        auditService.recordDelete("transaction", uuid, AuditMapper.toMap(row));
         log.info("Transaction soft deleted: uuid={}", uuid);
     }
 
     public BigDecimal computeBalance(UUID accountId) {
         return transactionRepository.computeBalance(accountId);
+    }
+
+    public BigDecimal computeBalance(UUID accountId, LocalDate asOfDate) {
+        return transactionRepository.computeBalance(accountId, asOfDate);
     }
 }

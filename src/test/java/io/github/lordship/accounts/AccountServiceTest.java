@@ -56,10 +56,10 @@ public class AccountServiceTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void createAccount_returnsActiveAccountWithDefaults() {
+    void createTenancy_autoCreatesAccountWithDefaults() {
         UUID tenancyId = setupFullChain();
 
-        Account account = accountService.createAccount(tenancyId, "test notes");
+        Account account = accountService.getAccountByTenancyId(tenancyId).orElseThrow();
 
         assertNotNull(account.uuid());
         assertEquals(tenancyId, account.tenancyId());
@@ -70,13 +70,13 @@ public class AccountServiceTest {
         assertFalse(account.noPartialPayments());
         assertTrue(account.acceptPayments());
         assertFalse(account.exemptFromLateFees());
-        assertEquals("test notes", account.notes());
+        assertNull(account.notes());
     }
 
     @Test
     void getAccount_returnsAccountWhenExists() {
         UUID tenancyId = setupFullChain();
-        Account created = accountService.createAccount(tenancyId, null);
+        Account created = accountService.getAccountByTenancyId(tenancyId).orElseThrow();
 
         Optional<Account> found = accountService.getAccount(created.uuid());
 
@@ -95,7 +95,7 @@ public class AccountServiceTest {
     @Test
     void updateAccount_updatesCorrectFields() {
         UUID tenancyId = setupFullChain();
-        Account created = accountService.createAccount(tenancyId, null);
+        Account created = accountService.getAccountByTenancyId(tenancyId).orElseThrow();
 
         Account toUpdate = new Account(
                 created.uuid(),
@@ -127,7 +127,7 @@ public class AccountServiceTest {
     @Test
     void updateAccount_doesNotChangeBalance() {
         UUID tenancyId = setupFullChain();
-        Account created = accountService.createAccount(tenancyId, null);
+        Account created = accountService.getAccountByTenancyId(tenancyId).orElseThrow();
         assertEquals(0, BigDecimal.ZERO.compareTo(created.balanceCached()));
 
         // Pass an account with a different balance — the update SQL does not touch the balance column
@@ -155,7 +155,7 @@ public class AccountServiceTest {
     @Test
     void deactivateAccount_cannotBeFoundAfterDeletion() {
         UUID tenancyId = setupFullChain();
-        Account created = accountService.createAccount(tenancyId, null);
+        Account created = accountService.getAccountByTenancyId(tenancyId).orElseThrow();
 
         Optional<Account> deleted = accountService.deactivateAccount(created.uuid());
         assertTrue(deleted.isPresent());
@@ -167,7 +167,7 @@ public class AccountServiceTest {
     @Test
     void getAccountByTenancyId_returnsCorrectAccount() {
         UUID tenancyId = setupFullChain();
-        Account created = accountService.createAccount(tenancyId, null);
+        Account created = accountService.getAccountByTenancyId(tenancyId).orElseThrow();
 
         Optional<Account> found = accountService.getAccountByTenancyId(tenancyId);
 

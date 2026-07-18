@@ -55,7 +55,8 @@ public class TransactionServiceTest {
     private Account createTestAccount() {
         Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
         Lot lot = lotService.createLot(new LotCreationRequest(property.uuid(), "1", null, null, null, null));
-        return accountService.createAccount(tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid(), null);
+        UUID tenancyId = tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid();
+        return accountService.getAccountByTenancyId(tenancyId).orElseThrow();
     }
 
     // -------------------------------------------------------------------------
@@ -211,6 +212,64 @@ public class TransactionServiceTest {
         BigDecimal balance = transactionService.computeBalance(account.uuid());
 
         assertEquals(0, BigDecimal.ZERO.compareTo(balance));
+    }
+
+    @Test
+    void postTransaction_syncesBalanceCachedAfterPost() {
+        Account account = createTestAccount();
+
+        transactionService.postTransaction(account.uuid(), TransactionType.RENT_CHARGE, new BigDecimal("300.00"), null, LocalDate.now());
+        transactionService.postTransaction(account.uuid(), TransactionType.PAYMENT, new BigDecimal("100.00"), null, LocalDate.now());
+
+        BigDecimal cached = accountService.getAccount(account.uuid()).orElseThrow().balanceCached();
+        BigDecimal computed = transactionService.computeBalance(account.uuid());
+
+        assertEquals(0, computed.compareTo(cached));
+    }
+
+    @Test
+    void deleteTransaction_syncesBalanceCachedAfterDelete() {
+        Account account = createTestAccount();
+
+        Transaction tx = transactionService.postTransaction(
+                account.uuid(), TransactionType.RENT_CHARGE, new BigDecimal("200.00"), null, LocalDate.now()
+        );
+
+        transactionService.deleteTransaction(tx.uuid());
+
+        BigDecimal cached = accountService.getAccount(account.uuid()).orElseThrow().balanceCached();
+
+        assertEquals(0, BigDecimal.ZERO.compareTo(cached));
+    }
+
+    @Test
+    void postTransaction_throwsWhenNonAdjustmentAmountIsNegative() {
+        Account account = createTestAccount();
+
+        assertThrows(IllegalArgumentException.class, () ->
+                transactionService.postTransaction(account.uuid(), TransactionType.RENT_CHARGE, new BigDecimal("-100.00"), null, LocalDate.now())
+        );
+        assertThrows(IllegalArgumentException.class, () ->
+                transactionService.postTransaction(account.uuid(), TransactionType.PAYMENT, new BigDecimal("-50.00"), null, LocalDate.now())
+        );
+    }
+
+    @Test
+    void postTransaction_throwsWhenNonAdjustmentAmountIsZero() {
+        Account account = createTestAccount();
+
+        assertThrows(IllegalArgumentException.class, () ->
+                transactionService.postTransaction(account.uuid(), TransactionType.RENT_CHARGE, BigDecimal.ZERO, null, LocalDate.now())
+        );
+    }
+
+    @Test
+    void postTransaction_throwsWhenBalanceAdjustmentAmountIsZero() {
+        Account account = createTestAccount();
+
+        assertThrows(IllegalArgumentException.class, () ->
+                transactionService.postTransaction(account.uuid(), TransactionType.BALANCE_ADJUSTMENT, BigDecimal.ZERO, "Zero adjustment", LocalDate.now())
+        );
     }
 
     @Test
