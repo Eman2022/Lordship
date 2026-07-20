@@ -71,7 +71,7 @@ public class AccountCrudTest {
     private String loginAsRoot() throws Exception {
         AgentLoginRequest loginRequest = new AgentLoginRequest(rootEmail, rootPassword);
 
-        MvcResult result = mockMvc.perform(post("/agents/login")
+        MvcResult result = mockMvc.perform(post("/api/agents/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
