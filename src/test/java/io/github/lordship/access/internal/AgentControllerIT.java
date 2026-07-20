@@ -78,7 +78,7 @@ public class AgentControllerIT extends IntegrationTest {
         AgentRegistrationRequest agentRegistrationRequest = new AgentRegistrationRequest(testAgentNameFirst, testAgentNameLast, null,
                 testAgentEmail, null, testAgentPass);
 
-        mockMvc.perform(post("/agents/register")
+        mockMvc.perform(post("/api/agents/register")
                      .header("Authorization", "Bearer " + rootUserToken) // don't forget your token!
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(agentRegistrationRequest)))
@@ -90,7 +90,7 @@ public class AgentControllerIT extends IntegrationTest {
         // --- Step 4: ensure the new user can log in
         AgentLoginRequest newAgentLoginRequest = new AgentLoginRequest(testAgentEmail, testAgentPass);
 
-        MvcResult testUserLoginResult = mockMvc.perform(post("/agents/login")
+        MvcResult testUserLoginResult = mockMvc.perform(post("/api/agents/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(newAgentLoginRequest)))
                 .andExpect(status().isOk())
@@ -118,7 +118,7 @@ public class AgentControllerIT extends IntegrationTest {
                 null, testAgentNameEmail,
                 null, testAgentPassword);
 
-        mockMvc.perform(post("/agents/register")
+        mockMvc.perform(post("/api/agents/register")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(agentRegistrationRequest)))
                 .andExpect(status().isForbidden());
@@ -129,7 +129,7 @@ public class AgentControllerIT extends IntegrationTest {
         String wrongPassword = rootPassword + "123";
         AgentLoginRequest agentLoginRequest = new AgentLoginRequest(rootEmail, wrongPassword);
 
-        mockMvc.perform(post("/agents/login")
+        mockMvc.perform(post("/api/agents/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(agentLoginRequest)))
                 .andExpect(status().isUnauthorized())

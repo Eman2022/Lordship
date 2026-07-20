@@ -1,5 +1,6 @@
 package io.github.lordship.lots.internal;
 
+import io.github.lordship.IntegrationTest;
 import io.github.lordship.lots.Lot;
 import io.github.lordship.lots.LotType;
 import org.junit.jupiter.api.Test;
@@ -17,11 +18,9 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
+
 @Transactional
-public class LotInternalTests {
+public class LotInternalTests extends IntegrationTest {
 
     @Autowired
     LotRepository lotRepository;
