@@ -210,7 +210,7 @@ public class TransactionServiceTest {
     }
 
     @Test
-    void postTransaction_syncesBalanceCachedAfterPost() {
+    void postTransaction_syncsBalanceCachedAfterPost() {
         Account account = createTestAccount();
 
         transactionService.postTransaction(account.uuid(), TransactionType.RENT_CHARGE, new BigDecimal("300.00"), null, LocalDate.now());
