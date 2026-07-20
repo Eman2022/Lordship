@@ -17,7 +17,11 @@ public class TenancyRepository {
     private static final Set<String> ALLOWED_COLUMNS = Set.of(
             "lot_id",
             "start_date",
-            "end_date"
+            "end_date",
+            "no_personal_checks",
+            "no_partial_payments",
+            "accept_payments",
+            "exempt_from_late_fees"
     );
 
     public TenancyRepository(JdbcClient jdbcClient) {
@@ -27,9 +31,11 @@ public class TenancyRepository {
     public TenancyRow save(TenancyRow row) {
         return jdbc.sql("""
                         INSERT INTO tenancy (
-                                lot_id, start_date, end_date
+                                lot_id, start_date, end_date,
+                                no_personal_checks, no_partial_payments, accept_payments, exempt_from_late_fees
                             ) VALUES (
-                                :lotId, :startDate, :endDate
+                                :lotId, :startDate, :endDate,
+                                :noPersonalChecks, :noPartialPayments, :acceptPayments, :exemptFromLateFees
                             ) RETURNING *
                         """)
                 .paramSource(row)

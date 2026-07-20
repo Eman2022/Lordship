@@ -1,5 +1,7 @@
 package io.github.lordship.properties;
 
+import io.github.lordship.audit.AuditMapper;
+import io.github.lordship.audit.AuditService;
 import io.github.lordship.properties.internal.PropertyRow;
 import io.github.lordship.properties.internal.PropertyRepository;
 import jakarta.transaction.Transactional;
@@ -14,18 +16,19 @@ import java.time.LocalDate;
 @Service
 public class PropertyService {
     private final PropertyRepository propertyRepository;
+    private final AuditService auditService;
 
-    public PropertyService(PropertyRepository propertyRepository) {
+    public PropertyService(PropertyRepository propertyRepository, AuditService auditService) {
         this.propertyRepository = propertyRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
     public Property createProperty(String propertyName, String propertyAddress) {
-        PropertyRow row = new PropertyRow(
-                propertyName,
-                propertyAddress
-        );
-        return propertyRepository.save(row).toProperty();
+        PropertyRow row = new PropertyRow(propertyName, propertyAddress);
+        PropertyRow saved = propertyRepository.save(row);
+        auditService.recordInsert("property", saved.uuid(), AuditMapper.toMap(saved));
+        return saved.toProperty();
     }
 
     public Optional<Property> findByPropertyCode(String propertyCode) {
@@ -65,12 +68,27 @@ public class PropertyService {
             changes.remove("propertyManager");
         }
 
-        return propertyRepository.patch(uuid, changes).map(PropertyRow::toProperty);
+        PropertyRow before = propertyRepository.getPropertyOptional(uuid).orElse(null);
+        Optional<PropertyRow> result = propertyRepository.patch(uuid, changes);
+        result.ifPresent(after -> {
+            if (before != null) {
+                AuditMapper.Diff diff = AuditMapper.diff(before, after);
+                if (!diff.before().isEmpty()) {
+                    auditService.recordUpdate("property", uuid, diff.before(), diff.after());
+                }
+            }
+        });
+        return result.map(PropertyRow::toProperty);
     }
 
     @Transactional
     public boolean deleteProperty(UUID uuid) {
-        return propertyRepository.softDelete(uuid);
+        PropertyRow before = propertyRepository.getPropertyOptional(uuid).orElse(null);
+        boolean deleted = propertyRepository.softDelete(uuid);
+        if (deleted && before != null) {
+            auditService.recordDelete("property", uuid, AuditMapper.toMap(before));
+        }
+        return deleted;
     }
 }
 

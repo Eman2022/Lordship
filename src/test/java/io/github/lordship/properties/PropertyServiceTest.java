@@ -1,11 +1,13 @@
 package io.github.lordship.properties;
 
+import io.github.lordship.audit.AuditService;
 import io.github.lordship.properties.internal.PropertyCreateRequest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -21,6 +23,9 @@ public class PropertyServiceTest {
 
     @Autowired
     private PropertyService propertyService;
+
+    @MockitoBean
+    AuditService auditService;
 
     private PropertyCreateRequest buildRequest() {
         return new PropertyCreateRequest(

@@ -11,10 +11,6 @@ public record Account(
         BigDecimal balanceCached,
         boolean autopayEnabled,
         String notes,
-        boolean noPersonalChecks,
-        boolean noPartialPayments,
-        boolean acceptPayments,
-        boolean exemptFromLateFees,
         LocalDateTime createdAt,
         LocalDateTime deletedAt
 ) {

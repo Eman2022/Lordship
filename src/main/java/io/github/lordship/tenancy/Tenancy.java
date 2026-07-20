@@ -9,6 +9,10 @@ public record Tenancy(
     UUID lotId,
     LocalDate startDate,
     LocalDate endDate,
+    boolean noPersonalChecks,
+    boolean noPartialPayments,
+    boolean acceptPayments,
+    boolean exemptFromLateFees,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     LocalDateTime deletedAt

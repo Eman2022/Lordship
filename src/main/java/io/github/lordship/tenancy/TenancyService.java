@@ -1,6 +1,7 @@
 package io.github.lordship.tenancy;
 
 
+import io.github.lordship.accounts.AccountService;
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
 import io.github.lordship.shared.EncryptionService;
@@ -23,19 +24,20 @@ public class TenancyService {
     private final TenancyRepository tenancyRepository;
     private final EncryptionService encryptionService;
     private final AuditService auditService;
+    private final AccountService accountService;
 
     private static final Logger log = LoggerFactory.getLogger(TenancyService.class);
-
 
     public TenancyService(
             TenancyRepository tenancyRepository,
             EncryptionService encryptionService,
-            AuditService auditService
-
+            AuditService auditService,
+            AccountService accountService
     ) {
         this.tenancyRepository = tenancyRepository;
         this.encryptionService = encryptionService;
         this.auditService = auditService;
+        this.accountService = accountService;
     }
 
     // Forces a maximum of two tenancies for a lot
@@ -55,10 +57,12 @@ public class TenancyService {
                 )
         );
 
-
         auditService.recordInsert("tenancy", row.uuid(), AuditMapper.toMap(row));
 
-        return row.toTenancy();
+        Tenancy tenancy = row.toTenancy();
+        accountService.createAccount(tenancy.uuid(), null);
+        log.info("Account auto-created for tenancy uuid={}", tenancy.uuid());
+        return tenancy;
     }
 
     // Manages timeslots for the second tenancy

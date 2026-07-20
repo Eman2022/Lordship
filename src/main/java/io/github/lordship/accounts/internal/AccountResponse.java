@@ -13,10 +13,6 @@ public record AccountResponse(
         BigDecimal balanceCached,
         boolean autopayEnabled,
         String notes,
-        boolean noPersonalChecks,
-        boolean noPartialPayments,
-        boolean acceptPayments,
-        boolean exemptFromLateFees,
         LocalDateTime createdAt
 ) {
     public static AccountResponse from(Account account) {
@@ -27,10 +23,6 @@ public record AccountResponse(
                 account.balanceCached(),
                 account.autopayEnabled(),
                 account.notes(),
-                account.noPersonalChecks(),
-                account.noPartialPayments(),
-                account.acceptPayments(),
-                account.exemptFromLateFees(),
                 account.createdAt()
         );
     }
