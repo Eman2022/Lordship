@@ -10,8 +10,7 @@ import java.util.UUID;
 public record PersonResponse(
         UUID uuid,
         String nameRaw,
-        String nameFirst,
-        String nameLast,
+        String nameFull,
         LocalDate birthday,
         String personalPhone,
         String personalEmail,
@@ -26,8 +25,7 @@ public record PersonResponse(
         return new PersonResponse(
                 person.uuid(),
                 person.nameRaw(),
-                person.nameFirst(),
-                person.nameLast(),
+                person.fullName(),
                 person.birthday(),
                 person.personalPhone(),
                 person.personalEmail(),

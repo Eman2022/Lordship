@@ -40,11 +40,10 @@ public class PersonServiceTest {
     @Test
     void createPersonFromName_shouldReturnPersonWithCorrectName_andRecordAudit(){
         // Arrange
-        String nameFirst = "Don";
-        String nameLast  = "Mock";
+        String nameFull = "Don Mock";
 
         PersonRow stubRow = new PersonRow(
-                UUID.randomUUID(), null, nameFirst, nameLast,
+                UUID.randomUUID(), null, nameFull,
                 null, null, null, null, null, null, null,
                 LocalDateTime.now(), null
         );
@@ -52,7 +51,7 @@ public class PersonServiceTest {
         when(personRepository.save(any())).thenReturn(stubRow);
 
         // Act
-        Person result = personService.createPersonFromName(nameFirst, nameLast);
+        Person result = personService.createPersonFromName(nameFull);
 
         // Assert
         assertEquals("Don Mock", result.fullName());
@@ -64,7 +63,7 @@ public class PersonServiceTest {
     void findById_shouldReturnPerson_whenFound() {
         // Arrange
         PersonRow stubRow = new PersonRow(
-                UUID.randomUUID(), null, "Don", "Mock",
+                UUID.randomUUID(), null, "Don Mock",
                 null, null, null, null, null, null, null,
                 LocalDateTime.now(), null
         );

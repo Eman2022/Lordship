@@ -4,6 +4,8 @@ package io.github.lordship.config;
 import io.github.lordship.access.*;
 import io.github.lordship.identity.AgentPrincipal;
 import io.github.lordship.identity.LordshipPrincipal;
+import io.github.lordship.propertyassignments.PropertyAssignmentService;
+import io.github.lordship.shared.PropertyScope;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,14 +31,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final PermissionResolverService permissionResolverService;
     private final AgentService agentService;
-
+    private final PropertyAssignmentService propertyAssignmentService;
 
     public JwtAuthFilter(JwtService jwtService,
                          PermissionResolverService permissionResolverService,
-                         AgentService agentService) {
+                         AgentService agentService,
+                         PropertyAssignmentService propertyAssignmentService) {
         this.jwtService = jwtService;
         this.permissionResolverService = permissionResolverService;
         this.agentService = agentService;
+        this.propertyAssignmentService = propertyAssignmentService;
     }
 
     @Override
@@ -68,11 +72,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         if ("AGENT".equals(userType)) {
             Agent agent = agentService.findById(agentId).orElseThrow();
-            principal = new AgentPrincipal(agent.uuid(), agent.personId());
+
             authorities = permissionResolverService.findPermissionsForAgent(agentId)
                     .stream()
                     .map(p -> new SimpleGrantedAuthority(p.permissionName()))
                     .collect(Collectors.toSet());
+
+            boolean assignAll = authorities.stream()
+                    .anyMatch(a -> a.getAuthority().equals("assignments:assign-all"));
+
+            PropertyScope scope = assignAll
+                    ? new PropertyScope.All()
+                    : new PropertyScope.Restricted(propertyAssignmentService.getAgentAssignedPropertyUUIDs(agentId));
+            principal = new AgentPrincipal(agent.uuid(), agent.personId(), scope);
         } else {
             throw new IllegalArgumentException("Unsupported user type: " + userType);
         }

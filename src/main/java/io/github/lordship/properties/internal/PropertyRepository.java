@@ -3,10 +3,7 @@ package io.github.lordship.properties.internal;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.Map;
+import java.util.*;
 
 @Repository
 public class PropertyRepository {

@@ -7,8 +7,7 @@ import java.util.UUID;
 public record Person(
         UUID uuid,
         String nameRaw,
-        String nameFirst,
-        String nameLast,
+        String nameFull,
         LocalDate birthday,
         String personalPhone,
         String personalEmail,
@@ -24,8 +23,6 @@ public record Person(
     }
 
     public String fullName() {
-        if (nameFirst != null && nameLast != null)
-            return nameFirst + " " + nameLast;
-        return nameRaw;
+        return (nameFull != null) ? nameFull : nameRaw;
     }
 }

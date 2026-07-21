@@ -28,7 +28,6 @@ public class PropertyController {
     ResponseEntity<Property> createProperty(@Valid @RequestBody PropertyCreateRequest request) {
         Property property = propertyService.createProperty(request.propertyName(), request.propertyAddress());
         return new ResponseEntity<>(property, HttpStatus.CREATED);
-
     }
 
     @PreAuthorize("hasAuthority('properties:read')")

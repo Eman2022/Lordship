@@ -18,8 +18,7 @@ CREATE TABLE property (
 CREATE TABLE person (
     uuid UUID PRIMARY KEY DEFAULT uuidv7(),
     name_raw VARCHAR(120),
-    name_first VARCHAR(60),
-    name_last VARCHAR(60),
+    name_full VARCHAR(120),
     birthday DATE,
     personal_phone VARCHAR(120),
     personal_email VARCHAR(120),

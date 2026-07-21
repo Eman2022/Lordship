@@ -28,7 +28,7 @@ public class PersonController {
     @PreAuthorize("hasAuthority('persons:create')")
     @PostMapping("/create")
     public ResponseEntity<PersonResponse> createPerson(@Valid @RequestBody PersonCreateRequest createPersonRequest) {
-        Person person = personService.createPersonFromName(createPersonRequest.nameFirst(), createPersonRequest.nameLast());
+        Person person = personService.createPersonFromName(createPersonRequest.nameFull());
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(PersonResponse.from(person, true));

@@ -25,12 +25,12 @@ public class PersonRepository {
     public PersonRow save(PersonRow row) {
         return jdbc.sql("""
             INSERT INTO person (
-                name_raw, name_first, name_last,
+                name_raw, name_full,
                 birthday, personal_phone, personal_email,
                 primary_property, mailing_address,
                 emergency_contact, social
             ) VALUES (
-                :nameRaw, :nameFirst, :nameLast,
+                :nameRaw, :nameFull,
                 :birthday, :personalPhone, :personalEmail,
                 :primaryProperty, :mailingAddress, :emergencyContact,
                 :social
