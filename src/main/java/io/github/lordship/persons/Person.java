@@ -11,7 +11,6 @@ public record Person(
         LocalDate birthday,
         String personalPhone,
         String personalEmail,
-        UUID primaryProperty,
         String mailingAddress,
         UUID emergencyContact,
         String social,
@@ -20,9 +19,5 @@ public record Person(
 ) {
     public boolean isSoftDeleted() {
         return deletedAt != null;
-    }
-
-    public String fullName() {
-        return (nameFull != null) ? nameFull : nameRaw;
     }
 }

@@ -40,8 +40,7 @@ public class PropertyAssignmentRepository {
 
     public Set<PropertyAssignmentRow> getActivePropertyAssignmentsForAgent(UUID agentId) {
         return jdbc.sql("""
-                SELECT uuid, agent_id, property_id, assigned_by, assigned_at, removed_at
-                FROM agent_property_assignment
+                SELECT * FROM agent_property_assignment
                 WHERE agent_id = :agentId AND removed_at IS NULL
                 """)
                 .param("agentId", agentId)
@@ -54,9 +53,8 @@ public class PropertyAssignmentRepository {
                 UPDATE agent_property_assignment
                 SET removed_at = now()
                 WHERE uuid = :uuid AND removed_at IS NULL
-        """)
-        .param("uuid", uuid)
-        .update();
+                """)
+                .param("uuid", uuid)
+                .update();
     }
-
 }

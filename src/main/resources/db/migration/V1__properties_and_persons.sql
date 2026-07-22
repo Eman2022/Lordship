@@ -22,18 +22,15 @@ CREATE TABLE person (
     birthday DATE,
     personal_phone VARCHAR(120),
     personal_email VARCHAR(120),
-    primary_property UUID,   -- Either the place of their tenancy, residence, or primary agent location
     mailing_address TEXT,
     emergency_contact UUID,
     social VARCHAR(72),            -- AES-256 encrypted SSN
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,
-    FOREIGN KEY (emergency_contact) REFERENCES person(uuid),
-    FOREIGN KEY (primary_property) REFERENCES property(uuid)
+    FOREIGN KEY (emergency_contact) REFERENCES person(uuid)
 );
 
-CREATE INDEX idx_person_name_last  ON person(LOWER(name_last))      WHERE deleted_at IS NULL;
-CREATE INDEX idx_person_name_first ON person(LOWER(name_first))     WHERE deleted_at IS NULL;
+CREATE INDEX idx_person_name_full  ON person(LOWER(name_full))      WHERE deleted_at IS NULL;
 CREATE INDEX idx_person_email      ON person(LOWER(personal_email)) WHERE deleted_at IS NULL;
 
 -- Tracks known or inferred relationships between persons (e.g. spouse, parent, roommate).

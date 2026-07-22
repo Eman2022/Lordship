@@ -14,7 +14,6 @@ public record PersonResponse(
         LocalDate birthday,
         String personalPhone,
         String personalEmail,
-        UUID primaryProperty,
         String mailingAddress,
         UUID emergencyContact,
         String social,
@@ -25,11 +24,10 @@ public record PersonResponse(
         return new PersonResponse(
                 person.uuid(),
                 person.nameRaw(),
-                person.fullName(),
+                person.nameFull(),
                 person.birthday(),
                 person.personalPhone(),
                 person.personalEmail(),
-                person.primaryProperty(),
                 person.mailingAddress(),
                 person.emergencyContact(),
                 canViewSsn ? person.social() : SensitiveDataMasker.maskSsn(person.social()), // Note: maskSSN can accept null values

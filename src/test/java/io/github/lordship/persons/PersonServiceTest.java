@@ -20,6 +20,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -44,7 +45,7 @@ public class PersonServiceTest {
 
         PersonRow stubRow = new PersonRow(
                 UUID.randomUUID(), null, nameFull,
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
                 LocalDateTime.now(), null
         );
 
@@ -54,7 +55,7 @@ public class PersonServiceTest {
         Person result = personService.createPersonFromName(nameFull);
 
         // Assert
-        assertEquals("Don Mock", result.fullName());
+        assertEquals("Don Mock", result.nameFull());
         assertNotNull(result.uuid());
         verify(auditService).recordInsert(eq("person"), eq(stubRow.uuid()), any());
     }
@@ -64,7 +65,7 @@ public class PersonServiceTest {
         // Arrange
         PersonRow stubRow = new PersonRow(
                 UUID.randomUUID(), null, "Don Mock",
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
                 LocalDateTime.now(), null
         );
         when(personRepository.findById(stubRow.uuid())).thenReturn(Optional.of(stubRow));
@@ -88,14 +89,15 @@ public class PersonServiceTest {
 
         // Assert
         assertTrue(result.isEmpty());
+        verifyNoInteractions(auditService);
     }
 
     @Test
     void deletePerson_shouldReturnTrue_andRecordAudit_whenPersonExists() {
         // Arrange
         PersonRow stubRow = new PersonRow(
-                UUID.randomUUID(), null, "Don", "Mock",
-                null, null, null, null, null, null, null,
+                UUID.randomUUID(), null, "Don Mock",
+                null, null, null, null, null, null,
                 LocalDateTime.now(), null
         );
         when(personRepository.findById(stubRow.uuid())).thenReturn(Optional.of(stubRow));
@@ -121,7 +123,7 @@ public class PersonServiceTest {
         // Assert
         assertFalse(result);
         verify(personRepository, never()).softDelete(any());
-        verify(auditService, never()).recordDelete(any(), any(), any());
+        verifyNoInteractions(auditService);
     }
 
     @Test
@@ -135,15 +137,15 @@ public class PersonServiceTest {
 
         // Assert
         assertTrue(result.isEmpty());
-        verify(auditService, never()).recordUpdate(any(), any(), any(), any());
+        verifyNoInteractions(auditService);
     }
 
     @Test
     void patchPerson_shouldNotRecordAudit_whenNoDiffProduced(){
         // Arrange
         PersonRow stubRow = new PersonRow(
-                UUID.randomUUID(), null, "Don", "Mock",
-                null, null, null, null, null, null, null,
+                UUID.randomUUID(), null, "Don Mock",
+                null, null, null, null, null, null,
                 LocalDateTime.now(), null
         );
         when(personRepository.findById(stubRow.uuid())).thenReturn(Optional.of(stubRow));
@@ -152,24 +154,24 @@ public class PersonServiceTest {
 
         // Act
         Map<String, Object> changes = new HashMap<>();
-        changes.put("name_first", "Don");
+        changes.put("name_full", "Don Mock");
         personService.patchPerson(stubRow.uuid(), changes);
 
         // Assert
-        verify(auditService, never()).recordUpdate(any(), any(), any(), any());
+        verifyNoInteractions(auditService);
     }
 
     @Test
     void patchPerson_shouldRecordAudit_whenFieldActuallyChanges() {
         // Arrange
         PersonRow before = new PersonRow(
-                UUID.randomUUID(), null, "Don", "Mock",
-                null, null, null, null, null, null, null,
+                UUID.randomUUID(), null, "Don Mock",
+                null, null, null,null, null, null,
                 LocalDateTime.now(), null
         );
         PersonRow after = new PersonRow(
-                before.uuid(), null, "Baby", "Mocko",
-                null, null, null, null, null, null, null,
+                before.uuid(), null, "Baby Mocko",
+                null, null, null, null, null, null,
                 before.createdAt(), null
         );
         when(personRepository.findById(before.uuid())).thenReturn(Optional.of(before));
@@ -177,8 +179,7 @@ public class PersonServiceTest {
 
         // Act
         Map<String, Object> changes = new HashMap<>();
-        changes.put("name_first", "Baby");
-        changes.put("name_last", "Mocko");
+        changes.put("name_full", "Baby Mocko");
         personService.patchPerson(before.uuid(), changes);
 
         // Assert
@@ -189,13 +190,13 @@ public class PersonServiceTest {
     void patchPerson_shouldEncryptSocial_beforePassingToRepository() {
         // Arrange
         PersonRow stubRow = new PersonRow(
-                UUID.randomUUID(), null, "Don", "Mock",
-                null, null, null, null, null, null, null,
+                UUID.randomUUID(), null, "Don Mock",
+                null, null, null, null, null, null,
                 LocalDateTime.now(), null
         );
         PersonRow afterRow = new PersonRow(
-                stubRow.uuid(), null, "Don", "Mock",
-                null, null, null, null, null, null, "ENCRYPTED",
+                stubRow.uuid(), null, "Don Mock",
+                null, null, null, null, null, "ENCRYPTED",
                 stubRow.createdAt(), null
         );
         when(personRepository.findById(stubRow.uuid())).thenReturn(Optional.of(stubRow));
@@ -220,13 +221,13 @@ public class PersonServiceTest {
     void patchPerson_shouldParseBirthdayString_toLocalDate() {
         // Arrange
         PersonRow stubRow = new PersonRow(
-                UUID.randomUUID(), null, "Don", "Mock",
-                null, null, null, null, null, null, null,
+                UUID.randomUUID(), null, "Don Mock",
+                null, null, null, null, null, null,
                 LocalDateTime.now(), null
         );
         PersonRow afterRow = new PersonRow(
-                stubRow.uuid(), null, "Don", "Mock",
-                LocalDate.of(1990, 12, 17), null, null, null, null, null, "ENCRYPTED",
+                stubRow.uuid(), null, "Don Mock",
+                LocalDate.of(1990, 12, 17), null, null, null, null, "ENCRYPTED",
                 stubRow.createdAt(), null
         );
         when(personRepository.findById(stubRow.uuid())).thenReturn(Optional.of(stubRow));

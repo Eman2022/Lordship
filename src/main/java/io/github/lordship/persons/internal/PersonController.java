@@ -74,7 +74,6 @@ public class PersonController {
         if (request.containsKey("mailingAddress")) changes.put("mailing_address", request.get("mailingAddress"));
         if (request.containsKey("emergencyContact")) changes.put("emergency_contact", request.get("emergencyContact"));
         if (request.containsKey("social")) changes.put("social", request.get("social"));
-        if (request.containsKey("primaryProperty")) changes.put("primary_property", request.get("primaryProperty"));
 
         boolean canViewSsn = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("persons_ssn:view"));
@@ -91,5 +90,4 @@ public class PersonController {
                 ResponseEntity.noContent().build() :
                 ResponseEntity.notFound().build();
     }
-
 }

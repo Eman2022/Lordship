@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-//NOTE: this class is NOT put in the internal folder because the SecurityConfig file needs it
+
 
 public class JwtAuthFilter extends OncePerRequestFilter {
 

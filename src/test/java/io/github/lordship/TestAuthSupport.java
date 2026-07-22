@@ -32,7 +32,7 @@ public final class TestAuthSupport {
                         .content(objectMapper.writeValueAsString(agentLoginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.workEmail").value(rootEmail))
-                .andExpect(jsonPath("$.fullName").value("Root Admin"))
+                .andExpect(jsonPath("$.nameFull").value("Root Admin"))
                 .andExpect(jsonPath("$.uuid").exists())
                 .andExpect(jsonPath("$.token").exists())
                 .andReturn();

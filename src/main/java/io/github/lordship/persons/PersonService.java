@@ -84,15 +84,6 @@ public class PersonService {
             }
         }
 
-        if (changes.containsKey("primary_property")) {
-            Object ec = changes.get("primary_property");
-            if (ec instanceof String s && !s.isBlank()) {
-                changes.put("primary_property", UUID.fromString(s));
-            } else {
-                changes.put("primary_property", null);
-            }
-        }
-
         Optional<PersonRow> personBeforeOpt = personRepository.findById(uuid);
         if (personBeforeOpt.isEmpty()) {
             return Optional.empty();

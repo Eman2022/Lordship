@@ -18,7 +18,7 @@ public class PropertyAssignmentService {
     private final PropertyAssignmentRepository propertyAssignmentRepository;
     private final AuditService auditService;
 
-    public PropertyAssignmentService(PropertyAssignmentRepository  propertyAssignmentRepository,
+    public PropertyAssignmentService(PropertyAssignmentRepository propertyAssignmentRepository,
                                      AuditService auditService) {
         this.propertyAssignmentRepository = propertyAssignmentRepository;
         this.auditService = auditService;
