@@ -31,7 +31,7 @@ public class PropertyController {
 
     }
 
-    @PreAuthorize("hasAuthority('properties:read')")
+    @PreAuthorize("hasAuthority('properties:view')")
     @GetMapping("/{propertyCode}")
     ResponseEntity<Property> readProperty(@PathVariable("propertyCode") String propertyCode) {
         return propertyService.findByPropertyCode(propertyCode)
@@ -39,7 +39,7 @@ public class PropertyController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasAuthority('properties:read')")
+    @PreAuthorize("hasAuthority('properties:view')")
     @GetMapping("/getAll")
     public ResponseEntity<List<Property>> getAllProperties() {
         return ResponseEntity.ok(propertyService.findAll());
