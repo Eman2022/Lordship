@@ -27,12 +27,12 @@ public final class TestAuthSupport {
 
         AgentLoginRequest agentLoginRequest = new AgentLoginRequest(rootEmail, rootPassword);
 
-        MvcResult mvcResult = mockMvc.perform(post("/agents/login")
+        MvcResult mvcResult = mockMvc.perform(post("/api/agents/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(agentLoginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.workEmail").value(rootEmail))
-                .andExpect(jsonPath("$.fullName").value("Root Admin"))
+                .andExpect(jsonPath("$.nameFull").value("Root Admin"))
                 .andExpect(jsonPath("$.uuid").exists())
                 .andExpect(jsonPath("$.token").exists())
                 .andReturn();
@@ -46,7 +46,7 @@ public final class TestAuthSupport {
 
         AgentLoginRequest agentLoginRequest = new AgentLoginRequest(email, password);
 
-        MvcResult mvcResult = mockMvc.perform(post("/agents/login")
+        MvcResult mvcResult = mockMvc.perform(post("/api/agents/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(agentLoginRequest)))
             .andExpect(jsonPath("$.uuid").exists())

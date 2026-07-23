@@ -52,9 +52,9 @@ public class AgentService {
     }
 
     @Transactional
-    public AgentWithPerson registerAgent(String nameFirst, String nameLast, String workPhone, String workEmail, String plainTextPassword) {
+    public AgentWithPerson registerAgent(String nameFull, String workPhone, String workEmail, String plainTextPassword) {
 
-        Person person = personService.createPersonFromName(nameFirst, nameLast);
+        Person person = personService.createPersonFromName(nameFull);
 
         // hash the pass before it enters the DB
         String hashed = passwordService.hash(plainTextPassword);
@@ -116,7 +116,7 @@ public class AgentService {
 
         UUID correlationId = UUID.randomUUID();
 
-        Person person = personService.systemInsertRootPerson("Root", "Admin", correlationId);
+        Person person = personService.systemInsertRootPerson("Root Admin", correlationId);
         String hashed = passwordService.hash(password);
 
         AgentRow agentRow = new AgentRow(

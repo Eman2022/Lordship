@@ -1,4 +1,4 @@
-package io.github.lordship.tenancy;
+package io.github.lordship.tenants;
 
 import java.time.LocalDateTime;
 import java.time.LocalDate;

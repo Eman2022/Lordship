@@ -8,12 +8,12 @@ public record TenancyUpdateRequest(
         @NotNull
         UUID uuid,
 
-        UUID lotID,
+        UUID lotId,
 
         LocalDate startDate,
 
-        LocalDate endDate,
+        LocalDate endDate
 
-        String status
+        //        String status
 ) {
 }

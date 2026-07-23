@@ -1,6 +1,6 @@
-package io.github.lordship.tenancy.internal;
+package io.github.lordship.tenants.internal;
 
-import io.github.lordship.tenancy.Tenant;
+import io.github.lordship.tenants.Tenant;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

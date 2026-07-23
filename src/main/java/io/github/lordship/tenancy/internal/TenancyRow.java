@@ -12,11 +12,14 @@ public record TenancyRow(
     UUID lotId,
     LocalDate startDate,
     LocalDate endDate,
+    boolean noPersonalChecks,
+    boolean noPartialPayments,
+    boolean acceptPayments,
+    boolean exemptFromLateFees,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     LocalDateTime deletedAt
 ) {
-
 
     public Tenancy toTenancy(){
         return new Tenancy(
@@ -24,6 +27,10 @@ public record TenancyRow(
                 this.lotId,
                 this.startDate,
                 this.endDate,
+                this.noPersonalChecks,
+                this.noPartialPayments,
+                this.acceptPayments,
+                this.exemptFromLateFees,
                 this.createdAt,
                 this.updatedAt,
                 this.deletedAt
@@ -40,6 +47,10 @@ public record TenancyRow(
                 lotId,
                 startDate,
                 endDate,
+                false,
+                false,
+                true,
+                false,
                 null,
                 null,
                 null

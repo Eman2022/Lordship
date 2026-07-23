@@ -1,20 +1,28 @@
 package io.github.lordship.tenancy.internal;
 
+import io.github.lordship.persons.internal.PersonRow;
 import io.github.lordship.tenancy.Tenancy;
 import io.github.lordship.tenancy.internal.TenancyRow;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
-// Consider adding public List func for findByAccount and findAllLots
 @Repository
 public class TenancyRepository {
 
     private final JdbcClient jdbc;
+
+    private static final Set<String> ALLOWED_COLUMNS = Set.of(
+            "lot_id",
+            "start_date",
+            "end_date",
+            "no_personal_checks",
+            "no_partial_payments",
+            "accept_payments",
+            "exempt_from_late_fees"
+    );
 
     public TenancyRepository(JdbcClient jdbcClient) {
         this.jdbc = jdbcClient;
@@ -22,12 +30,14 @@ public class TenancyRepository {
 
     public TenancyRow save(TenancyRow row) {
         return jdbc.sql("""
-                INSERT INTO tenancy (
-                        lot_id, start_date, end_date
-                    ) VALUES (
-                        :lotId, :startDate, :endDate
-                    ) RETURNING *
-                """)
+                        INSERT INTO tenancy (
+                                lot_id, start_date, end_date,
+                                no_personal_checks, no_partial_payments, accept_payments, exempt_from_late_fees
+                            ) VALUES (
+                                :lotId, :startDate, :endDate,
+                                :noPersonalChecks, :noPartialPayments, :acceptPayments, :exemptFromLateFees
+                            ) RETURNING *
+                        """)
                 .paramSource(row)
                 .query(TenancyRow.class)
                 .single();
@@ -43,9 +53,9 @@ public class TenancyRepository {
     // Some lots may have two tenancies at a time
     public List<TenancyRow> findActiveByLot(UUID lotId) {
         return jdbc.sql("""
-                SELECT * from tenancy WHERE lot_id = :lotId
-                AND end_date IS NULL AND deleted_at IS NULL
-                """)
+                        SELECT * from tenancy WHERE lot_id = :lotId
+                        AND end_date IS NULL AND deleted_at IS NULL
+                        """)
                 .param("lotId", lotId)
                 .query(TenancyRow.class)
                 .list();
@@ -54,11 +64,11 @@ public class TenancyRepository {
     // Determines when a tenancyId closes
     public TenancyRow close(UUID uuid, LocalDate endDate) {
         return jdbc.sql("""
-                UPDATE tenancy
-                SET end_date = :endDate
-                WHERE uuid = :uuid AND deleted_at IS NULL
-                RETURNING *
-                """)
+                        UPDATE tenancy
+                        SET end_date = :endDate
+                        WHERE uuid = :uuid AND deleted_at IS NULL
+                        RETURNING *
+                        """)
                 .param("uuid", uuid)
                 .param("endDate", endDate)
                 .query(TenancyRow.class)
@@ -72,4 +82,31 @@ public class TenancyRepository {
                 .update();
     }
 
+    public Optional<TenancyRow> patch(UUID uuid, Map<String, Object> changes) {
+        if (changes.isEmpty()) return findById(uuid);
+
+        // Only allow specific columns to be patched
+        for (String col : changes.keySet()) {
+            if (!ALLOWED_COLUMNS.contains(col)) {
+                throw new IllegalArgumentException("Invalid column: " + col);
+            }
+        }
+
+        StringBuilder sql = new StringBuilder("UPDATE tenancy SET ");
+
+        changes.forEach((col, val) -> sql.append(col).append(" = :").append(col).append(", "));
+
+        // Remove trailing comma
+        sql.setLength(sql.length() - 2);
+
+        sql.append(" WHERE uuid = :uuid AND deleted_at IS NULL RETURNING *");
+
+        Map<String, Object> params = new HashMap<>(changes);
+        params.put("uuid", uuid);
+
+        return jdbc.sql(sql.toString())
+                .params(params)
+                .query(TenancyRow.class)
+                .optional();
+    }
 }

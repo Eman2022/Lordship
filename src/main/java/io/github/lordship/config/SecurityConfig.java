@@ -4,6 +4,7 @@ import io.github.lordship.access.AgentService;
 import io.github.lordship.access.JwtService;
 import io.github.lordship.access.PermissionResolverService;
 import io.github.lordship.audit.AuditContext;
+import io.github.lordship.propertyassignments.PropertyAssignmentService;
 import jakarta.servlet.Filter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -28,8 +29,11 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtAuthFilter jwtAuthFilter(JwtService jwtService, PermissionResolverService permissionResolverService, AgentService agentService) {
-        return new JwtAuthFilter(jwtService, permissionResolverService, agentService);
+    public JwtAuthFilter jwtAuthFilter(JwtService jwtService,
+                                       PermissionResolverService permissionResolverService,
+                                       AgentService agentService,
+                                       PropertyAssignmentService propertyAssignmentService) {
+        return new JwtAuthFilter(jwtService, permissionResolverService, agentService, propertyAssignmentService);
     }
 
     @Bean
@@ -40,6 +44,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+<<<<<<< HEAD
                         .requestMatchers("/agents/login").permitAll()
 //                        .requestMatchers(
 //                                "/v3/api-docs",
@@ -50,6 +55,18 @@ public class SecurityConfig {
 //                                "/swagger-resources/**",
 //                                "/webjars/**"
 //                        ).permitAll()
+=======
+                        .requestMatchers("/api/agents/login").permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/swagger-resources",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+>>>>>>> main
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

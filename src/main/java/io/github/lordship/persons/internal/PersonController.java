@@ -28,7 +28,7 @@ public class PersonController {
     @PreAuthorize("hasAuthority('persons:create')")
     @PostMapping("/create")
     public ResponseEntity<PersonResponse> createPerson(@Valid @RequestBody PersonCreateRequest createPersonRequest) {
-        Person person = personService.createPersonFromName(createPersonRequest.nameFirst(), createPersonRequest.nameLast());
+        Person person = personService.createPersonFromName(createPersonRequest.nameFull());
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(PersonResponse.from(person, true));
@@ -66,15 +66,13 @@ public class PersonController {
         Map<String, Object> changes = new HashMap<>();
 
         if (request.containsKey("nameRaw")) changes.put("name_raw", request.get("nameRaw"));
-        if (request.containsKey("nameFirst")) changes.put("name_first", request.get("nameFirst"));
-        if (request.containsKey("nameLast")) changes.put("name_last", request.get("nameLast"));
+        if (request.containsKey("nameFull")) changes.put("name_full", request.get("nameFull"));
         if (request.containsKey("birthday")) changes.put("birthday", request.get("birthday"));
         if (request.containsKey("personalEmail")) changes.put("personal_email", request.get("personalEmail"));
         if (request.containsKey("personalPhone")) changes.put("personal_phone", request.get("personalPhone"));
         if (request.containsKey("mailingAddress")) changes.put("mailing_address", request.get("mailingAddress"));
         if (request.containsKey("emergencyContact")) changes.put("emergency_contact", request.get("emergencyContact"));
         if (request.containsKey("social")) changes.put("social", request.get("social"));
-        if (request.containsKey("primaryProperty")) changes.put("primary_property", request.get("primaryProperty"));
 
         boolean canViewSsn = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("persons_ssn:view"));
@@ -91,5 +89,4 @@ public class PersonController {
                 ResponseEntity.noContent().build() :
                 ResponseEntity.notFound().build();
     }
-
 }
