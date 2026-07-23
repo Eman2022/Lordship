@@ -26,7 +26,7 @@ public class PropertyAssignmentController {
         PropertyAssignmentResponse response = PropertyAssignmentResponse.from(
             propertyAssignmentService.assignAgentToProperty(req.agentId(), req.propertyId(), auditContext.getActingUserId())
         );
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PreAuthorize("hasAuthority('assignments:remove')")
