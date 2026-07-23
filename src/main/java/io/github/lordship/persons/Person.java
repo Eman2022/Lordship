@@ -7,12 +7,10 @@ import java.util.UUID;
 public record Person(
         UUID uuid,
         String nameRaw,
-        String nameFirst,
-        String nameLast,
+        String nameFull,
         LocalDate birthday,
         String personalPhone,
         String personalEmail,
-        UUID primaryProperty,
         String mailingAddress,
         UUID emergencyContact,
         String social,
@@ -21,11 +19,5 @@ public record Person(
 ) {
     public boolean isSoftDeleted() {
         return deletedAt != null;
-    }
-
-    public String fullName() {
-        if (nameFirst != null && nameLast != null)
-            return nameFirst + " " + nameLast;
-        return nameRaw;
     }
 }

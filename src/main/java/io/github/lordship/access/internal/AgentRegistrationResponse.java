@@ -7,14 +7,14 @@ import java.util.UUID;
 
 public record AgentRegistrationResponse(UUID uuid,
                                         String workEmail,
-                                        String fullName
+                                        String nameFull
 ) {
 
     public static AgentRegistrationResponse from(AgentWithPerson agentWithPerson){
         return new AgentRegistrationResponse(
                 agentWithPerson.agent().uuid(),
                 agentWithPerson.agent().workEmail(),
-                agentWithPerson.person().fullName()
+                agentWithPerson.person().nameFull()
         );
     }
 }

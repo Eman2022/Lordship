@@ -12,8 +12,8 @@ public class PersonRepository {
 
     private static final Set<String> ALLOWED_COLUMNS = Set.of(
             "name_raw", "name_first", "name_last", "birthday",
-            "personal_phone", "personal_email", "primary_property",
-            "mailing_address", "emergency_contact", "social"
+            "personal_phone", "personal_email", "mailing_address",
+            "emergency_contact", "social"
     );
 
     private final JdbcClient jdbc;
@@ -25,14 +25,14 @@ public class PersonRepository {
     public PersonRow save(PersonRow row) {
         return jdbc.sql("""
             INSERT INTO person (
-                name_raw, name_first, name_last,
+                name_raw, name_full,
                 birthday, personal_phone, personal_email,
-                primary_property, mailing_address,
-                emergency_contact, social
+                mailing_address, emergency_contact,
+                social
             ) VALUES (
-                :nameRaw, :nameFirst, :nameLast,
+                :nameRaw, :nameFull,
                 :birthday, :personalPhone, :personalEmail,
-                :primaryProperty, :mailingAddress, :emergencyContact,
+                :mailingAddress, :emergencyContact,
                 :social
             ) RETURNING *
             """)

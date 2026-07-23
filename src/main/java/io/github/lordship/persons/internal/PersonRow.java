@@ -12,12 +12,10 @@ import java.util.UUID;
 public record PersonRow(
     UUID uuid,
     String nameRaw,
-    String nameFirst,
-    String nameLast,
+    String nameFull,
     LocalDate birthday,
     String personalPhone,
     String personalEmail,
-    UUID primaryProperty,
     String mailingAddress,
     UUID emergencyContact,
     String social,
@@ -28,12 +26,10 @@ public record PersonRow(
         return new Person(
                 this.uuid,
                 this.nameRaw,
-                this.nameFirst,
-                this.nameLast,
+                this.nameFull,
                 this.birthday,
                 this.personalPhone,
                 this.personalEmail,
-                this.primaryProperty,
                 this.mailingAddress,
                 this.emergencyContact,
                 social != null ? encryptionService.decrypt(social) : null,
@@ -42,13 +38,11 @@ public record PersonRow(
         );
     }
 
-    public PersonRow(String nameFirst, String nameLast) {
+    public PersonRow(String nameFull) {
         this(
                 null,
                 null,
-                nameFirst,
-                nameLast,
-                null,
+                nameFull,
                 null,
                 null,
                 null,

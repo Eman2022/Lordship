@@ -132,3 +132,7 @@ CREATE TABLE agent_property_assignment (
 
 CREATE INDEX idx_assignment_agent    ON agent_property_assignment(agent_id)      WHERE removed_at IS NULL;
 CREATE INDEX idx_assignment_property ON agent_property_assignment(property_id)   WHERE removed_at IS NULL;
+
+CREATE UNIQUE INDEX uq_active_assignment
+    ON agent_property_assignment (agent_id, property_id)
+    WHERE removed_at IS NULL;

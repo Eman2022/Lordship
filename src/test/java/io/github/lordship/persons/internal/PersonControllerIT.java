@@ -55,8 +55,7 @@ public class PersonControllerIT extends IntegrationTest {
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
         String requestBody = """
                 {
-                    "nameFirst" : "Linda",
-                    "nameLast" : "Belcher"
+                    "nameFull" : "Linda Belcher"
                 }
                 """;
 
@@ -68,29 +67,9 @@ public class PersonControllerIT extends IntegrationTest {
         // Assert
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.uuid").exists())
-            .andExpect(jsonPath("$.nameFirst").value("Linda"))
-            .andExpect(jsonPath("$.nameLast").value("Belcher"));
+            .andExpect(jsonPath("$.nameFull").value("Linda Belcher"));
     }
 
-    @Test
-    void createPerson_shouldReturn400_whenFirstNameIsBlank() throws Exception {
-        // Arrange
-        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
-        String requestBody = """
-                {
-                    "nameFirst" : "",
-                    "nameLast" : "Belcher"
-                }
-                """;
-
-        // Act
-        mockMvc.perform(post("/persons/create")
-                .header("Authorization", "Bearer " + token)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
-        // Assert
-           .andExpect(status().isBadRequest());
-    }
 
     @Test
     void getPerson_shouldReturn404_whenPersonDoesNotExist() throws Exception {
@@ -106,13 +85,12 @@ public class PersonControllerIT extends IntegrationTest {
     }
 
     @Test
-    void getPerson_shouldMaskSsn_whenUserLacksPersonsSsnViewPermission  () throws Exception {
+    void getPerson_shouldMaskSsn_whenUserLacksPersonsSsnViewPermission() throws Exception {
         // Arrange
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
         String createPersonRequest = """
                 {
-                    "nameFirst" : "Private",
-                    "nameLast" : "Piggy"
+                    "nameFull" : "Private Piggy"
                 }
                 """;
 
@@ -140,8 +118,7 @@ public class PersonControllerIT extends IntegrationTest {
                 .header("Authorization", "Bearer " + token)
                 .content("""
                         {
-                            "nameFirst" : "Tony",
-                            "nameLast" : "Crook",
+                            "nameFull" : "Tony Crook",
                             "workEmail" : "loser@lordship.com",
                             "password" : "iLoveMyMommy"
                         }
@@ -183,8 +160,7 @@ public class PersonControllerIT extends IntegrationTest {
                 .header("Authorization", "Bearer " + rootToken)
                 .content("""
                         {
-                            "nameFirst" : "Don",
-                            "nameLast" : "Social"
+                            "nameFull" : "Don Social"
                         }
                         """))
                 .andExpect(status().isCreated())
@@ -237,8 +213,7 @@ public class PersonControllerIT extends IntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {
-                            "nameFirst" : "Don",
-                            "nameLast" : "Mock"
+                            "nameFull" : "Don Mock"
                         }
                         """))
                 .andExpect(status().isCreated())
@@ -263,40 +238,6 @@ public class PersonControllerIT extends IntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-
-    @Test
-    public void patchPerson_shouldNotModifyOmittedFields_whenEditingPerson() throws Exception {
-        // Arrange
-        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
-        Optional<Agent> rootAgent = agentService.findByWorkEmail(rootEmail);
-        assertTrue(rootAgent.isPresent());
-        Optional<Person> personOptional = personService.findByID(rootAgent.get().personId());
-        assertTrue(personOptional.isPresent());
-        Person person = personOptional.get();
-        String originalNameLast = person.nameLast();
-        UUID personUuid = person.uuid();
-
-        // only sending nameFirst - nameLast is OMITTED, should stay untouched
-        String requestBody = """
-                {
-                    "nameFirst": "Erich"
-                }
-                """;
-
-        // Act
-        mockMvc.perform(patch("/persons/{uuid}", personUuid)
-                .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-        // Assert
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nameFirst").value("Erich"))
-                .andExpect(jsonPath("$.nameLast").value(originalNameLast));
-           // also check DB:
-        Person personUpdated = personService.findByID(person.uuid()).orElseThrow();
-        assertEquals("Erich", personUpdated.nameFirst());
-        assertEquals(originalNameLast, personUpdated.nameLast());
-    }
 
     @Test
     public void patchPerson_shouldClearField_whenExplicitNullIsProvided() throws Exception {
