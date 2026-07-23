@@ -11,8 +11,8 @@ import java.util.*;
 public class PersonRepository {
 
     private static final Set<String> ALLOWED_COLUMNS = Set.of(
-            "name_raw", "name_first", "name_last", "birthday",
-            "personal_phone", "personal_email", "mailing_address",
+            "name_raw", "name_full", "birthday", "personal_phone",
+            "personal_email", "mailing_address",
             "emergency_contact", "social"
     );
 
