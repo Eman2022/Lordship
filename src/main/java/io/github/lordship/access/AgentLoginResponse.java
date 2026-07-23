@@ -3,10 +3,9 @@ package io.github.lordship.access;
 import java.util.UUID;
 
 public record AgentLoginResponse(
-
         UUID uuid,
         String workEmail,
-        String fullName,
+        String nameFull,
         String token
 )
 
@@ -15,9 +14,8 @@ public record AgentLoginResponse(
         return new AgentLoginResponse(
                 agentWithPerson.agent().uuid(),
                 agentWithPerson.agent().workEmail(),
-                agentWithPerson.person().fullName(),
+                agentWithPerson.person().nameFull(),
                 token
         );
     }
-
 }

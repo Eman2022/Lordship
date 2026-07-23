@@ -10,15 +10,7 @@ public record AccountUpdateRequest(
 
         boolean autopayEnabled,
 
-        String notes,
-
-        boolean noPersonalChecks,
-
-        boolean noPartialPayments,
-
-        boolean acceptPayments,
-
-        boolean exemptFromLateFees
+        String notes
 
 ) {
 }

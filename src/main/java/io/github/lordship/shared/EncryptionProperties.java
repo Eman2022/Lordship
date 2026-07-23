@@ -63,5 +63,4 @@ public record EncryptionProperties (
         }
         return map;
     }
-
 }

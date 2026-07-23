@@ -38,7 +38,7 @@ public class AccountController {
     }
 
     @PreAuthorize("hasAuthority('accounts:view')")
-    @GetMapping("/property/{propertyCode}")
+    @GetMapping("/property/{propertyId}")
     public ResponseEntity<List<AccountResponse>> getAccountsByProperty(@PathVariable UUID propertyId) {
         List<AccountResponse> responses = accountService.getAccountsByProperty(propertyId)
                 .stream()
@@ -59,10 +59,6 @@ public class AccountController {
                             existing.balanceCached(),
                             request.autopayEnabled(),
                             request.notes(),
-                            request.noPersonalChecks(),
-                            request.noPartialPayments(),
-                            request.acceptPayments(),
-                            request.exemptFromLateFees(),
                             existing.createdAt(),
                             existing.deletedAt()
                     );

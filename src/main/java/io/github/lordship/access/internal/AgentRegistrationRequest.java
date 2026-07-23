@@ -7,10 +7,7 @@ import jakarta.validation.constraints.Size;
 public record AgentRegistrationRequest (
 
     @NotBlank
-    String nameFirst,
-
-    @NotBlank
-    String nameLast,
+    String nameFull,
 
     @Email
     String personalEmail,

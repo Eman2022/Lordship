@@ -43,20 +43,19 @@ public class AuditControllerIT extends IntegrationTest {
         String rootAuthToken = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
         String registerAgentBody = """
             {
-                "nameFirst": "Jimmy",
-                "nameLast": "John",
+                "nameFull": "Jimmy John",
                 "workEmail": "JimmyJohn@lordship.com",
                 "password": "jx341004rtrtrt"
             }
             """;
 
-        MvcResult result1 = mockMvc.perform(post("/agents/register")
+        MvcResult result1 = mockMvc.perform(post("/api/agents/register")
                 .header("Authorization", "Bearer " + rootAuthToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(registerAgentBody))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.workEmail").value("JimmyJohn@lordship.com"))
-                .andExpect(jsonPath("$.fullName").value("Jimmy John"))
+                .andExpect(jsonPath("$.nameFull").value("Jimmy John"))
                 .andExpect(jsonPath("$.uuid").exists())
                 .andReturn();
 
@@ -86,12 +85,12 @@ public class AuditControllerIT extends IntegrationTest {
                 }
                 """;
 
-        MvcResult result3 = mockMvc.perform(post("/agents/login")
+        MvcResult result3 = mockMvc.perform(post("/api/agents/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jimmyLogin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.workEmail").value("JimmyJohn@lordship.com"))
-                .andExpect(jsonPath("$.fullName").value("Jimmy John"))
+                .andExpect(jsonPath("$.nameFull").value("Jimmy John"))
                 .andExpect(jsonPath("$.uuid").exists())
                 .andExpect(jsonPath("$.token").exists())
                 .andReturn();
@@ -102,8 +101,7 @@ public class AuditControllerIT extends IntegrationTest {
 
         String jimmyCreatePerson = """
                 {
-                    "nameFirst" : "Linda",
-                    "nameLast" : "Belcher"
+                    "nameFull" : "Linda Belcher"
                 }
                 """;
 
@@ -112,8 +110,7 @@ public class AuditControllerIT extends IntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                 .content(jimmyCreatePerson))
                 .andExpect(jsonPath("$.uuid").exists())
-                .andExpect(jsonPath("$.nameFirst").value("Linda"))
-                .andExpect(jsonPath("$.nameLast").value("Belcher"))
+                .andExpect(jsonPath("$.nameFull").value("Linda Belcher"))
                 .andReturn();
 
         UUID lindaPersonId = UUID.fromString(JsonPath.read(result4.getResponse().getContentAsString(), "$.uuid"));

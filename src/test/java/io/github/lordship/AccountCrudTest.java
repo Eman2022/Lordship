@@ -1,6 +1,7 @@
 package io.github.lordship;
 
 import io.github.lordship.access.AgentLoginRequest;
+import io.github.lordship.accounts.AccountService;
 import io.github.lordship.accounts.AccountStatus;
 import io.github.lordship.accounts.internal.AccountCreationRequest;
 import io.github.lordship.accounts.internal.AccountUpdateRequest;
@@ -57,6 +58,9 @@ public class AccountCrudTest {
     @Autowired
     TenancyService tenancyService;
 
+    @Autowired
+    AccountService accountService;
+
     @MockitoBean
     AuditService auditService;
 
@@ -67,7 +71,7 @@ public class AccountCrudTest {
     private String loginAsRoot() throws Exception {
         AgentLoginRequest loginRequest = new AgentLoginRequest(rootEmail, rootPassword);
 
-        MvcResult result = mockMvc.perform(post("/agents/login")
+        MvcResult result = mockMvc.perform(post("/api/agents/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
@@ -81,6 +85,10 @@ public class AccountCrudTest {
         Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
         Lot lot = lotService.createLot(new LotCreationRequest(property.uuid(), "1", null, null, null, null));
         return tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid();
+    }
+
+    private UUID getAutoCreatedAccountId(UUID tenancyId) {
+        return accountService.getAccountByTenancyId(tenancyId).orElseThrow().uuid();
     }
 
     // -------------------------------------------------------------------------
@@ -111,7 +119,7 @@ public class AccountCrudTest {
 
     @Test
     void unauthorizedUpdateReturns403() throws Exception {
-        AccountUpdateRequest request = new AccountUpdateRequest(AccountStatus.ACTIVE, false, null, false, false, true, false);
+        AccountUpdateRequest request = new AccountUpdateRequest(AccountStatus.ACTIVE, false, null);
 
         mockMvc.perform(put("/accounts/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -130,18 +138,15 @@ public class AccountCrudTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void authorizedCreateReturns201() throws Exception {
+    void authorizedGetAutoCreatedAccountReturns200() throws Exception {
         String token = loginAsRoot();
         UUID tenancyId = setupFullChain();
+        UUID accountId = getAutoCreatedAccountId(tenancyId);
 
-        AccountCreationRequest request = new AccountCreationRequest(tenancyId, "New tenant account");
-
-        mockMvc.perform(post("/accounts/create")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.uuid").exists())
+        mockMvc.perform(get("/accounts/" + accountId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.uuid").value(accountId.toString()))
                 .andExpect(jsonPath("$.tenancyId").value(tenancyId.toString()))
                 .andExpect(jsonPath("$.accountStatus").value("ACTIVE"))
                 .andExpect(jsonPath("$.balanceCached").value(0))
@@ -152,20 +157,8 @@ public class AccountCrudTest {
     void authorizedGetByIdReturns200() throws Exception {
         String token = loginAsRoot();
         UUID tenancyId = setupFullChain();
+        String accountId = getAutoCreatedAccountId(tenancyId).toString();
 
-        // create account
-        AccountCreationRequest createRequest = new AccountCreationRequest(tenancyId, null);
-        MvcResult createResult = mockMvc.perform(post("/accounts/create")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createRequest)))
-                .andExpect(status().isCreated())
-                .andReturn();
-
-        String accountId = objectMapper.readTree(createResult.getResponse().getContentAsString())
-                .get("uuid").asString();
-
-        // fetch by id
         mockMvc.perform(get("/accounts/" + accountId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
@@ -177,26 +170,12 @@ public class AccountCrudTest {
     void authorizedUpdateReturns200() throws Exception {
         String token = loginAsRoot();
         UUID tenancyId = setupFullChain();
-
-        AccountCreationRequest createRequest = new AccountCreationRequest(tenancyId, null);
-        MvcResult createResult = mockMvc.perform(post("/accounts/create")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createRequest)))
-                .andExpect(status().isCreated())
-                .andReturn();
-
-        String accountId = objectMapper.readTree(createResult.getResponse().getContentAsString())
-                .get("uuid").asString();
+        String accountId = getAutoCreatedAccountId(tenancyId).toString();
 
         AccountUpdateRequest updateRequest = new AccountUpdateRequest(
                 AccountStatus.DELINQUENT,
                 true,
-                "Tenant missed payment",
-                false,
-                false,
-                true,
-                false
+                "Tenant missed payment"
         );
 
         mockMvc.perform(put("/accounts/" + accountId)
@@ -214,17 +193,7 @@ public class AccountCrudTest {
     void authorizedDeleteReturns204() throws Exception {
         String token = loginAsRoot();
         UUID tenancyId = setupFullChain();
-
-        AccountCreationRequest createRequest = new AccountCreationRequest(tenancyId, null);
-        MvcResult createResult = mockMvc.perform(post("/accounts/create")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createRequest)))
-                .andExpect(status().isCreated())
-                .andReturn();
-
-        String accountId = objectMapper.readTree(createResult.getResponse().getContentAsString())
-                .get("uuid").asString();
+        String accountId = getAutoCreatedAccountId(tenancyId).toString();
 
         // soft delete
         mockMvc.perform(delete("/accounts/" + accountId)

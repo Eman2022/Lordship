@@ -35,6 +35,7 @@ INSERT INTO permission (uuid, permission_name) VALUES
     (uuidv7(), 'properties:delete'),
 
     -- Property assignments
+    (uuidv7(), 'assignments:assign-all'), -- marks agent as to be assigned to all properties
     (uuidv7(), 'assignments:view'),
     (uuidv7(), 'assignments:assign'),  -- assign an agent to a property
     (uuidv7(), 'assignments:remove'),  -- remove an agent from a property
@@ -97,6 +98,7 @@ AND p.permission_name IN (
     'pets:delete',
     'properties:view',
     'assignments:view',
+    'assignments:assign-all',
     'audit:view',
     'audit:view_own'
 );

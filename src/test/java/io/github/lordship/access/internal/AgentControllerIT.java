@@ -66,8 +66,7 @@ public class AgentControllerIT extends IntegrationTest {
     @Test
     void shouldAllowRootAgentToRegisterNewAgent_afterSuccessfulLogin() throws Exception {
         // an agent that needs a superuser to help them register
-        String testAgentNameFirst = "Bilbo";
-        String testAgentNameLast = "Baggins";
+        String testAgentName = "Bilbo Baggins";
         String testAgentEmail = "baggins@lordship.com";
         String testAgentPass = "pass123456789";
 
@@ -75,27 +74,27 @@ public class AgentControllerIT extends IntegrationTest {
         String rootUserToken = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
 
         // --- Step 3: register another user
-        AgentRegistrationRequest agentRegistrationRequest = new AgentRegistrationRequest(testAgentNameFirst, testAgentNameLast, null,
+        AgentRegistrationRequest agentRegistrationRequest = new AgentRegistrationRequest(testAgentName, null,
                 testAgentEmail, null, testAgentPass);
 
-        mockMvc.perform(post("/agents/register")
+        mockMvc.perform(post("/api/agents/register")
                      .header("Authorization", "Bearer " + rootUserToken) // don't forget your token!
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(agentRegistrationRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.workEmail").value(testAgentEmail))
-                .andExpect(jsonPath("$.fullName").value(testAgentNameFirst + " " + testAgentNameLast))
+                .andExpect(jsonPath("$.nameFull").value(testAgentName))
                 .andExpect(jsonPath("$.uuid").exists());
 
         // --- Step 4: ensure the new user can log in
         AgentLoginRequest newAgentLoginRequest = new AgentLoginRequest(testAgentEmail, testAgentPass);
 
-        MvcResult testUserLoginResult = mockMvc.perform(post("/agents/login")
+        MvcResult testUserLoginResult = mockMvc.perform(post("/api/agents/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(newAgentLoginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.workEmail").value(testAgentEmail))
-                .andExpect(jsonPath("$.fullName").value(testAgentNameFirst + " " + testAgentNameLast))
+                .andExpect(jsonPath("$.nameFull").value(testAgentName))
                 .andExpect(jsonPath("$.uuid").exists())
                 .andExpect(jsonPath("$.token").exists())
                 .andReturn();
@@ -108,17 +107,16 @@ public class AgentControllerIT extends IntegrationTest {
 
     @Test
     void shouldRejectAgentRegistration_whenUserIsUnauthorized() throws Exception {
-        String testAgentNameFirst = "Bilbo";
-        String testAgentNameLast = "Baggins";
+        String testAgentName = "Bilbo Baggins";
         String testAgentNameEmail = "BigBaggins@gmail.com";
         String testAgentPassword = "pass123456789";
 
         AgentRegistrationRequest agentRegistrationRequest = new AgentRegistrationRequest(
-                testAgentNameFirst, testAgentNameLast,
+                testAgentName,
                 null, testAgentNameEmail,
                 null, testAgentPassword);
 
-        mockMvc.perform(post("/agents/register")
+        mockMvc.perform(post("/api/agents/register")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(agentRegistrationRequest)))
                 .andExpect(status().isForbidden());
@@ -129,7 +127,7 @@ public class AgentControllerIT extends IntegrationTest {
         String wrongPassword = rootPassword + "123";
         AgentLoginRequest agentLoginRequest = new AgentLoginRequest(rootEmail, wrongPassword);
 
-        mockMvc.perform(post("/agents/login")
+        mockMvc.perform(post("/api/agents/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(agentLoginRequest)))
                 .andExpect(status().isUnauthorized())

@@ -9,7 +9,7 @@ import java.util.UUID;
 @JsonFormat
 public record TenancyResponse(
         UUID uuid,
-        UUID lotID,
+        UUID lotId,
         LocalDate startDate,
         LocalDate endDate
 ) {
@@ -17,7 +17,7 @@ public record TenancyResponse(
     public static TenancyResponse from(Tenancy t) {
         return new TenancyResponse(
                 t.uuid(),
-                t.lotID(),
+                t.lotId(),
                 t.startDate(),
                 t.endDate()
         );
