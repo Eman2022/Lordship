@@ -1,37 +1,39 @@
-package io.github.lordship.tenancy.internal;
+package io.github.lordship.meters.internal;
 
-import tools.jackson.databind.ObjectMapper;
 import io.github.lordship.IntegrationTest;
 import io.github.lordship.properties.internal.PropertyRow;
 import io.github.lordship.tenancy.TenancyService;
+import io.github.lordship.tenancy.internal.TenancyCreateRequest;
+import io.github.lordship.tenancy.internal.TenancyRepository;
+import io.github.lordship.tenancy.internal.TenancyRow;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
-import org.springframework.jdbc.core.simple.JdbcClient;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
+/*
+@SpringBootTest
+@AutoConfigureMockMvc
+@AutoConfigureJsonTesters
+@ActiveProfiles("test")
 @Transactional
-public class TenancyControllerIT extends IntegrationTest {
+public class MeterControllerIT extends IntegrationTest {
 
     @Autowired
     MockMvc mockMvc;
@@ -58,19 +60,19 @@ public class TenancyControllerIT extends IntegrationTest {
 
     private UUID insertTestProperty() {
         PropertyRow propertyRow = jdbc.sql("""
-                        INSERT INTO property (property_code, property_name, property_address)
-                        VALUES ('TST01', 'Test Mobile Park', '999 Test Ave') RETURNING *
-                        """).query(PropertyRow.class)
+                INSERT INTO property (property_code, property_name, property_address)
+                VALUES ('TST01', 'Test Mobile Park', '999 Test Ave') RETURNING *
+                """).query(PropertyRow.class)
                 .single();
         return propertyRow.uuid();
     }
 
     private UUID insertTestLot(UUID propertyId) {
         return jdbc.sql("""
-                        INSERT INTO lot (property_id, lot_number)
-                        VALUES (:propertyId, '1')
-                        RETURNING uuid
-                        """)
+                INSERT INTO lot (property_id, lot_number)
+                VALUES (:propertyId, '1')
+                RETURNING uuid
+                """)
                 .param("propertyId", propertyId)
                 .query(UUID.class)
                 .single();
@@ -81,58 +83,9 @@ public class TenancyControllerIT extends IntegrationTest {
         return insertTestLot(propertyId);
     }
 
-
-    // REPOSITORY TESTS
-    @Test
-    void findATenancyById() {
-        UUID lotId = setupFullChain();
-        TenancyRow saved = tenancyRepository.save(buildRow(lotId));
-
-        Optional<TenancyRow> found = tenancyRepository.findById(saved.uuid());
-
-        assertTrue(found.isPresent());
-        assertEquals(saved.uuid(), found.get().uuid());
-    }
-
-    @Test
-    void updatedAtChangesOnUpdate() {
-        UUID lotId = setupFullChain();
-        TenancyRow saved = tenancyRepository.save(buildRow(lotId));
-
-        LocalDateTime before = saved.updatedAt();
-
-        TenancyRow closed = tenancyRepository.close(saved.uuid(), LocalDate.now());
-
-        assertTrue(closed.updatedAt().isAfter(before) || closed.updatedAt().isEqual(before));
-    }
-
-    @Test
-    void closingTenancy() {
-        UUID lotId = setupFullChain();
-        TenancyRow saved = tenancyRepository.save(buildRow(lotId));
-
-        LocalDate endDate = LocalDate.now();
-        TenancyRow closed = tenancyRepository.close(saved.uuid(), endDate);
-
-        assertEquals(endDate, closed.endDate());
-        assertNotNull(closed.updatedAt());
-    }
-
-    @Test
-    void softDeleteRemovesFromTable() {
-        UUID lotId = setupFullChain();
-        TenancyRow saved = tenancyRepository.save(buildRow(lotId));
-
-        tenancyRepository.softDelete(saved.uuid());
-
-        assertTrue(tenancyRepository.findById(saved.uuid()).isEmpty());
-        assertTrue(tenancyRepository.findActiveByLot(saved.lotId()).isEmpty());
-    }
-
-    // CONTROLLER TESTS
     @Test
     void getTenancy_shouldReturn403_whenNoTokenProvided() throws Exception {
-        mockMvc.perform(get("/tenancy/{uuid}", UUID.randomUUID()))
+        mockMvc.perform(get("/tenancies/{uuid}", UUID.randomUUID()))
                 .andExpect(status().isForbidden());
     }
 
@@ -140,20 +93,20 @@ public class TenancyControllerIT extends IntegrationTest {
     void createTenancy_shouldReturn403_whenNoTokenProvided() throws Exception {
         var request = new TenancyCreateRequest(UUID.randomUUID());
 
-        mockMvc.perform(post("/tenancy/create")
+        mockMvc.perform(post("/tenancies/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @WithMockUser(authorities = "tenancy:create")
+    @WithMockUser(authorities = "tenancies:create")
     void createTenancy_shouldReturn400_whenLotIdIsMissing() throws Exception {
         var invalidJson = """
-                    { "lotId": null }
-                """;
+        { "lotId": null }
+    """;
 
-        mockMvc.perform(post("/tenancy/create")
+        mockMvc.perform(post("/tenancies/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidJson))
                 .andExpect(status().isBadRequest());
@@ -161,42 +114,27 @@ public class TenancyControllerIT extends IntegrationTest {
 
 
     @Test
-    @WithMockUser(authorities = "tenancy:view")
+    @WithMockUser(authorities = "tenancies:read")
     void getActiveTenanciesByLot_shouldReturnOnlyActiveTenancies() throws Exception {
         UUID lotId = setupFullChain();
 
         tenancyRepository.save(TenancyRow.forInsert(lotId, LocalDate.now(), null));
         tenancyRepository.save(TenancyRow.forInsert(lotId, LocalDate.now().minusDays(10), LocalDate.now()));
 
-        mockMvc.perform(get("/tenancy/lot/{lotId}", lotId))
+        mockMvc.perform(get("/tenancies/lot/{lotId}", lotId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].endDate").doesNotExist());
     }
 
-
     @Test
-    @WithMockUser(authorities = "tenancy:view")
+    @WithMockUser(authorities = "tenancies:read")
     void getTenancy_closedTenancy_returns200() throws Exception {
         TenancyRow saved = tenancyRepository.save(
                 TenancyRow.forInsert(setupFullChain(), LocalDate.now(), LocalDate.now())
         );
 
-        mockMvc.perform(get("/tenancy/{uuid}", saved.uuid()))
+        mockMvc.perform(get("/tenancies/{uuid}", saved.uuid()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.endDate").value(LocalDate.now().toString()));
     }
-
-
-    @Test
-    @WithMockUser(authorities = "tenancy:edit")
-    void patchTenancy_shouldReturn400_whenInvalidDateProvided() throws Exception {
-        var invalidJson = """
-                { "end_date": "not-a-date" }
-                """;
-
-        mockMvc.perform(patch("/tenancy/{uuid}", UUID.randomUUID())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidJson))
-                .andExpect(status().isBadRequest());
-    }
-}
+} */

@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,7 @@ import java.util.UUID;
 
 @Validated
 @RestController
-@RequestMapping("/tenancies")
+@RequestMapping("/tenancy")
 public class TenancyController {
 
     private final TenancyService tenancyService;
@@ -26,7 +27,7 @@ public class TenancyController {
         this.tenancyService = tenancyService;
     }
 
-    @PreAuthorize("hasAuthority('tenancies:create')")
+    @PreAuthorize("hasAuthority('tenancy:create')")
     @PostMapping("/create")
     public ResponseEntity<TenancyResponse> createTenancy(@RequestBody @Valid TenancyCreateRequest tenancyCreateRequest) {
         Tenancy tenancy = tenancyService.create(tenancyCreateRequest);
@@ -35,7 +36,7 @@ public class TenancyController {
                 .body(TenancyResponse.from(tenancy));
     }
 
-    @PreAuthorize("hasAuthority('tenancies:read')")
+    @PreAuthorize("hasAuthority('tenancy:view')")
     @GetMapping("/{uuid}")
     public ResponseEntity<TenancyResponse> getById(@PathVariable UUID uuid) {
         return tenancyService.findTenancyById(uuid)
@@ -43,7 +44,7 @@ public class TenancyController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasAuthority('tenancies:read')")
+    @PreAuthorize("hasAuthority('tenancy:view')")
     @GetMapping("/lot/{lotId}")
     public ResponseEntity<List<TenancyResponse>> getByLot(@PathVariable UUID lotId) {
         List<TenancyResponse> responses = tenancyService.findActiveTenancyByLot(lotId)
@@ -53,7 +54,7 @@ public class TenancyController {
         return ResponseEntity.ok(responses);
     }
 
-    @PreAuthorize("hasAuthority('tenancies:update')")
+    @PreAuthorize("hasAuthority('tenancy:edit')")
     @PatchMapping("/{uuid}")
     public ResponseEntity<TenancyResponse> patchTenancy(
             @PathVariable UUID uuid,
@@ -61,16 +62,34 @@ public class TenancyController {
 
         Map<String, Object> changes = new HashMap<>();
 
-        if (request.containsKey("startDate")) changes.put("start_date", request.get("startDate"));
-        if (request.containsKey("endDate")) changes.put("end_date", request.get("endDate"));
-        if (request.containsKey("lotId")) changes.put("lot_id", request.get("lotId"));
+        if (request.containsKey("start_date")) {
+            Object raw = request.get("start_date");
+            try {
+                changes.put("start_date", raw == null ? null : LocalDate.parse(raw.toString()));
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
 
-        return tenancyService.patchTenancy(uuid, request)
+        if (request.containsKey("end_date")) {
+            Object raw = request.get("end_date");
+            try {
+                changes.put("end_date", raw == null ? null : LocalDate.parse(raw.toString()));
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
+        if (request.containsKey("lot_id")) {
+            changes.put("lot_id", request.get("lot_id"));
+        }
+
+        return tenancyService.patchTenancy(uuid, changes)
                 .map(t -> ResponseEntity.ok(TenancyResponse.from(t)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasAuthority('tenancies:update')")
+    @PreAuthorize("hasAuthority('tenancy:edit')")
     @PatchMapping("/{uuid}/close")
     public ResponseEntity<TenancyResponse> close(@PathVariable UUID uuid,
                                  @RequestBody @Valid TenancyUpdateRequest request) {
@@ -78,8 +97,7 @@ public class TenancyController {
         return ResponseEntity.ok(TenancyResponse.from(tenancy));
     }
 
-    // may not actually use "Tenancy"
-    @PreAuthorize("hasAuthority('tenancies:delete')")
+    @PreAuthorize("hasAuthority('tenancy:delete')")
     @DeleteMapping("/{uuid}")
     public ResponseEntity<Void> deleteTenancy(@PathVariable UUID uuid) {
         return tenancyService.softDelete(uuid)
