@@ -43,12 +43,14 @@ public class AgentControllerIT extends IntegrationTest {
     AgentService agentService;
 
     @Test
-    void shouldCreateNewLoginEvent_whenUserLogsIn() throws Exception {
+    void login_createsNewLoginEvent_whenUserLogsIn() throws Exception {
+        // Arrange
         Optional<Agent> agent = agentService.findByWorkEmail(rootEmail);
         assertTrue(agent.isPresent());
         Agent rootAgent = agent.get();
         int logCount = agentService.getLoginEventsByAgentId(rootAgent.uuid()).size();
 
+        // Act
         TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
 
         List<LoginEventRow> loginEvents = agentService.getLoginEventsByAgentId(rootAgent.uuid());
@@ -56,16 +58,16 @@ public class AgentControllerIT extends IntegrationTest {
 
         LoginEventRow topLog = loginEvents.getFirst();
 
+        // Assert
         assertFalse(topLog.browserClient().isEmpty());
         assertFalse(topLog.agentId().toString().isEmpty());
         assertFalse(topLog.ipAddress().isEmpty());
-
         assertTrue(logCountPostLogin > logCount);
     }
 
     @Test
-    void shouldAllowRootAgentToRegisterNewAgent_afterSuccessfulLogin() throws Exception {
-        // an agent that needs a superuser to help them register
+    void register_allowedForRootAgent_afterLogin() throws Exception {
+        // Arrange
         String testAgentName = "Bilbo Baggins";
         String testAgentEmail = "baggins@lordship.com";
         String testAgentPass = "pass123456789";
@@ -73,7 +75,6 @@ public class AgentControllerIT extends IntegrationTest {
         // steps 1 & 2: login and get token
         String rootUserToken = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
 
-        // --- Step 3: register another user
         AgentRegistrationRequest agentRegistrationRequest = new AgentRegistrationRequest(testAgentName, null,
                 testAgentEmail, null, testAgentPass);
 
@@ -89,9 +90,11 @@ public class AgentControllerIT extends IntegrationTest {
         // --- Step 4: ensure the new user can log in
         AgentLoginRequest newAgentLoginRequest = new AgentLoginRequest(testAgentEmail, testAgentPass);
 
+        // Act
         MvcResult testUserLoginResult = mockMvc.perform(post("/api/agents/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(newAgentLoginRequest)))
+        // Assert
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.workEmail").value(testAgentEmail))
                 .andExpect(jsonPath("$.nameFull").value(testAgentName))
@@ -106,7 +109,8 @@ public class AgentControllerIT extends IntegrationTest {
     }
 
     @Test
-    void shouldRejectAgentRegistration_whenUserIsUnauthorized() throws Exception {
+    void register_shouldReturn403_whenAgentIsUnauthorized() throws Exception {
+        // Arrange
         String testAgentName = "Bilbo Baggins";
         String testAgentNameEmail = "BigBaggins@gmail.com";
         String testAgentPassword = "pass123456789";
@@ -116,20 +120,25 @@ public class AgentControllerIT extends IntegrationTest {
                 null, testAgentNameEmail,
                 null, testAgentPassword);
 
+        // Act
         mockMvc.perform(post("/api/agents/register")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(agentRegistrationRequest)))
+        // Assert
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void shouldRejectLogin_whenPasswordIsIncorrect() throws Exception {
+    void login_shouldReturn401_whenPasswordIsIncorrect() throws Exception {
+        // Arrange
         String wrongPassword = rootPassword + "123";
         AgentLoginRequest agentLoginRequest = new AgentLoginRequest(rootEmail, wrongPassword);
 
+        // Act
         mockMvc.perform(post("/api/agents/login")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(agentLoginRequest)))
+        // Assert
                 .andExpect(status().isUnauthorized())
                 .andReturn();
     }

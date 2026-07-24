@@ -70,7 +70,6 @@ public class AgentService {
 
         // log the change
         auditService.recordInsert("agent", agent.uuid(), AuditMapper.toMap(agent));
-        auditService.recordInsert("person", person.uuid(), AuditMapper.toMap(person));
 
         return new AgentWithPerson(agent, person);
     }

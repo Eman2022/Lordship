@@ -6,6 +6,9 @@ import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
 
+
+// Default roles: Admin, Unassigned, Office Staff, Property Manager
+
 public record GrantedRoleRequest(
 
         @NotNull

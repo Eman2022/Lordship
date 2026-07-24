@@ -57,10 +57,24 @@ public class PersonService {
     @Transactional //TODO: REMEMBER: sensitive fields may need same encryption logic as SSN
     public Optional<Person> patchPerson(UUID uuid, Map<String, Object> changes) {
 
+        Optional<PersonRow> personBeforeOpt = personRepository.findById(uuid);
+        if (personBeforeOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        PersonRow personBefore = personBeforeOpt.get();
+        // note: this requires special handling to avoid creating unnecessary logs
         if (changes.containsKey("social")) {
             String social = (String) changes.get("social");
             if (social != null && !social.isBlank()) {
-                changes.put("social", encryptionService.encrypt(social));
+                String currentSocial = personBefore.social() != null
+                        ? encryptionService.decrypt(personBefore.social())
+                        : null;
+                if (social.equals(currentSocial)) {
+                    changes.remove("social"); // unchanged plaintext — skip write and log
+                } else {
+                    changes.put("social", encryptionService.encrypt(social));
+                }
             } else {
                 changes.put("social", null);
             }
@@ -84,12 +98,6 @@ public class PersonService {
             }
         }
 
-        Optional<PersonRow> personBeforeOpt = personRepository.findById(uuid);
-        if (personBeforeOpt.isEmpty()) {
-            return Optional.empty();
-        }
-
-        PersonRow personBefore = personBeforeOpt.get();
         Optional<PersonRow> personAfterOpt = personRepository.patch(uuid, changes);
         if (personAfterOpt.isEmpty()) {
             return Optional.empty();

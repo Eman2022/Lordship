@@ -19,11 +19,9 @@ import java.util.Optional;
 public class AgentController {
 
     private final AgentService agentService;
-    private final PersonService personService;
 
-    public AgentController(AgentService agentService, PersonService personService) {
+    public AgentController(AgentService agentService) {
         this.agentService = agentService;
-        this.personService = personService;
     }
 
     @PreAuthorize("hasAuthority('agents:create')")
@@ -48,17 +46,4 @@ public class AgentController {
                 .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 
-//    @GetMapping("/self")
-//    public ResponseEntity<AgentSelfResponse> getSelf(Authentication authentication) {
-//        AgentPrincipal principal = (AgentPrincipal) authentication.getPrincipal();
-//
-//        Optional<Agent> agent = agentService.findById(principal.agentUuid());
-//        Optional<Person> person = personService.findByID(principal.personUuid());
-//
-//        if  (agent.isPresent() && person.isPresent()) {
-//
-//
-//        }
-//
-//    }
 }
