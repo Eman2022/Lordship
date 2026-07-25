@@ -1,7 +1,6 @@
 package io.github.lordship.meters.internal;
 
 import io.github.lordship.meters.internal.MeterRow;
-import io.github.lordship.tenancy.internal.TenancyRow;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -15,8 +14,7 @@ public class MeterRepository {
     // Decide which data points should be modified
     private static final Set<String> ALLOWED_COLUMNS = Set.of(
             "title",
-            "measurement",
-            "point_position"
+            "installed_at"
     );
 
     public MeterRepository(JdbcClient jdbcClient) {
@@ -26,9 +24,9 @@ public class MeterRepository {
     public MeterRow save(MeterRow row) {
         return jdbc.sql("""
                         INSERT INTO meters (
-                                title, measurement, point_x, point_y
+                                meter_id, point_x, point_y, utility_type, measurement
                             ) VALUES (
-                                :title, :measurement, :pointX, pointY
+                                :meterId, :pointX, :pointY, :utilityType, :measurement
                             ) RETURNING *
                         """)
                 .paramSource(row)
@@ -45,9 +43,9 @@ public class MeterRepository {
 
     public List<MeterRow> findMeterByLot(UUID meterId) {
         return jdbc.sql("""
-                        SELECT * from tenancy WHERE meter_id = :meterId
-                        AND end_date IS NULL AND deleted_at IS NULL
-                        """)
+                       SELECT * FROM meters WHERE meter_id = :meterId
+                       AND deleted_at IS NULL
+                       """)
                 .param("meterId", meterId)
                 .query(MeterRow.class)
                 .list();

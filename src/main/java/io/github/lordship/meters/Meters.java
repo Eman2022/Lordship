@@ -1,5 +1,7 @@
 package io.github.lordship.meters;
 
+import org.springframework.cglib.core.Local;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -9,11 +11,15 @@ public record Meters(
     UUID meterId,
     String title,
     String description,
-    String measurement,
+    String serialNumber,
     Double pointX,
     Double pointY,
     LocalDate installedAt,
-    LocalDateTime deletedAt
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt,
+    LocalDateTime deletedAt,
+    MeterType utilityType,
+    MeterMeasurement measurement
 ) {
     public boolean isSoftDeleted() {
         return deletedAt != null;

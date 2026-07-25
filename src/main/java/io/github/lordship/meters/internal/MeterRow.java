@@ -1,5 +1,7 @@
 package io.github.lordship.meters.internal;
 
+import io.github.lordship.meters.MeterMeasurement;
+import io.github.lordship.meters.MeterType;
 import io.github.lordship.meters.Meters;
 
 import java.time.LocalDate;
@@ -11,11 +13,15 @@ public record MeterRow(
         UUID meterId,
         String title,
         String description,
-        String measurement,
+        String serialNumber,
         Double pointX,
         Double pointY,
         LocalDate installedAt,
-        LocalDateTime deletedAt
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt,
+        LocalDateTime deletedAt,
+        String utilityType,
+        String measurement
 ) {
     public Meters toMeters(){
         return new Meters(
@@ -23,30 +29,39 @@ public record MeterRow(
                 this.meterId,
                 this.title,
                 this.description,
-                this.measurement,
+                this.serialNumber,
                 this.pointX,
                 this.pointY,
                 this.installedAt,
-                this.deletedAt
+                this.createdAt,
+                this.updatedAt,
+                this.deletedAt,
+                MeterType.valueOf(this.utilityType),
+                MeterMeasurement.valueOf(this.measurement)
         );
     }
 
     public static MeterRow forInsert(
             UUID meterId,
-            String measurement,
             Double pointX,
-            Double pointY
+            Double pointY,
+            MeterType utilityType,
+            MeterMeasurement measurement
     ) {
         return new MeterRow(
                 null,
                 meterId,
                 null,
                 null,
-                measurement,
+                null,
                 pointX,
                 pointY,
                 null,
-                null
+                null,
+                null,
+                null,
+                utilityType.name(),
+                measurement.name() // .name() is for the enum values
         );
     }
 

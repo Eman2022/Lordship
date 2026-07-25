@@ -1,11 +1,10 @@
 package io.github.lordship.meters.internal;
 
 import io.github.lordship.IntegrationTest;
+import io.github.lordship.meters.MeterMeasurement;
+import io.github.lordship.meters.MeterType;
 import io.github.lordship.properties.internal.PropertyRow;
-import io.github.lordship.tenancy.TenancyService;
-import io.github.lordship.tenancy.internal.TenancyCreateRequest;
-import io.github.lordship.tenancy.internal.TenancyRepository;
-import io.github.lordship.tenancy.internal.TenancyRow;
+import io.micrometer.core.instrument.Meter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
@@ -20,18 +19,20 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/*
-@SpringBootTest
-@AutoConfigureMockMvc
-@AutoConfigureJsonTesters
-@ActiveProfiles("test")
+
 @Transactional
 public class MeterControllerIT extends IntegrationTest {
 
@@ -42,19 +43,18 @@ public class MeterControllerIT extends IntegrationTest {
     ObjectMapper objectMapper;
 
     @Autowired
-    TenancyRepository tenancyRepository;
-
-    @Autowired
-    TenancyService tenancyService;
+    MeterRepository meterRepository;
 
     @Autowired
     JdbcClient jdbc;
 
-    private TenancyRow buildRow(UUID lotId) {
-        return TenancyRow.forInsert(
-                lotId,
-                LocalDate.now(),
-                LocalDate.of(2026, 10, 21)
+    private MeterRow buildRow(UUID meterId) {
+        return MeterRow.forInsert(
+                meterId,
+                0.0,
+                0.0,
+                MeterType.WATER,
+                MeterMeasurement.GALLONS
         );
     }
 
@@ -83,58 +83,6 @@ public class MeterControllerIT extends IntegrationTest {
         return insertTestLot(propertyId);
     }
 
-    @Test
-    void getTenancy_shouldReturn403_whenNoTokenProvided() throws Exception {
-        mockMvc.perform(get("/tenancies/{uuid}", UUID.randomUUID()))
-                .andExpect(status().isForbidden());
-    }
+    // REPOSITORY TESTS
 
-    @Test
-    void createTenancy_shouldReturn403_whenNoTokenProvided() throws Exception {
-        var request = new TenancyCreateRequest(UUID.randomUUID());
-
-        mockMvc.perform(post("/tenancies/create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @WithMockUser(authorities = "tenancies:create")
-    void createTenancy_shouldReturn400_whenLotIdIsMissing() throws Exception {
-        var invalidJson = """
-        { "lotId": null }
-    """;
-
-        mockMvc.perform(post("/tenancies/create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidJson))
-                .andExpect(status().isBadRequest());
-    }
-
-
-    @Test
-    @WithMockUser(authorities = "tenancies:read")
-    void getActiveTenanciesByLot_shouldReturnOnlyActiveTenancies() throws Exception {
-        UUID lotId = setupFullChain();
-
-        tenancyRepository.save(TenancyRow.forInsert(lotId, LocalDate.now(), null));
-        tenancyRepository.save(TenancyRow.forInsert(lotId, LocalDate.now().minusDays(10), LocalDate.now()));
-
-        mockMvc.perform(get("/tenancies/lot/{lotId}", lotId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].endDate").doesNotExist());
-    }
-
-    @Test
-    @WithMockUser(authorities = "tenancies:read")
-    void getTenancy_closedTenancy_returns200() throws Exception {
-        TenancyRow saved = tenancyRepository.save(
-                TenancyRow.forInsert(setupFullChain(), LocalDate.now(), LocalDate.now())
-        );
-
-        mockMvc.perform(get("/tenancies/{uuid}", saved.uuid()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.endDate").value(LocalDate.now().toString()));
-    }
-} */
+}

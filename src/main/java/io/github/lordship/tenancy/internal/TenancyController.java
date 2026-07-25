@@ -62,8 +62,8 @@ public class TenancyController {
 
         Map<String, Object> changes = new HashMap<>();
 
-        if (request.containsKey("start_date")) {
-            Object raw = request.get("start_date");
+        if (request.containsKey("startDate")) {
+            Object raw = request.get("startDate");
             try {
                 changes.put("start_date", raw == null ? null : LocalDate.parse(raw.toString()));
             } catch (Exception e) {
@@ -71,17 +71,13 @@ public class TenancyController {
             }
         }
 
-        if (request.containsKey("end_date")) {
-            Object raw = request.get("end_date");
+        if (request.containsKey("endDate")) {
+            Object raw = request.get("endDate");
             try {
                 changes.put("end_date", raw == null ? null : LocalDate.parse(raw.toString()));
             } catch (Exception e) {
                 return ResponseEntity.badRequest().build();
             }
-        }
-
-        if (request.containsKey("lot_id")) {
-            changes.put("lot_id", request.get("lot_id"));
         }
 
         return tenancyService.patchTenancy(uuid, changes)

@@ -22,8 +22,3 @@ public record MeterResponse(
         );
     }
 }
-
-/*             UUID meterId,
-            String measurement,
-            Double pointX,
-            Double pointY */

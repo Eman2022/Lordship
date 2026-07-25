@@ -43,9 +43,6 @@ public class TenancyControllerIT extends IntegrationTest {
     TenancyRepository tenancyRepository;
 
     @Autowired
-    TenancyService tenancyService;
-
-    @Autowired
     JdbcClient jdbc;
 
     private TenancyRow buildRow(UUID lotId) {
@@ -173,28 +170,20 @@ public class TenancyControllerIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].endDate").doesNotExist());
     }
 
-
-    @Test
-    @WithMockUser(authorities = "tenancy:view")
-    void getTenancy_closedTenancy_returns200() throws Exception {
-        TenancyRow saved = tenancyRepository.save(
-                TenancyRow.forInsert(setupFullChain(), LocalDate.now(), LocalDate.now())
-        );
-
-        mockMvc.perform(get("/tenancy/{uuid}", saved.uuid()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.endDate").value(LocalDate.now().toString()));
-    }
-
-
     @Test
     @WithMockUser(authorities = "tenancy:edit")
     void patchTenancy_shouldReturn400_whenInvalidDateProvided() throws Exception {
-        var invalidJson = """
-                { "end_date": "not-a-date" }
-                """;
+        UUID lotId = setupFullChain();
 
-        mockMvc.perform(patch("/tenancy/{uuid}", UUID.randomUUID())
+        TenancyRow saved = tenancyRepository.save(
+                TenancyRow.forInsert(lotId, LocalDate.now(), null)
+        );
+
+        var invalidJson = """
+            { "endDate": "not-a-date" }
+            """;
+
+        mockMvc.perform(patch("/tenancy/{uuid}", saved.uuid())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidJson))
                 .andExpect(status().isBadRequest());

@@ -42,9 +42,10 @@ public class MeterService {
         MeterRow row = meterRepository.save(
                 MeterRow.forInsert(
                         request.meterId(),
-                        null,
-                        0.0,
-                        0.0
+                        request.pointX(),
+                        request.pointY(),
+                        request.utilityType(),
+                        request.measurement()
                 )
         );
 

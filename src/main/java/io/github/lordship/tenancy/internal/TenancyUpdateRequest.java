@@ -13,7 +13,5 @@ public record TenancyUpdateRequest(
         LocalDate startDate,
 
         LocalDate endDate
-
-        //        String status
 ) {
 }

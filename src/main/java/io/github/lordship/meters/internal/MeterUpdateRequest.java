@@ -8,11 +8,9 @@ import java.util.UUID;
 public record MeterUpdateRequest(
         @NotNull
         UUID uuid,
-
-        UUID lotId,
-
-        LocalDate startDate,
-
-        LocalDate endDate
+        UUID meterId,
+        String title,
+        String description,
+        String serialNumber
 ) {
 }
