@@ -9,6 +9,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -41,7 +43,31 @@ public class TenantController {
     @PatchMapping("/{uuid}")
     public ResponseEntity<TenantResponse> patchTenant(
             @PathVariable UUID uuid,
-            @RequestBody Map<String, Object> changes) {
+            @RequestBody Map<String, Object> request) {
+
+        Map<String, Object> changes = new HashMap<>();
+
+        if (request.containsKey("startDate")) {
+            try {
+                Object raw = request.get("startDate");
+                changes.put("startDate", raw == null ? null : LocalDate.parse(raw.toString()));
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
+        if (request.containsKey("endDate")) {
+            try {
+                Object raw = request.get("endDate");
+                changes.put("endDate", raw == null ? null : LocalDate.parse(raw.toString()));
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
+        if (request.containsKey("lotId")) {
+            changes.put("lotId", request.get("lotId"));
+        }
 
         return tenantService.patch(uuid, changes)
                 .map(t -> ResponseEntity.ok(TenantResponse.from(t)))

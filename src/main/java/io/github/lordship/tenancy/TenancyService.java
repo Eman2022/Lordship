@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.*;
 
-// todo: add springboot error handling
 @Service
 public class TenancyService {
     private final TenancyRepository tenancyRepository;
@@ -158,7 +157,7 @@ public class TenancyService {
 
         TenancyRow before = previousTenancy.get();
 
-        Optional<TenancyRow> updatedTenancy = tenancyRepository.patch(uuid, changes);
+        Optional<TenancyRow> updatedTenancy = tenancyRepository.patch(uuid, mutable);
         if (updatedTenancy.isEmpty()) {
             return Optional.empty();
         }
