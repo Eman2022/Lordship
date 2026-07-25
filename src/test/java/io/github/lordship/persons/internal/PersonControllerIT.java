@@ -60,7 +60,7 @@ public class PersonControllerIT extends IntegrationTest {
                 """;
 
         // Act
-        mockMvc.perform(post("/persons/create")
+        mockMvc.perform(post("/api/persons/create")
                 .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -78,7 +78,7 @@ public class PersonControllerIT extends IntegrationTest {
         UUID randomUuid = UUID.randomUUID();
 
         // Act
-        mockMvc.perform(get("/persons/{uuid}", randomUuid)
+        mockMvc.perform(get("/api/persons/{uuid}", randomUuid)
                 .header("Authorization", "Bearer " + token))
         // Assert
                 .andExpect(status().isNotFound());
@@ -94,7 +94,7 @@ public class PersonControllerIT extends IntegrationTest {
                 }
                 """;
 
-        MvcResult createResult = mockMvc.perform(post("/persons/create")
+        MvcResult createResult = mockMvc.perform(post("/api/persons/create")
                 .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(createPersonRequest))
@@ -104,7 +104,7 @@ public class PersonControllerIT extends IntegrationTest {
         String personUuid = JsonPath.read(createResult.getResponse().getContentAsString(), "$.uuid");
 
         // set ssn
-        mockMvc.perform(patch("/persons/{uuid}", personUuid)
+        mockMvc.perform(patch("/api/persons/{uuid}", personUuid)
                 .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -142,7 +142,7 @@ public class PersonControllerIT extends IntegrationTest {
         String newAgentToken = TestAuthSupport.loginAsAgent(mockMvc, objectMapper, "loser@lordship.com", "iLoveMyMommy");
 
         // Act
-        mockMvc.perform(get("/persons/{uuid}", personUuid)
+        mockMvc.perform(get("/api/persons/{uuid}", personUuid)
                 .header("Authorization", "Bearer " + newAgentToken)
                 .contentType(MediaType.APPLICATION_JSON))
         // Assert
@@ -155,7 +155,7 @@ public class PersonControllerIT extends IntegrationTest {
         // Arrange
         String rootToken = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
 
-        MvcResult mvcResult = mockMvc.perform(post("/persons/create")
+        MvcResult mvcResult = mockMvc.perform(post("/api/persons/create")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + rootToken)
                 .content("""
@@ -168,7 +168,7 @@ public class PersonControllerIT extends IntegrationTest {
 
         String personUuid = JsonPath.read(mvcResult.getResponse().getContentAsString(), "$.uuid");
 
-        mockMvc.perform(patch("/persons/{uuid}", personUuid)
+        mockMvc.perform(patch("/api/persons/{uuid}", personUuid)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + rootToken)
                 .content("""
@@ -179,7 +179,7 @@ public class PersonControllerIT extends IntegrationTest {
                 .andExpect(status().isOk());
 
         // Act
-        mockMvc.perform(get("/persons/{uuid}", personUuid)
+        mockMvc.perform(get("/api/persons/{uuid}", personUuid)
                 .header("Authorization", "Bearer " + rootToken)
                 .contentType(MediaType.APPLICATION_JSON))
         // Assert
@@ -197,7 +197,7 @@ public class PersonControllerIT extends IntegrationTest {
         UUID rootPersonUuid = rootAgent.get().personId();
 
         // Act
-        mockMvc.perform(get("/persons/self")
+        mockMvc.perform(get("/api/persons/self")
                 .header("Authorization", "Bearer " + rootToken))
         // Assert
             .andExpect(status().isOk())
@@ -208,7 +208,7 @@ public class PersonControllerIT extends IntegrationTest {
     void deletePerson_shouldReturn204_andSubsequentGetReturns404() throws Exception {
         // Arrange
         String rootToken = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
-        MvcResult mvcResult = mockMvc.perform(post("/persons/create")
+        MvcResult mvcResult = mockMvc.perform(post("/api/persons/create")
                 .header("Authorization", "Bearer " + rootToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -222,19 +222,19 @@ public class PersonControllerIT extends IntegrationTest {
         String personUuid = JsonPath.read(mvcResult.getResponse().getContentAsString(), "$.uuid");
 
         // Act
-        mockMvc.perform(delete("/persons/{uuid}", personUuid)
+        mockMvc.perform(delete("/api/persons/{uuid}", personUuid)
                 .header("Authorization", "Bearer " + rootToken))
         // Assert
             .andExpect(status().isNoContent());
 
-        mockMvc.perform(delete("/persons/{uuid}", personUuid)
+        mockMvc.perform(delete("/api/persons/{uuid}", personUuid)
                 .header("Authorization", "Bearer " + rootToken))
            .andExpect(status().isNotFound());
     }
 
     @Test
     void getAnyPerson_shouldReturn401_whenNoTokenProvided() throws Exception {
-        mockMvc.perform(get("/persons/{uuid}", UUID.randomUUID()))
+        mockMvc.perform(get("/api/persons/{uuid}", UUID.randomUUID()))
                 .andExpect(status().isForbidden());
     }
 
@@ -256,7 +256,7 @@ public class PersonControllerIT extends IntegrationTest {
             }
             """;
 
-        mockMvc.perform(patch("/persons/{uuid}", person.uuid())
+        mockMvc.perform(patch("/api/persons/{uuid}", person.uuid())
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(setBirthdayBody))
@@ -271,7 +271,7 @@ public class PersonControllerIT extends IntegrationTest {
             """;
 
         // Act
-        mockMvc.perform(patch("/persons/{uuid}", person.uuid())
+        mockMvc.perform(patch("/api/persons/{uuid}", person.uuid())
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(clearBirthdayBody))

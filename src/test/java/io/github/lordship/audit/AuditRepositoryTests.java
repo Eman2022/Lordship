@@ -55,7 +55,7 @@ public class AuditRepositoryTests {
     }
 
     @Test
-    void shouldReturnPagedAuditLogsInRequestedOrder_whenAgentHasMultipleLogs() {
+    void findAllAgentAuditLogs_shouldReturnPagedAuditLogsInRequestedOrder_whenAgentHasMultipleLogs() {
         // Arrange
           // we'll make three logs showing
         UUID agentId = UUID.randomUUID();
@@ -90,7 +90,7 @@ public class AuditRepositoryTests {
     }
 
     @Test
-    void shouldThrowException_whenSortColumnIsUnknown() {
+    void findAllAgentAuditLogs_shouldThrowException_whenSortColumnIsUnknown() {
         UUID agentId = UUID.randomUUID();
         PageRequest pageRequest = PageRequest.of(0, 10, "value_after", true);
 

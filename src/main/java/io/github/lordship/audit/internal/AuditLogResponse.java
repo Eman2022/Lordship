@@ -1,7 +1,7 @@
 package io.github.lordship.audit.internal;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
 import io.github.lordship.audit.AuditLog;
 import io.github.lordship.audit.OperationType;
 import io.github.lordship.shared.SensitiveDataMasker;
@@ -73,21 +73,21 @@ public record AuditLogResponse(
 
             for (var entry : map.entrySet()) {
                 String key = entry.getKey();
+                Object value = entry.getValue();
                 String requiredPermission = FIELD_PERMISSIONS.get(key);
 
                 // If the field requires a permission and the user does NOT have it → redact
                 if (requiredPermission != null && !authorities.contains(requiredPermission)) {
-                    Function<String, String> masker = FIELD_MASKERS.get(key);
-
-                    if (masker != null && entry.getValue() instanceof String value) {
-                        result.put(key, masker.apply(value));
-                    } else if (entry.getValue() instanceof String value) {
-                        result.put(key, defaultMask(value));
+                    if (value == null) {
+                        result.put(key, null);
+                    } else if (value instanceof String stringValue){
+                        Function<String, String> masker = FIELD_MASKERS.get(key);
+                        result.put(key, masker != null ? masker.apply(stringValue) : defaultMask(stringValue));
                     }
                     // if the value isn't even a string just continue
                     continue;
                 }
-                result.put(key, entry.getValue());
+                result.put(key, value);
             }
             return MAPPER.writeValueAsString(result);
         } catch (Exception e) {
