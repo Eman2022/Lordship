@@ -77,7 +77,7 @@ public class PropertyRepositoryTest {
    // void softDeletedPropertyDoesNotAppearInFindAll() {
    //     PropertyRow saved = propertyRepository.save(buildRow());
 
-   //     propertyRepository.softDelete(saved.propertyCode());
+   //     propertyRepository.endAssignment(saved.propertyCode());
 
    //     List<PropertyRow> all = propertyRepository.findAll();
    //     assertTrue(all.stream().noneMatch(p -> p.propertyCode().equals(saved.propertyCode())));
@@ -87,7 +87,7 @@ public class PropertyRepositoryTest {
    // void softDeletedPropertyDoesNotAppearInFindByCode() {
    //     PropertyRow saved = propertyRepository.save(buildRow());
 
-   //     propertyRepository.softDelete(saved.propertyCode());
+   //     propertyRepository.endAssignment(saved.propertyCode());
 
    //     Optional<PropertyRow> found = propertyRepository.getPropertyOptional(saved.propertyCode());
    //     assertTrue(found.isEmpty());
@@ -102,7 +102,7 @@ public class PropertyRepositoryTest {
     // NOTE: PropertyRepository currently has no soft-delete method.
     // This test documents expected behavior for findAll()'s existing
     // "WHERE deleted_at IS NULL" filter once a delete method exists.
-    // If/when you add a softDelete(UUID) method to PropertyRepository,
+    // If/when you add a endAssignment(UUID) method to PropertyRepository,
     // this test should be updated to actually exercise it rather than
     // just asserting the filter clause is present in findAll().
 

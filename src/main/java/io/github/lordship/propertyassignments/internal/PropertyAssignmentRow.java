@@ -3,6 +3,7 @@ package io.github.lordship.propertyassignments.internal;
 import io.github.lordship.propertyassignments.PropertyAssignment;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 public record PropertyAssignmentRow(
@@ -26,5 +27,17 @@ public record PropertyAssignmentRow(
                 null,
                 null
         );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PropertyAssignmentRow other)) return false;
+        return Objects.equals(this.uuid, other.uuid);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(uuid);
     }
 }

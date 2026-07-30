@@ -43,7 +43,7 @@ public class PropertyAssignmentsServiceTest {
         when(propertyAssignmentRepository.save(any())).thenReturn(stubRow);
 
         //Act
-        PropertyAssignment result = propertyAssignmentService.assignAgentToProperty(agentId, propertyId, assignedBy);
+        PropertyAssignment result = propertyAssignmentService.assign(agentId, propertyId, assignedBy);
 
         // Assert
         assertEquals(agentId, result.agentId());
@@ -67,11 +67,11 @@ public class PropertyAssignmentsServiceTest {
         when(propertyAssignmentRepository.findById(assignmentId)).thenReturn(Optional.of(stubRow));
 
         // Act
-        boolean result = propertyAssignmentService.removeAssignment(assignmentId);
+        boolean result = propertyAssignmentService.endAssignment(assignmentId);
 
         // Assert
         assertTrue(result);
-        verify(propertyAssignmentRepository).softDelete(assignmentId);
+        verify(propertyAssignmentRepository).endAssignment(assignmentId);
         verify(auditService).recordDelete(eq("agent_property_assignment"), eq(stubRow.uuid()), any());
     }
 
@@ -82,11 +82,11 @@ public class PropertyAssignmentsServiceTest {
         when(propertyAssignmentRepository.findById(assignmentId)).thenReturn(Optional.empty());
 
         // Act
-        boolean result = propertyAssignmentService.removeAssignment(assignmentId);
+        boolean result = propertyAssignmentService.endAssignment(assignmentId);
 
         // Assert
         assertFalse(result);
-        verify(propertyAssignmentRepository, never()).softDelete(assignmentId);
+        verify(propertyAssignmentRepository, never()).endAssignment(assignmentId);
         verifyNoInteractions(auditService);
     }
 
@@ -101,7 +101,7 @@ public class PropertyAssignmentsServiceTest {
           new PropertyAssignmentRow(UUID.randomUUID(), agentId, propertyId1, agentId2, LocalDateTime.of(2025, 2,1,0,0), null),
           new PropertyAssignmentRow(UUID.randomUUID(), agentId, propertyId2, agentId2, LocalDateTime.of(2025, 2,1,0,0), null)
         );
-        when(propertyAssignmentRepository.getActivePropertyAssignmentsForAgent(agentId)).thenReturn(stubRows);
+        when(propertyAssignmentRepository.getAgentActiveAssignments(agentId)).thenReturn(stubRows);
 
         // Act
         Set<UUID> results = propertyAssignmentService.getAgentAssignedPropertyUUIDs(agentId);
@@ -117,7 +117,7 @@ public class PropertyAssignmentsServiceTest {
     void getAgentAssignedProperties_shouldReturnEmptySet_whenNoAssignments() {
         // Arrange
         UUID agentId = UUID.randomUUID();
-        when(propertyAssignmentRepository.getActivePropertyAssignmentsForAgent(agentId)).thenReturn(Set.of());
+        when(propertyAssignmentRepository.getAgentActiveAssignments(agentId)).thenReturn(Set.of());
 
         // Act
         Set<UUID> results = propertyAssignmentService.getAgentAssignedPropertyUUIDs(agentId);

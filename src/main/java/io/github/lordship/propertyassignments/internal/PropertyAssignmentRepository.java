@@ -38,7 +38,7 @@ public class PropertyAssignmentRepository {
                 .optional();
     }
 
-    public Set<PropertyAssignmentRow> getActivePropertyAssignmentsForAgent(UUID agentId) {
+    public Set<PropertyAssignmentRow> getAgentActiveAssignments(UUID agentId) {
         return jdbc.sql("""
                 SELECT * FROM agent_property_assignment
                 WHERE agent_id = :agentId AND removed_at IS NULL
@@ -48,7 +48,7 @@ public class PropertyAssignmentRepository {
                 .set();
     }
 
-    public void softDelete(UUID uuid) {
+    public void endAssignment(UUID uuid) {
         jdbc.sql("""
                 UPDATE agent_property_assignment
                 SET removed_at = now()

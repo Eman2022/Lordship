@@ -25,7 +25,7 @@ public class PropertyAssignmentService {
     }
 
     @Transactional
-    public PropertyAssignment assignAgentToProperty(UUID agentId, UUID propertyId, UUID assignedBy) {
+    public PropertyAssignment assign(UUID agentId, UUID propertyId, UUID assignedBy) {
         PropertyAssignmentRow row = propertyAssignmentRepository.save(
                 new PropertyAssignmentRow(agentId, propertyId, assignedBy)
         );
@@ -34,16 +34,16 @@ public class PropertyAssignmentService {
     }
 
     @Transactional
-    public boolean removeAssignment(UUID assignmentId) {   // covers unassignAgentFromProperty
+    public boolean endAssignment(UUID assignmentId) {   // covers unassignAgentFromProperty
         return propertyAssignmentRepository.findById(assignmentId).map(assignment -> {
-            propertyAssignmentRepository.softDelete(assignmentId);
+            propertyAssignmentRepository.endAssignment(assignmentId);
             auditService.recordDelete("agent_property_assignment", assignmentId, AuditMapper.toMap(assignment));
             return true;
         }).orElse(false);
     }
 
     public Set<UUID> getAgentAssignedPropertyUUIDs(UUID agentId) {
-        return propertyAssignmentRepository.getActivePropertyAssignmentsForAgent(agentId)
+        return propertyAssignmentRepository.getAgentActiveAssignments(agentId)
             .stream()
             .map(PropertyAssignmentRow::propertyId)
             .collect(Collectors.toSet());
