@@ -4,6 +4,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Repository
 public class PropertyRepository {
@@ -12,6 +13,11 @@ public class PropertyRepository {
     public PropertyRepository(JdbcClient jdbc) {
         this.jdbc = jdbc;
     }
+
+    private static final Set<String> ALLOWED_COLUMNS = Set.of(
+            // fill in with the property table's patchable columns
+            "property_name", "property_address", "property_code", "year_built"
+    );
 
     public PropertyRow save(PropertyRow row) {
         return jdbc.sql("""
@@ -48,23 +54,32 @@ public class PropertyRepository {
                 .list();
     }
 
+
     public Optional<PropertyRow> patch(UUID uuid, Map<String, Object> changes) {
         if (changes.isEmpty()) return getPropertyOptional(uuid);
 
+        for (String col : changes.keySet()) {
+            if (!ALLOWED_COLUMNS.contains(col)) {
+                throw new IllegalArgumentException("Invalid column: " + col);
+            }
+        }
+
         String setClauses = changes.keySet().stream()
                 .map(col -> col + " = :" + col)
-                .collect(java.util.stream.Collectors.joining(", "));
+                .collect(Collectors.joining(", "));
 
         String sql = "UPDATE property SET " + setClauses +
-                ", updated_at = NOW() WHERE uuid = :uuid AND deleted_at IS NULL RETURNING *";
+                " WHERE uuid = :uuid AND deleted_at IS NULL RETURNING *";
 
-        changes.put("uuid", uuid);
+        Map<String, Object> params = new HashMap<>(changes);
+        params.put("uuid", uuid);
 
         return jdbc.sql(sql)
-                .paramSource(new org.springframework.jdbc.core.namedparam.MapSqlParameterSource(changes))
+                .params(params)
                 .query(PropertyRow.class)
                 .optional();
     }
+
 
     public boolean softDelete(UUID uuid) {
         int rows = jdbc.sql("UPDATE property SET deleted_at = NOW() WHERE uuid = :uuid AND deleted_at IS NULL")

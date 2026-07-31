@@ -12,7 +12,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
+import java.util.Random;
 import java.util.Map;
 import java.util.UUID;
 
@@ -28,6 +30,7 @@ public class VehicleControllerIT {
 
     @Autowired
     MockMvc mockMvc;
+    Random random = new Random();
 
     @Autowired
     ObjectMapper objectMapper;
@@ -87,12 +90,7 @@ public class VehicleControllerIT {
         return Map.of(
                 "tenancyUuid",   tenancyUuid.toString(),
                 "propertyUuid",  propertyUuid.toString(),
-                "make",          "Toyota",
-                "model",         "Camry",
-                "year",          2020,
-                "plateNumber",   "ABC123",
-                "plateState",    "WA",
-                "color",         "Blue"
+                "plateNumber",   Integer.toString(random.nextInt(999999))
         );
     }
 
@@ -176,8 +174,7 @@ public class VehicleControllerIT {
                                 buildVehicleRequest(tenancyUuid, propertyUuid))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.vehicle.uuid").exists())
-                .andExpect(jsonPath("$.vehicle.make").value("Toyota"))
-                .andExpect(jsonPath("$.vehicle.plateNumber").value("ABC123"))
+                .andExpect(jsonPath("$.vehicle.plateNumber").exists())
                 .andExpect(jsonPath("$.plateConflictFlagged").value(false));
     }
 
@@ -206,8 +203,7 @@ public class VehicleControllerIT {
         mockMvc.perform(get("/vehicles/" + vehicleUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.uuid").value(vehicleUuid))
-                .andExpect(jsonPath("$.make").value("Toyota"));
+                .andExpect(jsonPath("$.uuid").value(vehicleUuid));
     }
 
     @Test
@@ -227,8 +223,7 @@ public class VehicleControllerIT {
         mockMvc.perform(get("/vehicles/tenancy/" + tenancyUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].make").value("Toyota"))
-                .andExpect(jsonPath("$[0].plateNumber").value("ABC123"));
+                .andExpect(jsonPath("$[0].plateNumber").exists());
     }
 
     @Test
@@ -243,12 +238,12 @@ public class VehicleControllerIT {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 buildVehicleRequest(tenancyUuid, propertyUuid))))
+                .andDo(print())
                 .andExpect(status().isCreated());
 
         mockMvc.perform(get("/vehicles/property/" + propertyUuid)
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].make").value("Toyota"));
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -276,8 +271,7 @@ public class VehicleControllerIT {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("color", "Red"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.color").value("Red"))
-                .andExpect(jsonPath("$.make").value("Toyota"));
+                .andExpect(jsonPath("$.color").value("Red"));
     }
 
     @Test
@@ -348,23 +342,35 @@ public class VehicleControllerIT {
         UUID lotUuid2 = insertTestLot(propertyUuid);
         UUID tenancyUuid2 = insertTestTenancy(lotUuid2);
 
+        // Use a fixed plate for both so the conflict is detectable
+        Map<String, Object> tenancy1 = Map.of(
+                "tenancyUuid",  tenancyUuid1.toString(),
+                "propertyUuid", propertyUuid.toString(),
+                "plateNumber",  "999999"
+        );
+
+        Map<String, Object> tenancy2 = Map.of(
+                "tenancyUuid",  tenancyUuid2.toString(),
+                "propertyUuid", propertyUuid.toString(),
+                "plateNumber",  "999999"
+        );
+
         // Register plate under tenancy 1
         mockMvc.perform(post("/vehicles/register")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                buildVehicleRequest(tenancyUuid1, propertyUuid))))
+                        .content(objectMapper.writeValueAsString(tenancy1)))
                 .andExpect(status().isCreated());
+
 
         // Register same plate under tenancy 2 — should flag conflict
         mockMvc.perform(post("/vehicles/register")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                buildVehicleRequest(tenancyUuid2, propertyUuid))))
+                        .content(objectMapper.writeValueAsString(tenancy2)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.plateConflictFlagged").value(true))
                 .andExpect(jsonPath("$.conflictingVehicles").isArray())
-                .andExpect(jsonPath("$.conflictingVehicles[0].plateNumber").value("ABC123"));
+                .andExpect(jsonPath("$.conflictingVehicles[0].plateNumber").value("999999"));
     }
 }

@@ -22,7 +22,17 @@ public class PropertyService {
 
     @Transactional
     public Property createProperty(String propertyName, String propertyAddress) {
-        PropertyRow row = new PropertyRow(propertyName, propertyAddress);
+        String propertyCode = UUID.randomUUID().toString()
+                .replace("-", "")
+                .substring(0, 5)
+                .toUpperCase();
+        PropertyRow row = new PropertyRow(
+                null,
+                propertyCode,
+                propertyName,
+                propertyAddress,
+                null, null, null, null);
+
         PropertyRow saved = propertyRepository.save(row);
         auditService.recordInsert("property", saved.uuid(), AuditMapper.toMap(saved));
         return saved.toProperty();

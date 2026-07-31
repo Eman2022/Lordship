@@ -33,7 +33,7 @@ public class VehicleController {
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
-    @PreAuthorize("hasAuthority('vehicles:read')")
+    @PreAuthorize("hasAuthority('vehicles:view')")
     @GetMapping("/{uuid}")
     public ResponseEntity<Vehicle> getVehicle(@PathVariable UUID uuid) {
         return vehicleService.findById(uuid)
@@ -41,13 +41,13 @@ public class VehicleController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasAuthority('vehicles:read')")
-    @GetMapping("/teanacy/{tenancyUuid}")
+    @PreAuthorize("hasAuthority('vehicles:view')")
+    @GetMapping("/tenancy/{tenancyUuid}")
     public ResponseEntity<List<Vehicle>> getVehiclesByTenancy(@PathVariable UUID tenancyUuid) {
         return ResponseEntity.ok(vehicleService.findByTenancy(tenancyUuid));
     }
 
-    @PreAuthorize("hasAuthority('vehicles:read')")
+    @PreAuthorize("hasAuthority('vehicles:view')")
     @GetMapping("/property/{propertyCode}")
     public ResponseEntity<List<Vehicle>> getVehiclesByProperty(@PathVariable UUID propertyCode) {
         return ResponseEntity.ok(vehicleService.findByProperty(propertyCode));
@@ -94,7 +94,7 @@ public class VehicleController {
         return ResponseEntity.ok(vehicleService.setPolicy(propertyCode, freeLimit, fee, notes));
     }
 
-    @PreAuthorize("hasAuthority('vehicles:read')")
+    @PreAuthorize("hasAuthority('vehicles:view')")
     @GetMapping("/policy/{propertyCode}")
     public ResponseEntity<VehiclePolicy> getPolicy(@PathVariable UUID propertyCode) {
         return vehicleService.getPolicy(propertyCode)

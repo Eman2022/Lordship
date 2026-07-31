@@ -37,10 +37,10 @@ public class VehicleRepositoryTest {
     private UUID insertTestLotAndTenancy(UUID propertyUuid) {
         UUID lotId = jdbc.sql("""
                 INSERT INTO lot (property_id, lot_number)
-                VALUES ((SELECT uuid FROM property WHERE property_code = :code), '1')
+                VALUES (:propertyUuid, '1')
                 RETURNING uuid
                 """)
-                .param("PropertyUuid", propertyUuid)
+                .param("propertyUuid", propertyUuid)
                 .query(UUID.class).single();
 
         return jdbc.sql("""
@@ -127,27 +127,28 @@ public class VehicleRepositoryTest {
 
     @Test
     void findConflictingPlateDetectsPlateUnderDifferentTenancy() {
-        UUID propertyCode = insertTestProperty();
-        UUID tenancy1 = insertTestLotAndTenancy(propertyCode);
-        UUID tenancy2 = insertTestLotAndTenancy(propertyCode);
+        UUID propertyUuid = insertTestProperty();
+        UUID tenancy1 = insertTestLotAndTenancy(propertyUuid);
+        UUID tenancy2 = insertTestLotAndTenancy(propertyUuid);
 
-        vehicleRepository.save(buildRow(tenancy1, propertyCode));
+        vehicleRepository.save(buildRow(tenancy1, propertyUuid));
 
         // Same plate, same property, but different tenancy — should flag
-        List<VehicleRow> conflicts = vehicleRepository.findUnregisteredByPlate("ABC123", propertyCode, tenancy2);
+        List<VehicleRow> conflicts = vehicleRepository.findUnregisteredByPlate("ABC123", propertyUuid, tenancy2);
 
         assertFalse(conflicts.isEmpty());
     }
 
     @Test
     void findConflictingPlateDoesNotFlagSameTenancy() {
-        UUID propertyCode = insertTestProperty();
-        UUID tenancyUuid = insertTestLotAndTenancy(propertyCode);
+        UUID propertyUuid = insertTestProperty();
+        System.out.println(propertyUuid);
+        UUID tenancyUuid = insertTestLotAndTenancy(propertyUuid);
 
-        vehicleRepository.save(buildRow(tenancyUuid, propertyCode));
+        vehicleRepository.save(buildRow(tenancyUuid, propertyUuid));
 
         // Same plate, same tenancy — should not flag
-        List<VehicleRow> conflicts = vehicleRepository.findUnregisteredByPlate("ABC123", propertyCode, tenancyUuid);
+        List<VehicleRow> conflicts = vehicleRepository.findUnregisteredByPlate("ABC123", propertyUuid, tenancyUuid);
 
         assertTrue(conflicts.isEmpty());
     }

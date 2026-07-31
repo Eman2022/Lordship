@@ -41,13 +41,13 @@ public class VehicleServiceTest {
         return row.uuid();
     }
 
-    private UUID insertTestTenancy(UUID propertyCode) {
+    private UUID insertTestTenancy(UUID propertyUuid) {
         UUID lotId = jdbc.sql("""
                 INSERT INTO lot (property_id, lot_number)
-                VALUES ((SELECT uuid FROM property WHERE property_code = :code), '1')
+                VALUES (:propertyUuid, '1')
                 RETURNING uuid
                 """)
-                .param("code", propertyCode)
+                .param("propertyUuid", propertyUuid)
                 .query(UUID.class).single();
 
         return jdbc.sql("""
@@ -60,7 +60,7 @@ public class VehicleServiceTest {
     }
 
     private VehicleCreateRequest buildRequest(UUID tenancyUuid, UUID propertyUuid) {
-        return new VehicleCreateRequest(tenancyUuid, propertyUuid, "Toyota", "Camry", 2020, "ABC123", "WA", "Blue", null);
+        return new VehicleCreateRequest(tenancyUuid, propertyUuid, "ABC123");
     }
 
     @Test
@@ -99,7 +99,7 @@ public class VehicleServiceTest {
         vehicleService.registerVehicle(buildRequest(tenancyUuid, propertyCode));
 
         // Register second vehicle (should trigger fee)
-        VehicleCreateRequest secondRequest = new VehicleCreateRequest(tenancyUuid, propertyCode, "Honda", "Civic", 2019, "XYZ789", "WA", "Red", null);
+        VehicleCreateRequest secondRequest = new VehicleCreateRequest(tenancyUuid, propertyCode, "XYZ789");
         VehicleRegistrationResult result = vehicleService.registerVehicle(secondRequest);
 
         assertEquals(new BigDecimal("25.00"), result.applicableFee());

@@ -3,10 +3,7 @@ package io.github.lordship.vehicles.internal;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository
@@ -17,13 +14,18 @@ public class VehicleRepository {
         this.jdbc = jdbc;
     }
 
+//    private static final Set<String> ALLOWED_COLUMNS = Set.of(
+//            // fill in with the property table's patchable columns
+//            "", "", "", ""
+//    );
+
     public VehicleRow save(VehicleRow row) {
         return jdbc.sql("""
                 INSERT INTO vehicle (
-                    person_uuid, property_code, make, model, year,
+                    tenancy_uuid, property_uuid, make, model, year,
                     plate_number, plate_state, color, notes
                 ) VALUES (
-                    :personUuid, :propertyCode, :make, :model, :year,
+                    :tenancyUuid, :propertyUuid, :make, :model, :year,
                     :plateNumber, :plateState, :color, :notes
                 ) RETURNING *
                 """)
@@ -40,45 +42,45 @@ public class VehicleRepository {
     }
 
     public List<VehicleRow> findByTenancy(UUID tenancyUuid) {
-        return jdbc.sql("SELECT * FROM vehicle WHERE person_uuid = :personUuid AND deleted_at IS NULL ORDER BY created_at ASC")
+        return jdbc.sql("SELECT * FROM vehicle WHERE tenancy_uuid = :tenancyUuid AND deleted_at IS NULL ORDER BY created_at ASC")
                 .param("tenancyUuid", tenancyUuid)
                 .query(VehicleRow.class)
                 .list();
     }
 
-    public List<VehicleRow> findByPropertyCode(String propertyCode) {
-        return jdbc.sql("SELECT * FROM vehicle WHERE property_code = :propertyCode AND deleted_at IS NULL ORDER BY created_at ASC")
-                .param("propertyCode", propertyCode)
+//    public List<VehicleRow> findByPropertyCode(String propertyCode) {
+//        return jdbc.sql("SELECT * FROM vehicle WHERE property_code = :propertyCode AND deleted_at IS NULL ORDER BY created_at ASC")
+//                .param("propertyCode", propertyCode)
+//                .query(VehicleRow.class)
+//                .list();
+//    }
+
+    public List<VehicleRow> findByProperty(UUID propertyUuid) {
+        return jdbc.sql("SELECT * FROM vehicle WHERE property_uuid = :propertyUuid AND deleted_at IS NULL ORDER BY created_at ASC")
+                .param("propertyUuid", propertyUuid)
                 .query(VehicleRow.class)
                 .list();
     }
 
-    public List<VehicleRow> findByProperty(UUID propertyId) {
-        return jdbc.sql("SELECT * FROM vehicle WHERE property_id = :propertyId AND deleted_at IS NULL ORDER BY created_at ASC")
-                .param("propertyId", propertyId)
-                .query(VehicleRow.class)
-                .list();
-    }
-
-    public int countByTenancy(UUID personUuid) {
-        return jdbc.sql("SELECT COUNT(*) FROM vehicle WHERE tenancy_uuid = :personUuid AND deleted_at IS NULL")
-                .param("personUuid", personUuid)
+    public int countByTenancy(UUID tenancyUuid) {
+        return jdbc.sql("SELECT COUNT(*) FROM vehicle WHERE tenancy_uuid = :tenancyUuid AND deleted_at IS NULL")
+                .param("tenancyUuid", tenancyUuid)
                 .query(Integer.class)
                 .single();
     }
 
     // Flag check: find any vehicle on a property with a matching plate that belongs to a different tenant
-    public List<VehicleRow> findUnregisteredByPlate(String plateNumber, UUID propertyCode, UUID personUuid) {
+    public List<VehicleRow> findUnregisteredByPlate(String plateNumber, UUID propertyUuid, UUID tenancyUuid) {
         return jdbc.sql("""
                 SELECT * FROM vehicle
-                WHERE property_code = :propertyCode
+                WHERE property_uuid = :propertyUuid
                 AND plate_number = :plateNumber
-                AND person_uuid != :personUuid
+                AND tenancy_uuid != :tenancyUuid
                 AND deleted_at IS NULL
                 """)
-                .param("propertyCode", propertyCode)
+                .param("propertyUuid", propertyUuid)
                 .param("plateNumber", plateNumber)
-                .param("personUuid", personUuid)
+                .param("tenancyUuid", tenancyUuid)
                 .query(VehicleRow.class)
                 .list();
     }
@@ -109,17 +111,17 @@ public class VehicleRepository {
     }
 
     // Policy methods
-    public Optional<VehiclePolicyRow> findPolicyByProperty(UUID propertyId) {
-        return jdbc.sql("SELECT * FROM vehicle_policy WHERE property_id = :propertyId")
-                .param("propertyId", propertyId)
+    public Optional<VehiclePolicyRow> findPolicyByProperty(UUID propertyUuid) {
+        return jdbc.sql("SELECT * FROM vehicle_policy WHERE property_uuid = :propertyUuid")
+                .param("propertyUuid", propertyUuid)
                 .query(VehiclePolicyRow.class)
                 .optional();
     }
     public VehiclePolicyRow savePolicy(VehiclePolicyRow row) {
         return jdbc.sql("""
-                INSERT INTO vehicle_policy (property_code, free_vehicle_limit, extra_vehicle_fee, notes)
-                VALUES (:propertyCode, :freeVehicleLimit, :extraVehicleFee, :notes)
-                ON CONFLICT (property_code) DO UPDATE SET
+                INSERT INTO vehicle_policy (property_uuid, free_vehicle_limit, extra_vehicle_fee, notes)
+                VALUES (:propertyUuid, :freeVehicleLimit, :extraVehicleFee, :notes)
+                ON CONFLICT (property_uuid) DO UPDATE SET
                     free_vehicle_limit = EXCLUDED.free_vehicle_limit,
                     extra_vehicle_fee = EXCLUDED.extra_vehicle_fee,
                     notes = EXCLUDED.notes,

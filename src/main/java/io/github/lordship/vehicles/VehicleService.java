@@ -25,7 +25,7 @@ public class VehicleService {
     public VehicleRegistrationResult registerVehicle(VehicleCreateRequest request) {
         // Check for duplicate plate on same property under a different tenant (flag)
         List<Vehicle> conflicts = vehicleRepository
-                .findUnregisteredByPlate(request.plateNumber(), request.propertyId(), request.tenancyUuid())
+                .findUnregisteredByPlate(request.plateNumber(), request.propertyUuid(), request.tenancyUuid())
                 .stream().map(VehicleRow::toVehicle).toList();
 
         // Count existing vehicles for this tenant
@@ -33,7 +33,7 @@ public class VehicleService {
 
         // Get property policy
         Optional<VehiclePolicy> policy = vehicleRepository
-                .findPolicyByProperty(request.propertyId())
+                .findPolicyByProperty(request.propertyUuid())
                 .map(VehiclePolicyRow::toPolicy);
 
         BigDecimal fee = BigDecimal.ZERO;
@@ -43,14 +43,8 @@ public class VehicleService {
 
         VehicleRow row = new VehicleRow(
                 request.tenancyUuid(),
-                request.propertyId(),
-                request.make(),
-                request.model(),
-                request.year(),
-                request.plateNumber(),
-                request.plateState(),
-                request.color(),
-                request.notes()
+                request.propertyUuid(),
+                request.plateNumber()
         );
 
         Vehicle saved = vehicleRepository.save(row).toVehicle();
