@@ -3,7 +3,6 @@ package io.github.lordship.lots.internal;
 import io.github.lordship.lots.Lot;
 import io.github.lordship.lots.LotCreationRequest;
 import io.github.lordship.lots.LotService;
-import io.github.lordship.lots.LotType;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -73,12 +72,5 @@ public class LotController {
         return lotService.deleteLot(uuid)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
-    }
-
-    // The dropdown "menu" of valid lot types.
-    @PreAuthorize("hasAuthority('lots:view')")
-    @GetMapping("/types")
-    public ResponseEntity<List<LotType>> listLotTypes() {
-        return ResponseEntity.ok(lotService.findActiveLotTypes());
     }
 }

@@ -7,7 +7,6 @@ public record Lot(
     UUID uuid,
     UUID propertyId,
     String lotNumber,
-    String lotTypeCode,
     String description,
     String notes,
     Integer sortOrder,

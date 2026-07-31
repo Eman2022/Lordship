@@ -55,8 +55,8 @@ public class LotTests {
 
     private UUID insertTestLot(UUID propertyId, String lotNumber) {
         return jdbc.sql("""
-                INSERT INTO lot (property_id, lot_number, lot_type_code, description, notes, sort_order)
-                VALUES (:propertyId, :lotNumber, 'REN', 'Rental lot', :notes, 1)
+                INSERT INTO lot (property_id, lot_number, description, notes, sort_order)
+                VALUES (:propertyId, :lotNumber, 'Rental lot', :notes, 1)
                 RETURNING uuid
                 """)
                 .param("propertyId", propertyId)
@@ -72,7 +72,6 @@ public class LotTests {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 "12",
-                "REN",
                 "Rental lot",
                 "Front row",
                 1,
@@ -89,7 +88,6 @@ public class LotTests {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 "12",
-                "REN",
                 "Rental lot",
                 "Front row",
                 1,
@@ -102,7 +100,7 @@ public class LotTests {
 
     @Test
     void unauthorizedCreateReturns403() throws Exception {
-        LotCreationRequest request = new LotCreationRequest(UUID.randomUUID(), "12", "REN", null, null, 1);
+        LotCreationRequest request = new LotCreationRequest(UUID.randomUUID(), "12", null, null, 1);
 
         mockMvc.perform(post("/lots")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -118,7 +116,6 @@ public class LotTests {
         LotCreationRequest request = new LotCreationRequest(
                 propertyId,
                 "12",
-                "REN",
                 "Rental lot",
                 "Front row",
                 1
@@ -132,7 +129,6 @@ public class LotTests {
                 .andExpect(jsonPath("$.uuid").exists())
                 .andExpect(jsonPath("$.propertyId").value(propertyId.toString()))
                 .andExpect(jsonPath("$.lotNumber").value("12"))
-                .andExpect(jsonPath("$.lotTypeCode").value("REN"))
                 .andExpect(jsonPath("$.description").value("Rental lot"))
                 .andExpect(jsonPath("$.notes").value("Front row"))
                 .andExpect(jsonPath("$.sortOrder").value(1));
@@ -160,8 +156,7 @@ public class LotTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].uuid").exists())
                 .andExpect(jsonPath("$[0].propertyId").value(propertyId.toString()))
-                .andExpect(jsonPath("$[0].lotNumber").value("7"))
-                .andExpect(jsonPath("$[0].lotTypeCode").value("REN"));
+                .andExpect(jsonPath("$[0].lotNumber").value("7"));
     }
 
     @Test

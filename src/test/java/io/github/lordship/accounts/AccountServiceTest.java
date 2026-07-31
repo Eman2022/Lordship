@@ -47,7 +47,7 @@ public class AccountServiceTest {
 
     private UUID setupFullChain() {
         Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
-        Lot lot = lotService.createLot(new LotCreationRequest(property.uuid(), "1", null, null, null, null));
+        Lot lot = lotService.createLot(new LotCreationRequest(property.uuid(), "1", null, null, null));
         return tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid();
     }
 

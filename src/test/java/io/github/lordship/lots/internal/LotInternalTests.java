@@ -2,7 +2,6 @@ package io.github.lordship.lots.internal;
 
 import io.github.lordship.IntegrationTest;
 import io.github.lordship.lots.Lot;
-import io.github.lordship.lots.LotType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,7 +11,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,9 +22,6 @@ public class LotInternalTests extends IntegrationTest {
 
     @Autowired
     LotRepository lotRepository;
-
-    @Autowired
-    LotTypeRepository lotTypeRepository;
 
     @Autowired
     JdbcClient jdbc;
@@ -46,7 +41,6 @@ public class LotInternalTests extends IntegrationTest {
         return new LotRow(
                 propertyId,
                 "12",
-                "REN",
                 "Rental lot",
                 "Front row",
                 1
@@ -62,7 +56,6 @@ public class LotInternalTests extends IntegrationTest {
         assertNotNull(saved.uuid());
         assertEquals(propertyId, saved.propertyId());
         assertEquals("12", saved.lotNumber());
-        assertEquals("REN", saved.lotTypeCode());
         assertNotNull(saved.createdAt());
         assertNull(saved.deletedAt());
     }
@@ -87,7 +80,6 @@ public class LotInternalTests extends IntegrationTest {
                 saved.uuid(),
                 saved.propertyId(),
                 "14",
-                "VAL",
                 "Vacant lot",
                 "Ready for assignment",
                 3,
@@ -97,7 +89,6 @@ public class LotInternalTests extends IntegrationTest {
 
         assertEquals(saved.uuid(), updated.uuid());
         assertEquals("14", updated.lotNumber());
-        assertEquals("VAL", updated.lotTypeCode());
         assertEquals("Vacant lot", updated.description());
         assertEquals("Ready for assignment", updated.notes());
         assertEquals(3, updated.sortOrder());
@@ -115,27 +106,6 @@ public class LotInternalTests extends IntegrationTest {
     }
 
     @Test
-    void findAllActiveLotTypesReturnsSeededLookupValues() {
-        List<LotTypeRow> lotTypes = lotTypeRepository.findAllActive();
-
-        assertFalse(lotTypes.isEmpty());
-        assertTrue(lotTypes.stream().allMatch(LotTypeRow::active));
-    }
-
-    @Test
-    void lotTypeRowMapsToPublicLotType() {
-        LotTypeRow row = new LotTypeRow("REN", "Rental", "Rental lot type", true, 2);
-
-        LotType lotType = row.toLotType();
-
-        assertEquals("REN", lotType.code());
-        assertEquals("Rental", lotType.label());
-        assertEquals("Rental lot type", lotType.description());
-        assertTrue(lotType.active());
-        assertEquals(2, lotType.sortOrder());
-    }
-
-    @Test
     void lotResponseMapsPublicLot() {
         UUID lotId = UUID.randomUUID();
         UUID propertyId = UUID.randomUUID();
@@ -143,7 +113,6 @@ public class LotInternalTests extends IntegrationTest {
                 lotId,
                 propertyId,
                 "12",
-                "REN",
                 "Rental lot",
                 "Front row",
                 1,
@@ -156,7 +125,6 @@ public class LotInternalTests extends IntegrationTest {
         assertEquals(lotId, response.uuid());
         assertEquals(propertyId, response.propertyId());
         assertEquals("12", response.lotNumber());
-        assertEquals("REN", response.lotTypeCode());
         assertEquals("Rental lot", response.description());
         assertEquals("Front row", response.notes());
         assertEquals(1, response.sortOrder());

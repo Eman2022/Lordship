@@ -3,7 +3,6 @@ package io.github.lordship.lots;
 import io.github.lordship.audit.AuditService;
 import io.github.lordship.lots.internal.LotRepository;
 import io.github.lordship.lots.internal.LotRow;
-import io.github.lordship.lots.internal.LotTypeRepository;
 import io.github.lordship.lots.internal.LotUpdateRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,14 +17,11 @@ import java.util.UUID;
 public class LotService {
 
     private final LotRepository lotRepository;
-    private final LotTypeRepository lotTypeRepository;
     private final AuditService auditService;
 
     public LotService(LotRepository lotRepository,
-                      LotTypeRepository lotTypeRepository,
                       AuditService auditService) {
         this.lotRepository = lotRepository;
-        this.lotTypeRepository = lotTypeRepository;
         this.auditService = auditService;
     }
 
@@ -34,7 +30,6 @@ public class LotService {
         LotRow saved = lotRepository.save(new LotRow(
                 request.propertyId(),
                 request.lotNumber(),
-                request.lotTypeCode(),
                 request.description(),
                 request.notes(),
                 request.sortOrder()
@@ -51,7 +46,6 @@ public class LotService {
                     existing.uuid(),
                     existing.propertyId(),
                     request.lotNumber(),
-                    request.lotTypeCode(),
                     request.description(),
                     request.notes(),
                     request.sortOrder(),
@@ -94,17 +88,10 @@ public class LotService {
                 .toList();
     }
 
-    public List<LotType> findActiveLotTypes() {
-        return lotTypeRepository.findAllActive().stream()
-                .map(io.github.lordship.lots.internal.LotTypeRow::toLotType)
-                .toList();
-    }
-
     private static Map<String, Object> snapshot(LotRow row) {
         Map<String, Object> map = new HashMap<>();
         map.put("property_id", row.propertyId());
         map.put("lot_number", row.lotNumber());
-        map.put("lot_type_code", row.lotTypeCode());
         map.put("description", row.description());
         map.put("notes", row.notes());
         map.put("sort_order", row.sortOrder());

@@ -7,7 +7,6 @@ public record LotResponse(
         UUID uuid,
         UUID propertyId,
         String lotNumber,
-        String lotTypeCode,
         String description,
         String notes,
         Integer sortOrder
@@ -17,7 +16,6 @@ public record LotResponse(
                 lot.uuid(),
                 lot.propertyId(),
                 lot.lotNumber(),
-                lot.lotTypeCode(),
                 lot.description(),
                 lot.notes(),
                 lot.sortOrder()
