@@ -11,6 +11,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -128,6 +130,67 @@ public class LotServiceTest {
         // Assert
         assertFalse(result);
         verify(lotRepository, never()).softDelete(any());
+        verifyNoInteractions(auditService);
+    }
+
+    @Test
+    void patchLot_shouldReturnUpdatedLot_andRecordAudit_whenFieldChanges() {
+        // Arrange
+        UUID propertyId = UUID.randomUUID();
+        LotRow before = stubRow(propertyId);
+        LotRow after = new LotRow(
+                before.uuid(), propertyId, "14",
+                "Rental lot", "Front row", 1,
+                before.createdAt(), null
+        );
+        when(lotRepository.findById(before.uuid())).thenReturn(Optional.of(before));
+        when(lotRepository.patch(eq(before.uuid()), any())).thenReturn(Optional.of(after));
+
+        Map<String, Object> changes = new HashMap<>();
+        changes.put("lot_number", "14");
+
+        // Act
+        Optional<Lot> result = lotService.patchLot(before.uuid(), changes);
+
+        // Assert
+        assertTrue(result.isPresent());
+        assertEquals("14", result.get().lotNumber());
+        verify(auditService).recordUpdate(eq("lot"), eq(before.uuid()), any(), any());
+    }
+
+    @Test
+    void patchLot_shouldNotRecordAudit_whenNoDiffProduced() {
+        // Arrange
+        LotRow before = stubRow(UUID.randomUUID());
+        when(lotRepository.findById(before.uuid())).thenReturn(Optional.of(before));
+        // patch returns a row identical to before
+        when(lotRepository.patch(eq(before.uuid()), any())).thenReturn(Optional.of(before));
+
+        Map<String, Object> changes = new HashMap<>();
+        changes.put("lot_number", before.lotNumber());
+
+        // Act
+        lotService.patchLot(before.uuid(), changes);
+
+        // Assert
+        verifyNoInteractions(auditService);
+    }
+
+    @Test
+    void patchLot_shouldReturnEmpty_andNotRecordAudit_whenNotExists() {
+        // Arrange
+        UUID unknownUuid = UUID.randomUUID();
+        when(lotRepository.findById(unknownUuid)).thenReturn(Optional.empty());
+
+        Map<String, Object> changes = new HashMap<>();
+        changes.put("lot_number", "14");
+
+        // Act
+        Optional<Lot> result = lotService.patchLot(unknownUuid, changes);
+
+        // Assert
+        assertTrue(result.isEmpty());
+        verify(lotRepository, never()).patch(any(), any());
         verifyNoInteractions(auditService);
     }
 

@@ -59,6 +59,39 @@ public class LotService {
         });
     }
 
+    // Partial update: only the fields present in `changes` are written. Keys are
+    // already snake_case column names mapped by the controller.
+    @Transactional
+    public Optional<Lot> patchLot(UUID uuid, Map<String, Object> changes) {
+        Optional<LotRow> beforeOpt = lotRepository.findById(uuid);
+        if (beforeOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        LotRow before = beforeOpt.get();
+
+        if (changes.containsKey("sort_order")) {
+            Object so = changes.get("sort_order");
+            if (so instanceof String s && !s.isBlank()) {
+                changes.put("sort_order", Integer.parseInt(s));
+            } else if (so instanceof String) {
+                changes.put("sort_order", null);
+            }
+        }
+
+        Optional<LotRow> afterOpt = lotRepository.patch(uuid, changes);
+        if (afterOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        LotRow after = afterOpt.get();
+
+        Map<String, Object> beforeSnap = snapshot(before);
+        Map<String, Object> afterSnap = snapshot(after);
+        if (!beforeSnap.equals(afterSnap)) {
+            auditService.recordUpdate("lot", uuid, beforeSnap, afterSnap);
+        }
+        return Optional.of(after.toLot());
+    }
+
     // Soft delete recorded as an UPDATE (sets deleted_at). AuditService exposes
     // no public delete hook, and a soft delete is a state change, not a removal.
     @Transactional

@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -17,7 +18,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -61,6 +64,25 @@ public class LotController {
     public ResponseEntity<LotResponse> updateLot(@PathVariable UUID uuid,
                                                  @Valid @RequestBody LotUpdateRequest request) {
         return lotService.updateLot(uuid, request)
+                .map(LotResponse::from)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PreAuthorize("hasAuthority('lots:edit')")
+    @PatchMapping("/{uuid}")
+    public ResponseEntity<LotResponse> patchLot(
+            @PathVariable UUID uuid,
+            @RequestBody Map<String, Object> request) {
+
+        Map<String, Object> changes = new HashMap<>();
+
+        if (request.containsKey("lotNumber"))   changes.put("lot_number", request.get("lotNumber"));
+        if (request.containsKey("description")) changes.put("description", request.get("description"));
+        if (request.containsKey("notes"))       changes.put("notes", request.get("notes"));
+        if (request.containsKey("sortOrder"))   changes.put("sort_order", request.get("sortOrder"));
+
+        return lotService.patchLot(uuid, changes)
                 .map(LotResponse::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

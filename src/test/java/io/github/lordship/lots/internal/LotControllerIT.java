@@ -117,6 +117,62 @@ public class LotControllerIT extends IntegrationTest {
     }
 
     @Test
+    void patchLot_shouldUpdateField_andReturn200() throws Exception {
+        // Arrange
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        UUID propertyId = insertTestProperty("L004");
+        UUID lotId = insertTestLot(propertyId, "5");
+
+        // Act
+        mockMvc.perform(patch("/lots/" + lotId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "lotNumber": "99", "description": "Updated lot" }
+                                """))
+        // Assert
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lotNumber").value("99"))
+                .andExpect(jsonPath("$.description").value("Updated lot"))
+                .andExpect(jsonPath("$.notes").value("Front row"));
+    }
+
+    @Test
+    void patchLot_shouldClearField_whenExplicitNullProvided() throws Exception {
+        // Arrange
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        UUID propertyId = insertTestProperty("L005");
+        UUID lotId = insertTestLot(propertyId, "6");
+
+        // Act
+        mockMvc.perform(patch("/lots/" + lotId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "notes": null }
+                                """))
+        // Assert
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.notes").doesNotExist());
+    }
+
+    @Test
+    void patchLot_shouldReturn404_whenNotFound() throws Exception {
+        // Arrange
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+
+        // Act
+        mockMvc.perform(patch("/lots/" + UUID.randomUUID())
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "lotNumber": "99" }
+                                """))
+        // Assert
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void deleteLot_shouldReturn204_andSubsequentGetReturns404() throws Exception {
         // Arrange
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);

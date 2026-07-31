@@ -3,9 +3,11 @@ package io.github.lordship.lots.internal;
 import io.github.lordship.IntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -109,5 +111,71 @@ public class LotRepositoryTest extends IntegrationTest {
         // Assert
         Optional<LotRow> found = lotRepository.findById(saved.uuid());
         assertTrue(found.isEmpty());
+    }
+
+    @Test
+    void patch_shouldUpdateField_andReturnUpdatedRow() {
+        // Arrange
+        UUID propertyId = insertTestProperty("I005");
+        LotRow saved = lotRepository.save(buildRow(propertyId));
+        Map<String, Object> changes = Map.of(
+                "lot_number", "14",
+                "description", "Vacant lot",
+                "notes", "Ready for assignment",
+                "sort_order", 3
+        );
+
+        // Act
+        Optional<LotRow> patched = lotRepository.patch(saved.uuid(), changes);
+
+        // Assert
+        assertTrue(patched.isPresent());
+        LotRow row = patched.get();
+        assertEquals("14", row.lotNumber());
+        assertEquals("Vacant lot", row.description());
+        assertEquals("Ready for assignment", row.notes());
+        assertEquals(3, row.sortOrder());
+    }
+
+    @Test
+    void patch_shouldReturnUnchangedRow_withEmptyChanges() {
+        // Arrange
+        UUID propertyId = insertTestProperty("I006");
+        LotRow saved = lotRepository.save(buildRow(propertyId));
+
+        // Act
+        Optional<LotRow> patched = lotRepository.patch(saved.uuid(), Map.of());
+
+        // Assert
+        assertTrue(patched.isPresent());
+        assertEquals(saved.uuid(), patched.get().uuid());
+        assertEquals(saved.lotNumber(), patched.get().lotNumber());
+    }
+
+    @Test
+    void patch_shouldThrow_whenColumnIsNotAllowed() {
+        // Arrange
+        UUID propertyId = insertTestProperty("I007");
+        LotRow saved = lotRepository.save(buildRow(propertyId));
+
+        // Act & Assert
+        // @Repository exception translation wraps the IllegalArgumentException.
+        assertThrows(InvalidDataAccessApiUsageException.class, () ->
+                lotRepository.patch(saved.uuid(), Map.of("property_id", UUID.randomUUID()))
+        );
+    }
+
+    @Test
+    void patch_shouldReturnEmpty_whenRowIsSoftDeleted() {
+        // Arrange
+        UUID propertyId = insertTestProperty("I008");
+        LotRow saved = lotRepository.save(buildRow(propertyId));
+        lotRepository.softDelete(saved.uuid());
+
+        // Act
+        Optional<LotRow> patched = lotRepository.patch(saved.uuid(), Map.of("lot_number", "gone"));
+
+        // Assert
+        assertTrue(patched.isEmpty());
     }
 }
