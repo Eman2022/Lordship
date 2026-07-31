@@ -8,10 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.HashMap;
+import java.util.*;
 
 @RestController
 @RequestMapping("/properties")
@@ -22,6 +19,11 @@ public class PropertyController {
     public PropertyController(PropertyService propertyService) {
         this.propertyService = propertyService;
     }
+
+    private static final Set<String> ALLOWED_COLUMNS = Set.of(
+            // fill in with the property table's patchable columns
+            "property_name", "property_address", "property_code", "year_built"
+    );
 
     @PreAuthorize("hasAuthority('properties:create')")
     @PostMapping("/create")
@@ -52,6 +54,7 @@ public class PropertyController {
 
         Map<String, Object> changes = new HashMap<>();
 
+        if (request.containsKey("propertyCode"))    changes.put("property_code", request.get("propertyCode"));
         if (request.containsKey("propertyName"))    changes.put("property_name", request.get("propertyName"));
         if (request.containsKey("propertyAddress")) changes.put("property_address", request.get("propertyAddress"));
         if (request.containsKey("propertyCity"))    changes.put("property_city", request.get("propertyCity"));
