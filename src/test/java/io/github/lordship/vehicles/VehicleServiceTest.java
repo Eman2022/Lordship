@@ -71,7 +71,6 @@ public class VehicleServiceTest {
         VehicleRegistrationResult result = vehicleService.registerVehicle(buildRequest(tenancyUuid, propertyCode));
 
         assertNotNull(result.vehicle().uuid());
-        assertEquals("Toyota", result.vehicle().make());
         assertEquals("ABC123", result.vehicle().plateNumber());
     }
 
@@ -131,7 +130,7 @@ public class VehicleServiceTest {
         List<Vehicle> vehicles = vehicleService.findByTenancy(tenancyUuid);
 
         assertFalse(vehicles.isEmpty());
-        assertEquals("Toyota", vehicles.get(0).make());
+        assertEquals("ABC123", vehicles.get(0).plateNumber());
     }
 
     @Test

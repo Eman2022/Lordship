@@ -174,7 +174,7 @@ public class PropertyControllerIT extends IntegrationTest {
         String propertyCode = JsonPath.read(
                 createResult.getResponse().getContentAsString(), "$.propertyCode");
 
-        mockMvc.perform(get("/properties")
+        mockMvc.perform(get("/properties/" + propertyCode)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.propertyCode == '" + propertyCode + "')]").exists());
