@@ -1,32 +1,23 @@
 package io.github.lordship.lots.internal;
 
 import io.github.lordship.IntegrationTest;
-import io.github.lordship.lots.Lot;
-import io.github.lordship.lots.LotType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
 @Transactional
-public class LotInternalTests extends IntegrationTest {
+public class LotRepositoryTest extends IntegrationTest {
 
     @Autowired
     LotRepository lotRepository;
-
-    @Autowired
-    LotTypeRepository lotTypeRepository;
 
     @Autowired
     JdbcClient jdbc;
@@ -46,7 +37,6 @@ public class LotInternalTests extends IntegrationTest {
         return new LotRow(
                 propertyId,
                 "12",
-                "REN",
                 "Rental lot",
                 "Front row",
                 1
@@ -54,40 +44,46 @@ public class LotInternalTests extends IntegrationTest {
     }
 
     @Test
-    void savePersistsRowAndReturnsGeneratedFields() {
+    void save_shouldPersistRow_andReturnGeneratedFields() {
+        // Arrange
         UUID propertyId = insertTestProperty("I001");
 
+        // Act
         LotRow saved = lotRepository.save(buildRow(propertyId));
 
+        // Assert
         assertNotNull(saved.uuid());
         assertEquals(propertyId, saved.propertyId());
         assertEquals("12", saved.lotNumber());
-        assertEquals("REN", saved.lotTypeCode());
         assertNotNull(saved.createdAt());
         assertNull(saved.deletedAt());
     }
 
     @Test
-    void findALotById() {
+    void findById_shouldReturnRow_whenExists() {
+        // Arrange
         UUID propertyId = insertTestProperty("I002");
         LotRow saved = lotRepository.save(buildRow(propertyId));
 
+        // Act
         Optional<LotRow> found = lotRepository.findById(saved.uuid());
 
+        // Assert
         assertTrue(found.isPresent());
         assertEquals(saved.uuid(), found.get().uuid());
     }
 
     @Test
-    void updateChangesMutableLotFields() {
+    void update_shouldChangeMutableFields() {
+        // Arrange
         UUID propertyId = insertTestProperty("I003");
         LotRow saved = lotRepository.save(buildRow(propertyId));
 
+        // Act
         LotRow updated = lotRepository.update(new LotRow(
                 saved.uuid(),
                 saved.propertyId(),
                 "14",
-                "VAL",
                 "Vacant lot",
                 "Ready for assignment",
                 3,
@@ -95,70 +91,91 @@ public class LotInternalTests extends IntegrationTest {
                 saved.deletedAt()
         ));
 
+        // Assert
         assertEquals(saved.uuid(), updated.uuid());
         assertEquals("14", updated.lotNumber());
-        assertEquals("VAL", updated.lotTypeCode());
         assertEquals("Vacant lot", updated.description());
         assertEquals("Ready for assignment", updated.notes());
         assertEquals(3, updated.sortOrder());
     }
 
     @Test
-    void softDeleteRemovesFromFindById() {
+    void softDelete_shouldRemoveFromFindById() {
+        // Arrange
         UUID propertyId = insertTestProperty("I004");
         LotRow saved = lotRepository.save(buildRow(propertyId));
 
+        // Act
         lotRepository.softDelete(saved.uuid());
 
+        // Assert
         Optional<LotRow> found = lotRepository.findById(saved.uuid());
         assertTrue(found.isEmpty());
     }
 
     @Test
-    void findAllActiveLotTypesReturnsSeededLookupValues() {
-        List<LotTypeRow> lotTypes = lotTypeRepository.findAllActive();
-
-        assertFalse(lotTypes.isEmpty());
-        assertTrue(lotTypes.stream().allMatch(LotTypeRow::active));
-    }
-
-    @Test
-    void lotTypeRowMapsToPublicLotType() {
-        LotTypeRow row = new LotTypeRow("REN", "Rental", "Rental lot type", true, 2);
-
-        LotType lotType = row.toLotType();
-
-        assertEquals("REN", lotType.code());
-        assertEquals("Rental", lotType.label());
-        assertEquals("Rental lot type", lotType.description());
-        assertTrue(lotType.active());
-        assertEquals(2, lotType.sortOrder());
-    }
-
-    @Test
-    void lotResponseMapsPublicLot() {
-        UUID lotId = UUID.randomUUID();
-        UUID propertyId = UUID.randomUUID();
-        Lot lot = new Lot(
-                lotId,
-                propertyId,
-                "12",
-                "REN",
-                "Rental lot",
-                "Front row",
-                1,
-                LocalDateTime.now(),
-                null
+    void patch_shouldUpdateField_andReturnUpdatedRow() {
+        // Arrange
+        UUID propertyId = insertTestProperty("I005");
+        LotRow saved = lotRepository.save(buildRow(propertyId));
+        Map<String, Object> changes = Map.of(
+                "lot_number", "14",
+                "description", "Vacant lot",
+                "notes", "Ready for assignment",
+                "sort_order", 3
         );
 
-        LotResponse response = LotResponse.from(lot);
+        // Act
+        Optional<LotRow> patched = lotRepository.patch(saved.uuid(), changes);
 
-        assertEquals(lotId, response.uuid());
-        assertEquals(propertyId, response.propertyId());
-        assertEquals("12", response.lotNumber());
-        assertEquals("REN", response.lotTypeCode());
-        assertEquals("Rental lot", response.description());
-        assertEquals("Front row", response.notes());
-        assertEquals(1, response.sortOrder());
+        // Assert
+        assertTrue(patched.isPresent());
+        LotRow row = patched.get();
+        assertEquals("14", row.lotNumber());
+        assertEquals("Vacant lot", row.description());
+        assertEquals("Ready for assignment", row.notes());
+        assertEquals(3, row.sortOrder());
+    }
+
+    @Test
+    void patch_shouldReturnUnchangedRow_withEmptyChanges() {
+        // Arrange
+        UUID propertyId = insertTestProperty("I006");
+        LotRow saved = lotRepository.save(buildRow(propertyId));
+
+        // Act
+        Optional<LotRow> patched = lotRepository.patch(saved.uuid(), Map.of());
+
+        // Assert
+        assertTrue(patched.isPresent());
+        assertEquals(saved.uuid(), patched.get().uuid());
+        assertEquals(saved.lotNumber(), patched.get().lotNumber());
+    }
+
+    @Test
+    void patch_shouldThrow_whenColumnIsNotAllowed() {
+        // Arrange
+        UUID propertyId = insertTestProperty("I007");
+        LotRow saved = lotRepository.save(buildRow(propertyId));
+
+        // Act & Assert
+        // @Repository exception translation wraps the IllegalArgumentException.
+        assertThrows(InvalidDataAccessApiUsageException.class, () ->
+                lotRepository.patch(saved.uuid(), Map.of("property_id", UUID.randomUUID()))
+        );
+    }
+
+    @Test
+    void patch_shouldReturnEmpty_whenRowIsSoftDeleted() {
+        // Arrange
+        UUID propertyId = insertTestProperty("I008");
+        LotRow saved = lotRepository.save(buildRow(propertyId));
+        lotRepository.softDelete(saved.uuid());
+
+        // Act
+        Optional<LotRow> patched = lotRepository.patch(saved.uuid(), Map.of("lot_number", "gone"));
+
+        // Assert
+        assertTrue(patched.isEmpty());
     }
 }

@@ -3,7 +3,6 @@ package io.github.lordship.lots;
 import io.github.lordship.audit.AuditService;
 import io.github.lordship.lots.internal.LotRepository;
 import io.github.lordship.lots.internal.LotRow;
-import io.github.lordship.lots.internal.LotTypeRepository;
 import io.github.lordship.lots.internal.LotUpdateRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,14 +17,11 @@ import java.util.UUID;
 public class LotService {
 
     private final LotRepository lotRepository;
-    private final LotTypeRepository lotTypeRepository;
     private final AuditService auditService;
 
     public LotService(LotRepository lotRepository,
-                      LotTypeRepository lotTypeRepository,
                       AuditService auditService) {
         this.lotRepository = lotRepository;
-        this.lotTypeRepository = lotTypeRepository;
         this.auditService = auditService;
     }
 
@@ -34,7 +30,6 @@ public class LotService {
         LotRow saved = lotRepository.save(new LotRow(
                 request.propertyId(),
                 request.lotNumber(),
-                request.lotTypeCode(),
                 request.description(),
                 request.notes(),
                 request.sortOrder()
@@ -51,7 +46,6 @@ public class LotService {
                     existing.uuid(),
                     existing.propertyId(),
                     request.lotNumber(),
-                    request.lotTypeCode(),
                     request.description(),
                     request.notes(),
                     request.sortOrder(),
@@ -63,6 +57,39 @@ public class LotService {
             auditService.recordUpdate("lot", uuid, snapshot(existing), snapshot(updated));
             return updated.toLot();
         });
+    }
+
+    // Partial update: only the fields present in `changes` are written. Keys are
+    // already snake_case column names mapped by the controller.
+    @Transactional
+    public Optional<Lot> patchLot(UUID uuid, Map<String, Object> changes) {
+        Optional<LotRow> beforeOpt = lotRepository.findById(uuid);
+        if (beforeOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        LotRow before = beforeOpt.get();
+
+        if (changes.containsKey("sort_order")) {
+            Object so = changes.get("sort_order");
+            if (so instanceof String s && !s.isBlank()) {
+                changes.put("sort_order", Integer.parseInt(s));
+            } else if (so instanceof String) {
+                changes.put("sort_order", null);
+            }
+        }
+
+        Optional<LotRow> afterOpt = lotRepository.patch(uuid, changes);
+        if (afterOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        LotRow after = afterOpt.get();
+
+        Map<String, Object> beforeSnap = snapshot(before);
+        Map<String, Object> afterSnap = snapshot(after);
+        if (!beforeSnap.equals(afterSnap)) {
+            auditService.recordUpdate("lot", uuid, beforeSnap, afterSnap);
+        }
+        return Optional.of(after.toLot());
     }
 
     // Soft delete recorded as an UPDATE (sets deleted_at). AuditService exposes
@@ -94,17 +121,10 @@ public class LotService {
                 .toList();
     }
 
-    public List<LotType> findActiveLotTypes() {
-        return lotTypeRepository.findAllActive().stream()
-                .map(io.github.lordship.lots.internal.LotTypeRow::toLotType)
-                .toList();
-    }
-
     private static Map<String, Object> snapshot(LotRow row) {
         Map<String, Object> map = new HashMap<>();
         map.put("property_id", row.propertyId());
         map.put("lot_number", row.lotNumber());
-        map.put("lot_type_code", row.lotTypeCode());
         map.put("description", row.description());
         map.put("notes", row.notes());
         map.put("sort_order", row.sortOrder());

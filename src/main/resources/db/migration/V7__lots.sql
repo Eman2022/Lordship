@@ -1,29 +1,6 @@
 -- Lots: physical spaces within a property that a tenancy occupies.
 -- One property has many lots; one lot has many tenancies over time (see V8).
--- Created in dependency order: lot_type -> lot -> lot_map.
-
--- ── Lot type lookup ──────────────────────────────────────────────────
--- Stable 3-char codes (like property_code). `active` lets a type be retired
--- from the dropdown without breaking FKs from historical lots.
-CREATE TABLE lot_type (
-                          code        CHAR(3) PRIMARY KEY,
-                          label       TEXT NOT NULL,
-                          description TEXT,
-                          active      BOOLEAN NOT NULL DEFAULT TRUE,
-                          sort_order  INT
-);
-
-INSERT INTO lot_type (code, label, sort_order) VALUES
-                                                   ('RCC', 'On Contract',        1),
-                                                   ('REN', 'Rental',             2),
-                                                   ('REC', 'RV',                 3),
-                                                   ('VCI', 'Vacant Iron',        4),
-                                                   ('VAL', 'Vacant Lot',         5),
-                                                   ('VRV', 'Vacant RV Lot',      6),
-                                                   ('RSB', 'Rental Stick Built', 7),
-                                                   ('VSB', 'Vacant Stick Built', 8),
-                                                   ('OOC', 'Owner Occupied',     9),
-                                                   ('EXT', 'Extra Lot',         10);
+-- Created in dependency order: lot -> lot_map.
 
 -- ── Lot ──────────────────────────────────────────────────────────────
 -- PK is uuid: lot_number can be renamed and everything stays tied to the
@@ -33,14 +10,12 @@ CREATE TABLE lot (
                      uuid          UUID PRIMARY KEY DEFAULT uuidv7(),
                      property_id   UUID NOT NULL,
                      lot_number    TEXT NOT NULL,        -- human-facing id; numeric OR lettered (e.g. "DF"); mutable
-                     lot_type_code CHAR(3),              -- nullable: legacy import may not know the type yet
                      description   TEXT,
                      notes         TEXT,                 -- notes about the LOT, never the tenancy
                      sort_order    INT,                  -- manual ordering for the map/menu view
                      created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                      deleted_at    TIMESTAMP,
-                     FOREIGN KEY (property_id) REFERENCES property(uuid),
-                     FOREIGN KEY (lot_type_code) REFERENCES lot_type(code)
+                     FOREIGN KEY (property_id) REFERENCES property(uuid)
 );
 
 -- NOT unique: real park data has duplicate labels (e.g. two "DF" lots in one
@@ -48,7 +23,6 @@ CREATE TABLE lot (
 CREATE INDEX idx_lot_number_per_property
     ON lot (property_id, LOWER(lot_number)) WHERE deleted_at IS NULL;
 CREATE INDEX idx_lot_property ON lot (property_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_lot_type     ON lot (lot_type_code);
 
 -- ── Lot map geometry ─────────────────────────────────────────────────
 -- 1:1 with lot. `vertices` is a JSONB list of Vector2s describing the lot's

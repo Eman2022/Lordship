@@ -3,12 +3,20 @@ package io.github.lordship.lots.internal;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository
 public class LotRepository {
+
+    // Whitelisted so the dynamic patch UPDATE can never touch an arbitrary column.
+    private static final Set<String> ALLOWED_COLUMNS = Set.of(
+            "lot_number", "description", "notes", "sort_order"
+    );
 
     private final JdbcClient jdbc;
 
@@ -19,10 +27,10 @@ public class LotRepository {
     public LotRow save(LotRow row) {
         return jdbc.sql("""
             INSERT INTO lot (
-                property_id, lot_number, lot_type_code,
+                property_id, lot_number,
                 description, notes, sort_order
             ) VALUES (
-                :propertyId, :lotNumber, :lotTypeCode,
+                :propertyId, :lotNumber,
                 :description, :notes, :sortOrder
             ) RETURNING *
             """)
@@ -35,7 +43,6 @@ public class LotRepository {
         return jdbc.sql("""
             UPDATE lot SET
                 lot_number    = :lotNumber,
-                lot_type_code = :lotTypeCode,
                 description   = :description,
                 notes         = :notes,
                 sort_order    = :sortOrder
@@ -50,6 +57,33 @@ public class LotRepository {
     public Optional<LotRow> findById(UUID uuid) {
         return jdbc.sql("SELECT * FROM lot WHERE uuid = :uuid AND deleted_at IS NULL")
                 .param("uuid", uuid)
+                .query(LotRow.class)
+                .optional();
+    }
+
+    // Partial update: only the columns present in `changes` are written. Trades
+    // compile-time type safety for generality, so callers must pass already-coerced
+    // values (e.g. Integer sort_order). Column names are whitelisted.
+    public Optional<LotRow> patch(UUID uuid, Map<String, Object> changes) {
+        if (changes.isEmpty()) return findById(uuid);
+
+        for (String col : changes.keySet()) {
+            if (!ALLOWED_COLUMNS.contains(col)) {
+                throw new IllegalArgumentException("Invalid column: " + col);
+            }
+        }
+
+        StringBuilder sql = new StringBuilder("UPDATE lot SET ");
+        changes.forEach((col, val) -> sql.append(col).append(" = :").append(col).append(", "));
+        // trim trailing comma and space
+        sql.setLength(sql.length() - 2);
+        sql.append(" WHERE uuid = :uuid AND deleted_at IS NULL RETURNING *");
+
+        Map<String, Object> params = new HashMap<>(changes);
+        params.put("uuid", uuid);
+
+        return jdbc.sql(sql.toString())
+                .params(params)
                 .query(LotRow.class)
                 .optional();
     }
