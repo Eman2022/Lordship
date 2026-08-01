@@ -3,6 +3,7 @@ package io.github.lordship.propertyassignments.internal;
 import io.github.lordship.propertyassignments.PropertyAssignment;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 public record PropertyAssignmentRow(
@@ -27,4 +28,5 @@ public record PropertyAssignmentRow(
                 null
         );
     }
+
 }
