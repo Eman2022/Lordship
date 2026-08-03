@@ -11,7 +11,6 @@ import java.util.UUID;
 //TODO: rule: row layer owns encryption for typed constructors. service layer owns it for dynamic/patch paths on sensitive fields.
 public record PersonRow(
     UUID uuid,
-    String nameRaw,
     String nameFull,
     LocalDate birthday,
     String personalPhone,
@@ -25,7 +24,6 @@ public record PersonRow(
     public Person toPerson(EncryptionService encryptionService) {
         return new Person(
                 this.uuid,
-                this.nameRaw,
                 this.nameFull,
                 this.birthday,
                 this.personalPhone,
@@ -40,7 +38,6 @@ public record PersonRow(
 
     public PersonRow(String nameFull) {
         this(
-                null,
                 null,
                 nameFull,
                 null,

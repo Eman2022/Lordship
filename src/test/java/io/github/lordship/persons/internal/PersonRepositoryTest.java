@@ -28,7 +28,7 @@ public class PersonRepositoryTest extends IntegrationTest {
 
     private PersonRow buildRowWithEmail(String email) {
         return new PersonRow(
-          null, null, "Don Mock",
+          null, "Don Mock",
           null, null, email, null,
           null, null, null, null
         );
@@ -54,7 +54,7 @@ public class PersonRepositoryTest extends IntegrationTest {
         // Arrange
         PersonRow emergencyContactSaved =  personRepository.save(buildRow());
         PersonRow fullRow = new PersonRow(
-                null, "BabyMock", "Baby Mock",
+                null, "Baby Mock",
                 LocalDate.of(1970, 7, 1), "599-211-2121", "BabyMock@lordship.com",
                 "69805 NF-9041, North Bend, WA 98045", emergencyContactSaved.uuid(),
                 "123-45-6789", null, null
@@ -66,7 +66,6 @@ public class PersonRepositoryTest extends IntegrationTest {
         // Assert
         assertNotNull(saved.uuid());
         assertEquals("Baby Mock", saved.nameFull());
-        assertEquals("BabyMock", saved.nameRaw());
         assertEquals(LocalDate.of(1970, 7, 1), saved.birthday());
         assertEquals("599-211-2121", saved.personalPhone());
         assertEquals("BabyMock@lordship.com", saved.personalEmail());
@@ -91,7 +90,7 @@ public class PersonRepositoryTest extends IntegrationTest {
     @Test
     void save_shouldThrow_whenEmergencyContactDoesNotExist(){
         // Arrange
-        PersonRow row = new PersonRow(null, null, "Don Mock",
+        PersonRow row = new PersonRow(null,"Don Mock",
                 null, null, null, null,
                 UUID.randomUUID(),
                 null, null, null);
@@ -178,7 +177,6 @@ public class PersonRepositoryTest extends IntegrationTest {
         Map<String, Object> changes = Map.of(
                 "name_full","Baby Mock",
                 "personal_email", "BabyMock@lordship.com",
-                "name_raw", "BabyMock",
                 "birthday", LocalDate.parse("1970-07-01"),
                 "personal_phone", "599-211-2121",
                 "mailing_address", "69805 NF-9041, North Bend, WA 98045",
@@ -193,7 +191,6 @@ public class PersonRepositoryTest extends IntegrationTest {
         assertTrue(patched.isPresent());
         PersonRow updatedRow = patched.get();
         assertEquals("Baby Mock", updatedRow.nameFull());
-        assertEquals("BabyMock", updatedRow.nameRaw());
         assertEquals("BabyMock@lordship.com", updatedRow.personalEmail());
         assertEquals(LocalDate.of(1970, 7, 1), updatedRow.birthday());
         assertEquals("599-211-2121", updatedRow.personalPhone());
@@ -218,7 +215,6 @@ public class PersonRepositoryTest extends IntegrationTest {
         PersonRow patchedRow = patchedOpt.get();
         assertEquals(rowSaved.uuid(), patchedRow.uuid());
         assertEquals(rowSaved.nameFull(), patchedRow.nameFull());
-        assertEquals(rowSaved.nameRaw(), patchedRow.nameRaw());
         assertEquals(rowSaved.birthday(), patchedRow.birthday());
         assertEquals(rowSaved.personalPhone(), patchedRow.personalPhone());
         assertEquals(rowSaved.personalEmail(), patchedRow.personalEmail());

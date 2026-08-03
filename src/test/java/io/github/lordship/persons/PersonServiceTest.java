@@ -44,7 +44,7 @@ public class PersonServiceTest {
         String nameFull = "Don Mock";
 
         PersonRow stubRow = new PersonRow(
-                UUID.randomUUID(), null, nameFull,
+                UUID.randomUUID(), nameFull,
                 null, null, null, null, null, null,
                 LocalDateTime.now(), null
         );
@@ -64,7 +64,7 @@ public class PersonServiceTest {
     void findById_shouldReturnPerson_whenFound() {
         // Arrange
         PersonRow stubRow = new PersonRow(
-                UUID.randomUUID(), null, "Don Mock",
+                UUID.randomUUID(), "Don Mock",
                 null, null, null, null, null, null,
                 LocalDateTime.now(), null
         );
@@ -96,7 +96,7 @@ public class PersonServiceTest {
     void deletePerson_shouldReturnTrue_andRecordAudit_whenPersonExists() {
         // Arrange
         PersonRow stubRow = new PersonRow(
-                UUID.randomUUID(), null, "Don Mock",
+                UUID.randomUUID(), "Don Mock",
                 null, null, null, null, null, null,
                 LocalDateTime.now(), null
         );
@@ -144,7 +144,7 @@ public class PersonServiceTest {
     void patchPerson_shouldNotRecordAudit_whenNoDiffProduced(){
         // Arrange
         PersonRow stubRow = new PersonRow(
-                UUID.randomUUID(), null, "Don Mock",
+                UUID.randomUUID(), "Don Mock",
                 null, null, null, null, null, null,
                 LocalDateTime.now(), null
         );
@@ -165,12 +165,12 @@ public class PersonServiceTest {
     void patchPerson_shouldRecordAudit_whenFieldActuallyChanges() {
         // Arrange
         PersonRow before = new PersonRow(
-                UUID.randomUUID(), null, "Don Mock",
+                UUID.randomUUID(), "Don Mock",
                 null, null, null,null, null, null,
                 LocalDateTime.now(), null
         );
         PersonRow after = new PersonRow(
-                before.uuid(), null, "Baby Mocko",
+                before.uuid(), "Baby Mocko",
                 null, null, null, null, null, null,
                 before.createdAt(), null
         );
@@ -190,12 +190,12 @@ public class PersonServiceTest {
     void patchPerson_shouldEncryptSocial_beforePassingToRepository() {
         // Arrange
         PersonRow stubRow = new PersonRow(
-                UUID.randomUUID(), null, "Don Mock",
+                UUID.randomUUID(), "Don Mock",
                 null, null, null, null, null, null,
                 LocalDateTime.now(), null
         );
         PersonRow afterRow = new PersonRow(
-                stubRow.uuid(), null, "Don Mock",
+                stubRow.uuid(), "Don Mock",
                 null, null, null, null, null, "ENCRYPTED",
                 stubRow.createdAt(), null
         );
@@ -221,12 +221,12 @@ public class PersonServiceTest {
     void patchPerson_shouldParseBirthdayString_toLocalDate() {
         // Arrange
         PersonRow stubRow = new PersonRow(
-                UUID.randomUUID(), null, "Don Mock",
+                UUID.randomUUID(), "Don Mock",
                 null, null, null, null, null, null,
                 LocalDateTime.now(), null
         );
         PersonRow afterRow = new PersonRow(
-                stubRow.uuid(), null, "Don Mock",
+                stubRow.uuid(), "Don Mock",
                 LocalDate.of(1990, 12, 17), null, null, null, null, "ENCRYPTED",
                 stubRow.createdAt(), null
         );

@@ -6,7 +6,6 @@
 
 CREATE TABLE person (
                         uuid              UUID PRIMARY KEY DEFAULT uuidv7(),
-                        name_raw          VARCHAR(120),
                         name_full         VARCHAR(120),
                         birthday          DATE,
                         personal_phone    VARCHAR(120),

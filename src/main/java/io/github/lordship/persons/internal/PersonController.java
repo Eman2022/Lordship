@@ -65,7 +65,6 @@ public class PersonController {
     {
         Map<String, Object> changes = new HashMap<>();
 
-        if (request.containsKey("nameRaw")) changes.put("name_raw", request.get("nameRaw"));
         if (request.containsKey("nameFull")) changes.put("name_full", request.get("nameFull"));
         if (request.containsKey("birthday")) changes.put("birthday", request.get("birthday"));
         if (request.containsKey("personalEmail")) changes.put("personal_email", request.get("personalEmail"));

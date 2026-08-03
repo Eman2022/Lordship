@@ -6,7 +6,6 @@ import java.util.UUID;
 
 public record Person(
         UUID uuid,
-        String nameRaw,
         String nameFull,
         LocalDate birthday,
         String personalPhone,
