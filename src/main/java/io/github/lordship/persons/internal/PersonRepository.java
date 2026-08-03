@@ -11,7 +11,7 @@ import java.util.*;
 public class PersonRepository {
 
     private static final Set<String> ALLOWED_COLUMNS = Set.of(
-            "name_raw", "name_full", "birthday", "personal_phone",
+            "name_full", "birthday", "personal_phone",
             "personal_email", "mailing_address",
             "emergency_contact", "social"
     );
@@ -25,13 +25,13 @@ public class PersonRepository {
     public PersonRow save(PersonRow row) {
         return jdbc.sql("""
             INSERT INTO person (
-                name_raw, name_full,
-                birthday, personal_phone, personal_email,
+                name_full, birthday,
+                personal_phone, personal_email,
                 mailing_address, emergency_contact,
                 social
             ) VALUES (
-                :nameRaw, :nameFull,
-                :birthday, :personalPhone, :personalEmail,
+                :nameFull, :birthday,
+                :personalPhone, :personalEmail,
                 :mailingAddress, :emergencyContact,
                 :social
             ) RETURNING *

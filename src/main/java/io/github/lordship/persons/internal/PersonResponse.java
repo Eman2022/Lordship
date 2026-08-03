@@ -9,7 +9,6 @@ import java.util.UUID;
 
 public record PersonResponse(
         UUID uuid,
-        String nameRaw,
         String nameFull,
         LocalDate birthday,
         String personalPhone,
@@ -23,7 +22,6 @@ public record PersonResponse(
     public static PersonResponse from(Person person, boolean canViewSsn) {
         return new PersonResponse(
                 person.uuid(),
-                person.nameRaw(),
                 person.nameFull(),
                 person.birthday(),
                 person.personalPhone(),
