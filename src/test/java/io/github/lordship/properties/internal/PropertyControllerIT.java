@@ -119,7 +119,7 @@ public class PropertyControllerIT extends IntegrationTest {
     }
 
     @Test
-    void getProperty_shouldReturn200_withCorrectFields() throws Exception {
+    void getProperty_withCorrectFields_shouldReturn200() throws Exception {
         String token = loginAsRoot();
 
         // Create first
@@ -135,24 +135,36 @@ public class PropertyControllerIT extends IntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        String propertyCode = JsonPath.read(
-                createResult.getResponse().getContentAsString(), "$.propertyCode");
+        String propertyUuid = JsonPath.read(
+                createResult.getResponse().getContentAsString(), "$.uuid");
 
         // Fetch by code
-        mockMvc.perform(get("/properties/{propertyCode}", propertyCode)
+        mockMvc.perform(get("/properties/{propertyUuid}", propertyUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.propertyCode").value(propertyCode))
+                .andExpect(jsonPath("$.uuid").value(propertyUuid))
                 .andExpect(jsonPath("$.propertyName").value("Test Mobile Park"));
     }
 
     @Test
-    void getProperty_shouldReturn404_whenPropertyDoesNotExist() throws Exception {
+    void getProperty_whenPropertyDoesNotExist_shouldReturn404() throws Exception {
         String token = loginAsRoot();
 
-        mockMvc.perform(get("/properties/NOPE9")
+        mockMvc.perform(get("/properties/019fc8cb-65fd-74f4-bc78-bfe53b4ea03d")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getProperty_whenFormatIncorrect_shouldReturn400() throws Exception {
+        // Arrange
+        String token = loginAsRoot();
+
+        // Act
+        mockMvc.perform(get("/properties/doggy8cb-65fd")
+                .header("Authorization", "Bearer " + token))
+        // Assert
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -171,13 +183,13 @@ public class PropertyControllerIT extends IntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        String propertyCode = JsonPath.read(
-                createResult.getResponse().getContentAsString(), "$.propertyCode");
+        String propertyUuid = JsonPath.read(
+                createResult.getResponse().getContentAsString(), "$.uuid");
 
-        mockMvc.perform(get("/properties/" + propertyCode)
+        mockMvc.perform(get("/properties/" + propertyUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.propertyCode == '" + propertyCode + "')]").exists());
+                .andExpect(jsonPath("$.uuid").value(propertyUuid));
     }
 
     @Test
@@ -243,16 +255,13 @@ public class PropertyControllerIT extends IntegrationTest {
         String propertyUuid = JsonPath.read(
                 createResult.getResponse().getContentAsString(), "$.uuid");
 
-        String propertyCode = JsonPath.read(
-                createResult.getResponse().getContentAsString(), "$.propertyCode");
-
         // Delete
-        mockMvc.perform(delete("/properties/{uuid}", propertyUuid)
+        mockMvc.perform(delete("/properties/{propertyUuid}", propertyUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
 
         // Confirm gone
-        mockMvc.perform(get("/properties/{propertyCode}", propertyCode)
+        mockMvc.perform(get("/properties/{propertyUuid}", propertyUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound());
     }

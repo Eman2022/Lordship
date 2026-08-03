@@ -6,7 +6,6 @@ import java.util.UUID;
 public record Vehicle(
         UUID uuid,
         UUID tenancyUuid,
-        UUID propertyUuid,
         String make,
         String model,
         Integer year,

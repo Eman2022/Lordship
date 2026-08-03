@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/vehicles")
+@RequestMapping("/api/vehicles")
 public class VehicleController {
     private final VehicleService vehicleService;
 
@@ -26,8 +26,8 @@ public class VehicleController {
     }
 
     @PreAuthorize("hasAuthority('vehicles:create')")
-    @PostMapping("/register")
-    public ResponseEntity<VehicleRegistrationResult> registerVehicle(
+    @PostMapping("/create")
+    public ResponseEntity<VehicleRegistrationResult> createVehicle(
             @Valid @RequestBody VehicleCreateRequest request) {
         VehicleRegistrationResult result = vehicleService.registerVehicle(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
@@ -42,15 +42,15 @@ public class VehicleController {
     }
 
     @PreAuthorize("hasAuthority('vehicles:view')")
-    @GetMapping("/tenancy/{tenancyUuid}")
+    @GetMapping("/bytenancy/{tenancyUuid}")
     public ResponseEntity<List<Vehicle>> getVehiclesByTenancy(@PathVariable UUID tenancyUuid) {
         return ResponseEntity.ok(vehicleService.findByTenancy(tenancyUuid));
     }
 
     @PreAuthorize("hasAuthority('vehicles:view')")
-    @GetMapping("/property/{propertyCode}")
-    public ResponseEntity<List<Vehicle>> getVehiclesByProperty(@PathVariable UUID propertyCode) {
-        return ResponseEntity.ok(vehicleService.findByProperty(propertyCode));
+    @GetMapping("/byproperty/{propertyUuid}")
+    public ResponseEntity<List<Vehicle>> getVehiclesByProperty(@PathVariable UUID propertyUuid) {
+        return ResponseEntity.ok(vehicleService.findByProperty(propertyUuid));
     }
 
     @PreAuthorize("hasAuthority('vehicles:edit')")

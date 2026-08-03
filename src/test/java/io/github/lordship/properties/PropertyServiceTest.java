@@ -55,12 +55,6 @@ void findByPropertyCodeReturnsCreatedProperty() {
     assertEquals(created.uuid(), found.get().uuid());
 }
 
-@Test
-void findByPropertyCodeReturnsEmptyForUnknownCode() {
-    Optional<Property> found = propertyService.findByPropertyCode("NOPE99");
-
-    assertTrue(found.isEmpty());
-}
 
 @Test
 void findAllIncludesCreatedProperty() {

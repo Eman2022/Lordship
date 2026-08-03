@@ -10,7 +10,6 @@ import java.util.UUID;
 public record VehicleRow (
         UUID uuid,
         UUID tenancyUuid,
-        UUID propertyUuid,
         String make,
         String model,
         Integer year,
@@ -19,20 +18,20 @@ public record VehicleRow (
         String color,
         String notes,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt,
         LocalDateTime deletedAt
 ) {
-    public VehicleRow(UUID tenancyUuid, UUID propertyUuid, String plateNumber) {
+    public VehicleRow(UUID tenancyUuid, String plateNumber) {
         this(
+                null,
                 tenancyUuid,
-                propertyUuid,
                 null,
                 null,
                 null,
                 plateNumber,
                 null,
                 null,
-                null
+                null,
+                null,null
         );
     }
 
@@ -40,7 +39,6 @@ public record VehicleRow (
         return new Vehicle(
                 this.uuid,
                 this.tenancyUuid,
-                this.propertyUuid,
                 this.make,
                 this.model,
                 this.year,
@@ -54,8 +52,8 @@ public record VehicleRow (
 }
 
     // Constructor for new vehicle inserts
-    public VehicleRow(UUID tenancyUuid, UUID propertyUuid, String make, String model,
+    public VehicleRow(UUID tenancyUuid, String make, String model,
                       Integer year, String plateNumber, String plateState, String color, String notes) {
-        this(null, tenancyUuid, propertyUuid, make, model, year, plateNumber, plateState, color, notes, null, null, null);
+        this(null, tenancyUuid, make, model, year, plateNumber, plateState, color, notes, null,null);
     }
 }

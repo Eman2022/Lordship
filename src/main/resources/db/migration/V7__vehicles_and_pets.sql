@@ -5,7 +5,6 @@
 CREATE TABLE vehicle (
                          uuid          UUID PRIMARY KEY DEFAULT uuidv7(),
                          tenancy_uuid  UUID NOT NULL,
-                         property_uuid UUID NOT NULL,
                          make          VARCHAR(100),
                          model         VARCHAR(100),
                          year          INT,
@@ -16,8 +15,7 @@ CREATE TABLE vehicle (
                          created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                          updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                          deleted_at    TIMESTAMP,
-                         FOREIGN KEY (tenancy_uuid)  REFERENCES tenancy(uuid),
-                         FOREIGN KEY (property_uuid) REFERENCES property(uuid)
+                         FOREIGN KEY (tenancy_uuid)  REFERENCES tenancy(uuid)
 );
 
 CREATE TABLE vehicle_policy (
@@ -32,7 +30,7 @@ CREATE TABLE vehicle_policy (
 );
 
 CREATE INDEX idx_vehicle_tenancy  ON vehicle(tenancy_uuid)  WHERE deleted_at IS NULL;
-CREATE INDEX idx_vehicle_property ON vehicle(property_uuid) WHERE deleted_at IS NULL;
+
 
 
 -- ── Pet ──────────────────────────────────────────────────────────────────────

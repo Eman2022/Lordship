@@ -11,25 +11,6 @@ public record VehicleCreateRequest (
         @NotNull
         UUID tenancyUuid,
 
-        @NotNull
-        UUID propertyUuid,
-//
-//        @NotBlank
-//        String make,
-//
-//        @NotBlank
-//        String model,
-//
-//        @NotNull
-//        Integer year,
-
         @NotBlank
         String plateNumber
-
-//        @Size(min = 2, max = 2, message = "Plate state must be a 2-letter code")
-//        String plateState,
-//
-//        String color,
-//
-//        String notes
 ) {}

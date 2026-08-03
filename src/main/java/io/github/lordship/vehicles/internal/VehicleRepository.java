@@ -22,10 +22,10 @@ public class VehicleRepository {
     public VehicleRow save(VehicleRow row) {
         return jdbc.sql("""
                 INSERT INTO vehicle (
-                    tenancy_uuid, property_uuid, make, model, year,
+                    tenancy_uuid, make, model, year,
                     plate_number, plate_state, color, notes
                 ) VALUES (
-                    :tenancyUuid, :propertyUuid, :make, :model, :year,
+                    :tenancyUuid, :make, :model, :year,
                     :plateNumber, :plateState, :color, :notes
                 ) RETURNING *
                 """)
@@ -48,15 +48,16 @@ public class VehicleRepository {
                 .list();
     }
 
-//    public List<VehicleRow> findByPropertyCode(String propertyCode) {
-//        return jdbc.sql("SELECT * FROM vehicle WHERE property_code = :propertyCode AND deleted_at IS NULL ORDER BY created_at ASC")
-//                .param("propertyCode", propertyCode)
-//                .query(VehicleRow.class)
-//                .list();
-//    }
-
     public List<VehicleRow> findByProperty(UUID propertyUuid) {
-        return jdbc.sql("SELECT * FROM vehicle WHERE property_uuid = :propertyUuid AND deleted_at IS NULL ORDER BY created_at ASC")
+        return jdbc.sql("""
+            SELECT DISTINCT v.*
+            FROM vehicle v
+            LEFT JOIN tenancy t ON v.tenancy_uuid = t.uuid
+            LEFT JOIN lot l ON t.lot_id = l.uuid
+            WHERE (l.property_id = :propertyUuid)
+              AND v.deleted_at IS NULL
+            ORDER BY v.created_at ASC
+            """)
                 .param("propertyUuid", propertyUuid)
                 .query(VehicleRow.class)
                 .list();
@@ -70,19 +71,35 @@ public class VehicleRepository {
     }
 
     // Flag check: find any vehicle on a property with a matching plate that belongs to a different tenant
-    public List<VehicleRow> findUnregisteredByPlate(String plateNumber, UUID propertyUuid, UUID tenancyUuid) {
+    public List<VehicleRow> findUnregisteredByPlate(String plateNumber, UUID tenancyUuid) {
         return jdbc.sql("""
-                SELECT * FROM vehicle
-                WHERE property_uuid = :propertyUuid
-                AND plate_number = :plateNumber
-                AND tenancy_uuid != :tenancyUuid
-                AND deleted_at IS NULL
-                """)
-                .param("propertyUuid", propertyUuid)
+        SELECT v.*
+        FROM tenancy t
+        JOIN lot l  ON t.lot_id = l.uuid
+        JOIN lot l2 ON l2.property_id = l.property_id
+        JOIN tenancy t2 ON t2.lot_id = l2.uuid
+        JOIN vehicle v ON v.tenancy_uuid = t2.uuid
+        WHERE t.uuid = :tenancyUuid
+          AND v.plate_number = :plateNumber
+          AND v.tenancy_uuid != :tenancyUuid
+          AND v.deleted_at IS NULL
+        """)
                 .param("plateNumber", plateNumber)
                 .param("tenancyUuid", tenancyUuid)
                 .query(VehicleRow.class)
                 .list();
+    }
+
+    public Optional<UUID> findPropertyUuidByTenancy(UUID tenancyUuid) {
+        return jdbc.sql("""
+        SELECT l.property_id
+        FROM tenancy t
+        JOIN lot l ON t.lot_id = l.uuid
+        WHERE t.uuid = :tenancyUuid
+        """)
+                .param("tenancyUuid", tenancyUuid)
+                .query(UUID.class)
+                .optional();
     }
 
     public Optional<VehicleRow> patch(UUID uuid, Map<String, Object> changes) {

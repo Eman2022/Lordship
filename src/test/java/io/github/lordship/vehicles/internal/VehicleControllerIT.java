@@ -86,10 +86,9 @@ public class VehicleControllerIT {
         return insertTestProperty();
     }
 
-    private Map<String, Object> buildVehicleRequest(UUID tenancyUuid, UUID propertyUuid) {
+    private Map<String, Object> buildVehicleRequest(UUID tenancyUuid) {
         return Map.of(
                 "tenancyUuid",   tenancyUuid.toString(),
-                "propertyUuid",  propertyUuid.toString(),
                 "plateNumber",   Integer.toString(random.nextInt(999999))
         );
     }
@@ -105,7 +104,7 @@ public class VehicleControllerIT {
         mockMvc.perform(post("/vehicles/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                buildVehicleRequest(UUID.randomUUID(), UUID.randomUUID()))))
+                                buildVehicleRequest(UUID.randomUUID()))))
                 .andExpect(status().isForbidden());
     }
 
@@ -117,13 +116,13 @@ public class VehicleControllerIT {
 
     @Test
     void unauthorizedGetByTenancyReturns403() throws Exception {
-        mockMvc.perform(get("/vehicles/tenancy/" + UUID.randomUUID()))
+        mockMvc.perform(get("/vehicles/bytenancy/" + UUID.randomUUID()))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void unauthorizedGetByPropertyReturns403() throws Exception {
-        mockMvc.perform(get("/vehicles/property/" + UUID.randomUUID()))
+        mockMvc.perform(get("/vehicles/byproperty/" + UUID.randomUUID()))
                 .andExpect(status().isForbidden());
     }
 
@@ -167,11 +166,11 @@ public class VehicleControllerIT {
         UUID lotUuid = insertTestLot(propertyUuid);
         UUID tenancyUuid = insertTestTenancy(lotUuid);
 
-        mockMvc.perform(post("/vehicles/register")
+        mockMvc.perform(post("/api/vehicles/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                buildVehicleRequest(tenancyUuid, propertyUuid))))
+                                buildVehicleRequest(tenancyUuid))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.vehicle.uuid").exists())
                 .andExpect(jsonPath("$.vehicle.plateNumber").exists())
@@ -186,11 +185,11 @@ public class VehicleControllerIT {
         UUID tenancyUuid = insertTestTenancy(lotUuid);
 
         // Register first
-        String registerBody = mockMvc.perform(post("/vehicles/register")
+        String registerBody = mockMvc.perform(post("/api/vehicles/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                buildVehicleRequest(tenancyUuid, propertyUuid))))
+                                buildVehicleRequest(tenancyUuid))))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
@@ -200,48 +199,48 @@ public class VehicleControllerIT {
                 .get("vehicle").get("uuid").asString();
 
         // Fetch by ID
-        mockMvc.perform(get("/vehicles/" + vehicleUuid)
+        mockMvc.perform(get("/api/vehicles/" + vehicleUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.uuid").value(vehicleUuid));
     }
 
     @Test
-    void authorizedGetByTenancyReturns200() throws Exception {
+    void getByTenancy_whenAuthorized_returns200() throws Exception {
         String token = loginAsRoot();
         UUID propertyUuid = insertTestProperty();
         UUID lotUuid = insertTestLot(propertyUuid);
         UUID tenancyUuid = insertTestTenancy(lotUuid);
 
-        mockMvc.perform(post("/vehicles/register")
+        mockMvc.perform(post("/api/vehicles/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                buildVehicleRequest(tenancyUuid, propertyUuid))))
+                                buildVehicleRequest(tenancyUuid))))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/vehicles/tenancy/" + tenancyUuid)
+        mockMvc.perform(get("/api/vehicles/bytenancy/" + tenancyUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].plateNumber").exists());
     }
 
     @Test
-    void authorizedGetByPropertyReturns200() throws Exception {
+    void getByProperty_whenAuthorized_returns200() throws Exception {
         String token = loginAsRoot();
         UUID propertyUuid = insertTestProperty();
         UUID lotUuid = insertTestLot(propertyUuid);
         UUID tenancyUuid = insertTestTenancy(lotUuid);
 
-        mockMvc.perform(post("/vehicles/register")
+        mockMvc.perform(post("/api/vehicles/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                buildVehicleRequest(tenancyUuid, propertyUuid))))
+                                buildVehicleRequest(tenancyUuid))))
                 .andDo(print())
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/vehicles/property/" + propertyUuid)
+        mockMvc.perform(get("/api/vehicles/byproperty/" + propertyUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
     }
@@ -253,11 +252,11 @@ public class VehicleControllerIT {
         UUID lotUuid = insertTestLot(propertyUuid);
         UUID tenancyUuid = insertTestTenancy(lotUuid);
 
-        String registerBody = mockMvc.perform(post("/vehicles/register")
+        String registerBody = mockMvc.perform(post("/api/vehicles/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                buildVehicleRequest(tenancyUuid, propertyUuid))))
+                                buildVehicleRequest(tenancyUuid))))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
@@ -266,7 +265,7 @@ public class VehicleControllerIT {
         String vehicleUuid = objectMapper.readTree(registerBody)
                 .get("vehicle").get("uuid").asString();
 
-        mockMvc.perform(patch("/vehicles/" + vehicleUuid)
+        mockMvc.perform(patch("/api/vehicles/" + vehicleUuid)
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("color", "Red"))))
@@ -281,11 +280,11 @@ public class VehicleControllerIT {
         UUID lotUuid = insertTestLot(propertyUuid);
         UUID tenancyUuid = insertTestTenancy(lotUuid);
 
-        String registerBody = mockMvc.perform(post("/vehicles/register")
+        String registerBody = mockMvc.perform(post("/api/vehicles/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                buildVehicleRequest(tenancyUuid, propertyUuid))))
+                                buildVehicleRequest(tenancyUuid))))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
@@ -295,12 +294,12 @@ public class VehicleControllerIT {
                 .get("vehicle").get("uuid").asString();
 
         // Delete
-        mockMvc.perform(delete("/vehicles/" + vehicleUuid)
+        mockMvc.perform(delete("/api/vehicles/" + vehicleUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
 
         // Confirm gone
-        mockMvc.perform(get("/vehicles/" + vehicleUuid)
+        mockMvc.perform(get("/api/vehicles/" + vehicleUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound());
     }
@@ -311,7 +310,7 @@ public class VehicleControllerIT {
         UUID propertyUuid = insertTestProperty();
 
         // Set policy
-        mockMvc.perform(put("/vehicles/policy/" + propertyUuid)
+        mockMvc.perform(put("/api/vehicles/policy/" + propertyUuid)
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of(
@@ -324,7 +323,7 @@ public class VehicleControllerIT {
                 .andExpect(jsonPath("$.extraVehicleFee").value(25.00));
 
         // Get policy
-        mockMvc.perform(get("/vehicles/policy/" + propertyUuid)
+        mockMvc.perform(get("/api/vehicles/policy/" + propertyUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.freeVehicleLimit").value(2))
@@ -345,18 +344,16 @@ public class VehicleControllerIT {
         // Use a fixed plate for both so the conflict is detectable
         Map<String, Object> tenancy1 = Map.of(
                 "tenancyUuid",  tenancyUuid1.toString(),
-                "propertyUuid", propertyUuid.toString(),
                 "plateNumber",  "999999"
         );
 
         Map<String, Object> tenancy2 = Map.of(
                 "tenancyUuid",  tenancyUuid2.toString(),
-                "propertyUuid", propertyUuid.toString(),
                 "plateNumber",  "999999"
         );
 
         // Register plate under tenancy 1
-        mockMvc.perform(post("/vehicles/register")
+        mockMvc.perform(post("/api/vehicles/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(tenancy1)))
@@ -364,7 +361,7 @@ public class VehicleControllerIT {
 
 
         // Register same plate under tenancy 2 — should flag conflict
-        mockMvc.perform(post("/vehicles/register")
+        mockMvc.perform(post("/api/vehicles/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(tenancy2)))
