@@ -33,9 +33,10 @@ public class PropertyController {
     }
 
     @PreAuthorize("hasAuthority('properties:view')")
-    @GetMapping("/{propertyCode}")
-    ResponseEntity<Property> readProperty(@PathVariable("propertyCode") String propertyCode) {
-        return propertyService.findByPropertyCode(propertyCode)
+    @GetMapping("/{propertyUuid}")
+    ResponseEntity<Property> getProperty(@PathVariable UUID propertyUuid) {
+        System.out.println(propertyUuid);
+        return propertyService.findByPropertyId(propertyUuid)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

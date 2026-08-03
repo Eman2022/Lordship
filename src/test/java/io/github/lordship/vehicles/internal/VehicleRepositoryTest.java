@@ -52,8 +52,8 @@ public class VehicleRepositoryTest {
                 .query(UUID.class).single();
     }
 
-    private VehicleRow buildRow(UUID tenancyUuid, UUID propertyUuid) {
-        return new VehicleRow(tenancyUuid, propertyUuid, "Toyota", "Camry", 2020, "ABC123", "WA", "Blue", null);
+    private VehicleRow buildRow(UUID tenancyUuid) {
+        return new VehicleRow(tenancyUuid, "Toyota", "Camry", 2020, "ABC123", "WA", "Blue", null);
     }
 
     @Test
@@ -61,7 +61,7 @@ public class VehicleRepositoryTest {
         UUID propertyCode = insertTestProperty();
         UUID tenancyUuid = insertTestLotAndTenancy(propertyCode);
 
-        VehicleRow saved = vehicleRepository.save(buildRow(tenancyUuid, propertyCode));
+        VehicleRow saved = vehicleRepository.save(buildRow(tenancyUuid));
 
         assertNotNull(saved.uuid());
         assertNotNull(saved.createdAt());
@@ -75,7 +75,7 @@ public class VehicleRepositoryTest {
     void findByIdReturnsSavedVehicle() {
         UUID propertyCode = insertTestProperty();
         UUID tenancyUuid = insertTestLotAndTenancy(propertyCode);
-        VehicleRow saved = vehicleRepository.save(buildRow(tenancyUuid, propertyCode));
+        VehicleRow saved = vehicleRepository.save(buildRow(tenancyUuid));
 
         Optional<VehicleRow> found = vehicleRepository.findById(saved.uuid());
 
@@ -93,8 +93,8 @@ public class VehicleRepositoryTest {
     void findByTenancyReturnsVehiclesForTenant() {
         UUID propertyCode = insertTestProperty();
         UUID tenancyUuid = insertTestLotAndTenancy(propertyCode);
-        vehicleRepository.save(buildRow(tenancyUuid, propertyCode));
-        vehicleRepository.save(new VehicleRow(tenancyUuid, propertyCode, "Honda", "Civic", 2019, "XYZ789", "WA", "Red", null));
+        vehicleRepository.save(buildRow(tenancyUuid));
+        vehicleRepository.save(new VehicleRow(tenancyUuid, "Honda", "Civic", 2019, "XYZ789", "WA", "Red", null));
 
         List<VehicleRow> vehicles = vehicleRepository.findByTenancy(tenancyUuid);
 
@@ -105,25 +105,14 @@ public class VehicleRepositoryTest {
     void countByTenancyReturnsCorrectCount() {
         UUID propertyCode = insertTestProperty();
         UUID tenancyUuid = insertTestLotAndTenancy(propertyCode);
-        vehicleRepository.save(buildRow(tenancyUuid, propertyCode));
-        vehicleRepository.save(new VehicleRow(tenancyUuid, propertyCode, "Honda", "Civic", 2019, "XYZ789", "WA", "Red", null));
+        vehicleRepository.save(buildRow(tenancyUuid));
+        vehicleRepository.save(new VehicleRow(tenancyUuid, "Honda", "Civic", 2019, "XYZ789", "WA", "Red", null));
 
         int count = vehicleRepository.countByTenancy(tenancyUuid);
 
         assertEquals(2, count);
     }
 
-//    @Test
-//    void findByPropertyReturnsVehiclesForProperty() {
-//        UUID propertyCode = insertTestProperty();
-//        UUID tenancyUuid = insertTestLotAndTenancy(propertyCode);
-//        vehicleRepository.save(buildRow(tenancyUuid, propertyCode));
-//
-//        List<VehicleRow> vehicles = vehicleRepository.findByProperty(propertyCode);
-//
-//        assertFalse(vehicles.isEmpty());
-//        assertTrue(vehicles.stream().allMatch(v -> v.propertyUuid().equals(propertyCode)));
-//    }
 
     @Test
     void findConflictingPlateDetectsPlateUnderDifferentTenancy() {
@@ -131,10 +120,10 @@ public class VehicleRepositoryTest {
         UUID tenancy1 = insertTestLotAndTenancy(propertyUuid);
         UUID tenancy2 = insertTestLotAndTenancy(propertyUuid);
 
-        vehicleRepository.save(buildRow(tenancy1, propertyUuid));
+        vehicleRepository.save(buildRow(tenancy1));
 
         // Same plate, same property, but different tenancy — should flag
-        List<VehicleRow> conflicts = vehicleRepository.findUnregisteredByPlate("ABC123", propertyUuid, tenancy2);
+        List<VehicleRow> conflicts = vehicleRepository.findUnregisteredByPlate("ABC123", tenancy2);
 
         assertFalse(conflicts.isEmpty());
     }
@@ -145,19 +134,19 @@ public class VehicleRepositoryTest {
         System.out.println(propertyUuid);
         UUID tenancyUuid = insertTestLotAndTenancy(propertyUuid);
 
-        vehicleRepository.save(buildRow(tenancyUuid, propertyUuid));
+        vehicleRepository.save(buildRow(tenancyUuid));
 
         // Same plate, same tenancy — should not flag
-        List<VehicleRow> conflicts = vehicleRepository.findUnregisteredByPlate("ABC123", propertyUuid, tenancyUuid);
+        List<VehicleRow> conflicts = vehicleRepository.findUnregisteredByPlate("ABC123", tenancyUuid);
 
         assertTrue(conflicts.isEmpty());
     }
 
     @Test
-    void softDeleteRemovesVehicleFromResults() {
+    void softDelete_removesVehicle_fromResults() {
         UUID propertyCode = insertTestProperty();
         UUID tenancyUuid = insertTestLotAndTenancy(propertyCode);
-        VehicleRow saved = vehicleRepository.save(buildRow(tenancyUuid, propertyCode));
+        VehicleRow saved = vehicleRepository.save(buildRow(tenancyUuid));
 
         vehicleRepository.softDelete(saved.uuid());
 
@@ -176,5 +165,19 @@ public class VehicleRepositoryTest {
         assertTrue(found.isPresent());
         assertEquals(2, found.get().freeVehicleLimit());
         assertEquals(new BigDecimal("25.00"), found.get().extraVehicleFee());
+    }
+
+    @Test
+    void savePolicy_updatesExistingPolicy_onConflict() {
+        UUID propertyUuid = insertTestProperty();
+        vehicleRepository.savePolicy(new VehiclePolicyRow(null, propertyUuid, 2, new BigDecimal("25.00"), "Standard", null, null));
+
+        vehicleRepository.savePolicy(new VehiclePolicyRow(null, propertyUuid, 3, new BigDecimal("50.00"), "Updated", null, null));
+
+        Optional<VehiclePolicyRow> found = vehicleRepository.findPolicyByProperty(propertyUuid);
+        assertTrue(found.isPresent());
+        assertEquals(3, found.get().freeVehicleLimit());
+        assertEquals(new BigDecimal("50.00"), found.get().extraVehicleFee());
+        assertEquals("Updated", found.get().notes());
     }
 }
