@@ -1,7 +1,7 @@
 package io.github.lordship.persons;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record Person(
@@ -13,8 +13,8 @@ public record Person(
         String mailingAddress,
         UUID emergencyContact,
         String social,
-        LocalDateTime createdAt,
-        LocalDateTime deletedAt
+        OffsetDateTime createdAt,
+        OffsetDateTime deletedAt
 ) {
     public boolean isSoftDeleted() {
         return deletedAt != null;

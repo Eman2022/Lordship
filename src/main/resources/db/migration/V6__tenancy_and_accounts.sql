@@ -19,9 +19,9 @@ CREATE TABLE tenancy (
                          no_partial_payments   BOOLEAN NOT NULL DEFAULT FALSE,
                          accept_payments       BOOLEAN NOT NULL DEFAULT TRUE,
                          exempt_from_late_fees BOOLEAN NOT NULL DEFAULT FALSE,
-                         created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                         updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                         deleted_at            TIMESTAMP,
+                         created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+                         updated_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+                         deleted_at            TIMESTAMPTZ,
                          FOREIGN KEY (lot_id) REFERENCES lot(uuid)
 );
 
@@ -38,9 +38,9 @@ CREATE TABLE tenant (
                         person_id  UUID NOT NULL,
                         start_date DATE,
                         end_date   DATE,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        deleted_at TIMESTAMP,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                        deleted_at TIMESTAMPTZ,
                         FOREIGN KEY (person_id)  REFERENCES person(uuid),
                         FOREIGN KEY (tenancy_id) REFERENCES tenancy(uuid)
 );
@@ -55,8 +55,8 @@ CREATE TABLE account (
                          balance_cached  NUMERIC(10,2) NOT NULL DEFAULT 0.00,
                          autopay_enabled BOOLEAN NOT NULL DEFAULT FALSE,
                          notes           TEXT,
-                         created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                         deleted_at      TIMESTAMP,
+                         created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+                         deleted_at      TIMESTAMPTZ,
                          FOREIGN KEY (tenancy_id) REFERENCES tenancy(uuid)
 );
 
@@ -68,14 +68,14 @@ CREATE INDEX idx_account_tenancy_id ON account(tenancy_id) WHERE deleted_at IS N
 -- ── Transaction ───────────────────────────────────────────────────────────────
 
 CREATE TABLE transaction (
-                             uuid           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                             uuid           UUID PRIMARY KEY DEFAULT uuidv7(),
                              account_id     UUID NOT NULL REFERENCES account(uuid),
                              type           VARCHAR(50) NOT NULL,
                              amount         NUMERIC(14,2) NOT NULL,
                              description    TEXT,
                              billing_period DATE NOT NULL,
-                             posted_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                             deleted_at     TIMESTAMP,
+                             posted_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+                             deleted_at     TIMESTAMPTZ,
                              CONSTRAINT transaction_amount_check
                                  CHECK (amount <> 0 AND (amount > 0 OR type = 'BALANCE_ADJUSTMENT'))
 );

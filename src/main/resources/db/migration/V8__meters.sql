@@ -23,8 +23,8 @@ CREATE TABLE meters (
                         utility_type  TEXT NOT NULL REFERENCES meter_type(code),
                         measurement   TEXT NOT NULL REFERENCES meter_measurement(code),
                         installed_at  DATE,
-                        created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        deleted_at    TIMESTAMP,
+                        created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+                        updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+                        deleted_at    TIMESTAMPTZ,
                         FOREIGN KEY (meter_id) REFERENCES lot(uuid)
 );

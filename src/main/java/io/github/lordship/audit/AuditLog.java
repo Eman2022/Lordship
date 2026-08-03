@@ -2,7 +2,7 @@ package io.github.lordship.audit;
 
 import io.github.lordship.shared.UserType;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record AuditLog (
@@ -16,6 +16,6 @@ public record AuditLog (
     OperationType operation,
     String valueBefore,
     String valueAfter,
-    LocalDateTime changedAt
+    OffsetDateTime changedAt
 ) {
 }

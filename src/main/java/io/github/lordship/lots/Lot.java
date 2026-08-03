@@ -1,6 +1,6 @@
 package io.github.lordship.lots;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record Lot(
@@ -10,8 +10,8 @@ public record Lot(
     String description,
     String notes,
     Integer sortOrder,
-    LocalDateTime createdAt,
-    LocalDateTime deletedAt
+    OffsetDateTime createdAt,
+    OffsetDateTime deletedAt
 ) {
   public boolean isSoftDeleted() {
     return deletedAt != null;

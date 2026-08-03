@@ -7,9 +7,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -82,8 +80,8 @@ public class PersonRepositoryTest extends IntegrationTest {
         // Act
         PersonRow saved = personRepository.save(row);
 
-        // Assert
-        Duration age = Duration.between(saved.createdAt(), LocalDateTime.now()).abs();
+        // Assert   OffsetDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS),
+        Duration age = Duration.between(saved.createdAt(), OffsetDateTime.now(ZoneOffset.UTC));
         assertTrue(age.toSeconds() < 5, "expecting to be created within 5s");
     }
 

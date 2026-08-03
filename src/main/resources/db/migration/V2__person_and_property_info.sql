@@ -13,8 +13,8 @@ CREATE TABLE person (
                         mailing_address   TEXT,
                         emergency_contact UUID,
                         social            VARCHAR(72),   -- AES-256 encrypted SSN
-                        created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        deleted_at        TIMESTAMP,
+                        created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+                        deleted_at        TIMESTAMPTZ,
                         FOREIGN KEY (emergency_contact) REFERENCES person(uuid)
 );
 
@@ -31,8 +31,8 @@ CREATE TABLE property_contact (
                                   contact_phone VARCHAR(120),
                                   contact_email VARCHAR(120),
                                   description   TEXT,
-                                  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                  deleted_at    TIMESTAMP,
+                                  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                  deleted_at    TIMESTAMPTZ,
                                   FOREIGN KEY (property_id) REFERENCES property(uuid),
                                   FOREIGN KEY (person_uuid) REFERENCES person(uuid)
 );
@@ -40,11 +40,11 @@ CREATE TABLE property_contact (
 CREATE TABLE property_link (
                                uuid        UUID PRIMARY KEY DEFAULT uuidv7(),
                                property_id UUID NOT NULL,
-                               title       VARCHAR(255) NOT NULL,
+                               title       TEXT NOT NULL,
                                description TEXT,
                                url         TEXT NOT NULL,
-                               created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                               deleted_at  TIMESTAMP,
+                               created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+                               deleted_at  TIMESTAMPTZ,
                                FOREIGN KEY (property_id) REFERENCES property(uuid)
 );
 

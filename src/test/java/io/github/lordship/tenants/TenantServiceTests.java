@@ -10,6 +10,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,8 +38,8 @@ public class TenantServiceTests {
                 personId,
                 start,
                 end,
-                LocalDate.now().atStartOfDay(),
-                LocalDate.now().atStartOfDay(),
+                OffsetDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS),
+                OffsetDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS),
                 null
         );
     }

@@ -9,7 +9,7 @@ import io.github.lordship.shared.UserType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -27,7 +27,7 @@ public record AuditLogResponse(
         OperationType operation,
         String valueBefore,
         String valueAfter,
-        LocalDateTime changedAt
+        OffsetDateTime changedAt
 ) {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();

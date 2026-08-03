@@ -4,7 +4,7 @@ import io.github.lordship.transactions.Transaction;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record TransactionResponse(
@@ -14,8 +14,8 @@ public record TransactionResponse(
         BigDecimal amount,
         String description,
         LocalDate billingPeriod,
-        LocalDateTime postedAt,
-        LocalDateTime deletedAt
+        OffsetDateTime postedAt,
+        OffsetDateTime deletedAt
 ) {
     public static TransactionResponse from(Transaction transaction) {
         return new TransactionResponse(

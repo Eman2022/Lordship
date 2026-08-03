@@ -2,7 +2,7 @@ package io.github.lordship.access.internal;
 
 import io.github.lordship.access.Agent;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record AgentRow (
@@ -11,8 +11,8 @@ public record AgentRow (
         String workPhone,
         String workEmail,
         String agentPassword,
-        LocalDateTime createdAt,
-        LocalDateTime deletedAt
+        OffsetDateTime createdAt,
+        OffsetDateTime deletedAt
 ) {
     public Agent toAgent(){
         return new Agent(

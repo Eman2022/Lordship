@@ -2,7 +2,7 @@ package io.github.lordship.properties;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record Property(
@@ -15,6 +15,6 @@ public record Property(
         LocalDate purchaseDate,
         Integer yearBuilt,
         BigDecimal lateFeeRate,
-        LocalDateTime createdAt,
-        LocalDateTime deletedAt
+        OffsetDateTime createdAt,
+        OffsetDateTime deletedAt
 ) {}

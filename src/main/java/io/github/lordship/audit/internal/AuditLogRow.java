@@ -2,13 +2,14 @@ package io.github.lordship.audit.internal;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.lordship.audit.AuditLog;
 import io.github.lordship.audit.OperationType;
 import io.github.lordship.shared.EncryptionService;
 import io.github.lordship.shared.UserType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.time.LocalDateTime;
+
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +27,7 @@ public record AuditLogRow(
         OperationType operation,
         String valueBefore,
         String valueAfter,
-        LocalDateTime changedAt
+        OffsetDateTime changedAt
 ) {
 
     public AuditLogRow(UUID correlationId, UUID userId, UserType userType,
@@ -54,7 +55,7 @@ public record AuditLogRow(
         if (json == null) return null;
 
         try {
-            Map<String, Object> map = MAPPER.readValue(json, new TypeReference<>() {});
+            Map<String, Object> map = MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {});
             Map<String, Object> result = new HashMap<>();
 
             for (var entry : map.entrySet()) {

@@ -2,7 +2,7 @@ package io.github.lordship.lots.internal;
 
 import io.github.lordship.lots.Lot;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record LotRow(
@@ -12,8 +12,8 @@ public record LotRow(
         String description,
         String notes,
         Integer sortOrder,
-        LocalDateTime createdAt,
-        LocalDateTime deletedAt
+        OffsetDateTime createdAt,
+        OffsetDateTime deletedAt
 ) {
     public Lot toLot() {
         return new Lot(

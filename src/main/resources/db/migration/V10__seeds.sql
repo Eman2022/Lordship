@@ -101,8 +101,14 @@ INSERT INTO permission (uuid, permission_name) VALUES
     (uuidv7(), 'meters:view'),
     (uuidv7(), 'meters:edit'),
     (uuidv7(), 'meters:create'),
-    (uuidv7(), 'meters:delete');
+    (uuidv7(), 'meters:delete'),
 
+    -- charge term
+    (uuidv7(), 'charge_term:view'),
+    (uuidv7(), 'charge_term:edit'),
+    (uuidv7(), 'charge_term:create'),
+    (uuidv7(), 'charge_term:delete')
+;
 
 -- ── Roles ─────────────────────────────────────────────────────────────────────
 
