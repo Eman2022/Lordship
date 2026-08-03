@@ -35,6 +35,10 @@ public class TransactionController {
                     )
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
