@@ -1,11 +1,7 @@
--- Lots: physical spaces within a property that a tenancy occupies.
--- One property has many lots; one lot has many tenancies over time (see V8).
--- Created in dependency order: lot -> lot_map.
+-- ============================================================
+-- V5: Lots
+-- ============================================================
 
--- ── Lot ──────────────────────────────────────────────────────────────
--- PK is uuid: lot_number can be renamed and everything stays tied to the
--- same uuid. Renames are captured by the audit log, so the original name
--- is not stored separately.
 CREATE TABLE lot (
                      uuid          UUID PRIMARY KEY DEFAULT uuidv7(),
                      property_id   UUID NOT NULL,
@@ -17,7 +13,6 @@ CREATE TABLE lot (
                      deleted_at    TIMESTAMP,
                      FOREIGN KEY (property_id) REFERENCES property(uuid)
 );
-
 -- NOT unique: real park data has duplicate labels (e.g. two "DF" lots in one
 -- park). Duplicates are flagged at the application layer, not rejected here.
 CREATE INDEX idx_lot_number_per_property
@@ -34,16 +29,3 @@ CREATE TABLE lot_map (
                          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                          FOREIGN KEY (lot_id) REFERENCES lot(uuid)
 );
-
--- ── Permissions ──────────────────────────────────────────────────────
--- V5's "Admin gets all" grant ran before these existed, so grant explicitly.
-INSERT INTO permission (uuid, permission_name) VALUES
-                                                   (uuidv7(), 'lots:view'),
-                                                   (uuidv7(), 'lots:edit'),
-                                                   (uuidv7(), 'lots:create'),
-                                                   (uuidv7(), 'lots:delete');
-
-INSERT INTO role_permission (uuid, role_id, permission_id)
-SELECT uuidv7(), r.uuid, p.uuid
-FROM agent_role r, permission p
-WHERE r.role_name = 'Admin' AND p.permission_name LIKE 'lots:%';
