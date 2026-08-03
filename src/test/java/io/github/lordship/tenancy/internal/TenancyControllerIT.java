@@ -19,6 +19,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -96,7 +98,7 @@ public class TenancyControllerIT extends IntegrationTest {
         UUID lotId = setupFullChain();
         TenancyRow saved = tenancyRepository.save(buildRow(lotId));
 
-        LocalDateTime before = saved.updatedAt();
+        OffsetDateTime before = saved.updatedAt();
 
         TenancyRow closed = tenancyRepository.close(saved.uuid(), LocalDate.now());
 

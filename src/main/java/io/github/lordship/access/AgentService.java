@@ -13,7 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
 @Service
@@ -88,7 +89,7 @@ public class AgentService {
 
         LoginEventRow loginEventRow = new LoginEventRow(
                 ar.uuid(),
-                LocalDateTime.now(),
+                OffsetDateTime.now(ZoneOffset.UTC),
                 ipAddress,
                 userAgent.getOperatingSystem().getName(),
                 userAgent.getBrowser().getName(),
@@ -150,6 +151,4 @@ public class AgentService {
     public List<LoginEventRow> getLoginEventsByAgentId(UUID agentId) {
         return loginEventRepository.getLoginEventsByAgentId(agentId);
     }
-
-
 }

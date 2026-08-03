@@ -12,6 +12,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -46,7 +48,7 @@ public class PersonServiceTest {
         PersonRow stubRow = new PersonRow(
                 UUID.randomUUID(), nameFull,
                 null, null, null, null, null, null,
-                LocalDateTime.now(), null
+                OffsetDateTime.now(ZoneOffset.UTC), null
         );
 
         when(personRepository.save(any())).thenReturn(stubRow);
@@ -66,7 +68,7 @@ public class PersonServiceTest {
         PersonRow stubRow = new PersonRow(
                 UUID.randomUUID(), "Don Mock",
                 null, null, null, null, null, null,
-                LocalDateTime.now(), null
+                OffsetDateTime.now(ZoneOffset.UTC), null
         );
         when(personRepository.findById(stubRow.uuid())).thenReturn(Optional.of(stubRow));
 
@@ -98,7 +100,7 @@ public class PersonServiceTest {
         PersonRow stubRow = new PersonRow(
                 UUID.randomUUID(), "Don Mock",
                 null, null, null, null, null, null,
-                LocalDateTime.now(), null
+                OffsetDateTime.now(ZoneOffset.UTC), null
         );
         when(personRepository.findById(stubRow.uuid())).thenReturn(Optional.of(stubRow));
 
@@ -146,7 +148,7 @@ public class PersonServiceTest {
         PersonRow stubRow = new PersonRow(
                 UUID.randomUUID(), "Don Mock",
                 null, null, null, null, null, null,
-                LocalDateTime.now(), null
+                OffsetDateTime.now(ZoneOffset.UTC), null
         );
         when(personRepository.findById(stubRow.uuid())).thenReturn(Optional.of(stubRow));
         // prep a patch that doesn't change anything
@@ -167,7 +169,7 @@ public class PersonServiceTest {
         PersonRow before = new PersonRow(
                 UUID.randomUUID(), "Don Mock",
                 null, null, null,null, null, null,
-                LocalDateTime.now(), null
+                OffsetDateTime.now(ZoneOffset.UTC), null
         );
         PersonRow after = new PersonRow(
                 before.uuid(), "Baby Mocko",
@@ -192,7 +194,7 @@ public class PersonServiceTest {
         PersonRow stubRow = new PersonRow(
                 UUID.randomUUID(), "Don Mock",
                 null, null, null, null, null, null,
-                LocalDateTime.now(), null
+                OffsetDateTime.now(ZoneOffset.UTC), null
         );
         PersonRow afterRow = new PersonRow(
                 stubRow.uuid(), "Don Mock",
@@ -223,7 +225,7 @@ public class PersonServiceTest {
         PersonRow stubRow = new PersonRow(
                 UUID.randomUUID(), "Don Mock",
                 null, null, null, null, null, null,
-                LocalDateTime.now(), null
+                OffsetDateTime.now(ZoneOffset.UTC), null
         );
         PersonRow afterRow = new PersonRow(
                 stubRow.uuid(), "Don Mock",

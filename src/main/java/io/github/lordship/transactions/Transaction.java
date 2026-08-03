@@ -2,7 +2,7 @@ package io.github.lordship.transactions;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record Transaction(
@@ -12,7 +12,7 @@ public record Transaction(
         BigDecimal amount,
         String description,
         LocalDate billingPeriod,
-        LocalDateTime postedAt,
-        LocalDateTime deletedAt
+        OffsetDateTime postedAt,
+        OffsetDateTime deletedAt
 ) {
 }

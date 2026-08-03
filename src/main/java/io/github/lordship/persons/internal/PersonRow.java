@@ -4,7 +4,7 @@ import io.github.lordship.persons.Person;
 import io.github.lordship.shared.EncryptionService;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 
@@ -18,8 +18,8 @@ public record PersonRow(
     String mailingAddress,
     UUID emergencyContact,
     String social,
-    LocalDateTime createdAt,
-    LocalDateTime deletedAt
+    OffsetDateTime createdAt,
+    OffsetDateTime deletedAt
 ) {
     public Person toPerson(EncryptionService encryptionService) {
         return new Person(

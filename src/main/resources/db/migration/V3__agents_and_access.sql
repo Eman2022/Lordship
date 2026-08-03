@@ -8,8 +8,8 @@ CREATE TABLE agent (
                        work_phone     VARCHAR(20),
                        work_email     VARCHAR(120),
                        agent_password VARCHAR(255),
-                       created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                       deleted_at     TIMESTAMP,
+                       created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+                       deleted_at     TIMESTAMPTZ,
                        FOREIGN KEY (person_id) REFERENCES person(uuid)
 );
 
@@ -19,7 +19,7 @@ CREATE UNIQUE INDEX uq_agent_email_active ON agent(work_email) WHERE deleted_at 
 CREATE TABLE agent_login_event (
                                    uuid           UUID PRIMARY KEY DEFAULT uuidv7(),
                                    agent_id       UUID NOT NULL,
-                                   occurred_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                   occurred_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
                                    ip_address     VARCHAR(45),
                                    browser_client TEXT,
                                    browserOs      TEXT,
@@ -33,23 +33,23 @@ CREATE TABLE agent_role (
                             uuid             UUID PRIMARY KEY DEFAULT uuidv7(),
                             role_name        VARCHAR(60) NOT NULL UNIQUE,
                             role_description TEXT,
-                            created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            deleted_at       TIMESTAMP
+                            created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+                            deleted_at       TIMESTAMPTZ
 );
 
 CREATE TABLE permission (
                             uuid            UUID PRIMARY KEY DEFAULT uuidv7(),
                             permission_name VARCHAR(60) NOT NULL UNIQUE,
-                            created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            deleted_at      TIMESTAMP
+                            created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+                            deleted_at      TIMESTAMPTZ
 );
 
 CREATE TABLE role_permission (
                                  uuid          UUID PRIMARY KEY DEFAULT uuidv7(),
                                  role_id       UUID NOT NULL,
                                  permission_id UUID NOT NULL,
-                                 created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                 deleted_at    TIMESTAMP,
+                                 created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                 deleted_at    TIMESTAMPTZ,
                                  FOREIGN KEY (role_id)       REFERENCES agent_role(uuid),
                                  FOREIGN KEY (permission_id) REFERENCES permission(uuid)
 );
@@ -64,8 +64,8 @@ CREATE TABLE granted_role (
                               role_id    UUID NOT NULL,
                               granted_by UUID NOT NULL,
                               revoked_by UUID,
-                              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                              deleted_at TIMESTAMP,
+                              created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                              deleted_at TIMESTAMPTZ,
                               FOREIGN KEY (agent_id)   REFERENCES agent(uuid),
                               FOREIGN KEY (role_id)    REFERENCES agent_role(uuid),
                               FOREIGN KEY (granted_by) REFERENCES agent(uuid),
@@ -82,8 +82,8 @@ CREATE TABLE denied_permission (
                                    permission_id     UUID NOT NULL,
                                    denied_by         UUID NOT NULL,
                                    denial_removed_by UUID,
-                                   created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                   deleted_at        TIMESTAMP,
+                                   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                   deleted_at        TIMESTAMPTZ,
                                    FOREIGN KEY (agent_id)          REFERENCES agent(uuid),
                                    FOREIGN KEY (permission_id)     REFERENCES permission(uuid),
                                    FOREIGN KEY (denied_by)         REFERENCES agent(uuid),
@@ -99,8 +99,8 @@ CREATE TABLE agent_property_assignment (
                                            agent_id    UUID NOT NULL,
                                            property_id UUID NOT NULL,
                                            assigned_by UUID NOT NULL,
-                                           assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                           removed_at  TIMESTAMP,
+                                           assigned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                           removed_at  TIMESTAMPTZ,
                                            FOREIGN KEY (agent_id)    REFERENCES agent(uuid),
                                            FOREIGN KEY (property_id) REFERENCES property(uuid),
                                            FOREIGN KEY (assigned_by) REFERENCES agent(uuid)

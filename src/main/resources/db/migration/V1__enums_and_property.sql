@@ -19,6 +19,14 @@ CREATE TABLE property (
                           year_built       INT,
                           late_fee_rate    NUMERIC(5,4) NOT NULL DEFAULT 0.0150,
                           property_manager UUID,                                  -- FK added in V3 after agent table exists
-                          created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                          deleted_at       TIMESTAMP
+                          created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+                          deleted_at       TIMESTAMPTZ
+);
+
+
+-- ── Globals ─────────────────────────────────────────────────────────────────
+
+
+CREATE TABLE global_settings (
+
 );

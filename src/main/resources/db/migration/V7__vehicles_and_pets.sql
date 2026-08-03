@@ -12,9 +12,9 @@ CREATE TABLE vehicle (
                          plate_state   VARCHAR(2),
                          color         VARCHAR(50),
                          notes         TEXT,
-                         created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                         updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                         deleted_at    TIMESTAMP,
+                         created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+                         updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+                         deleted_at    TIMESTAMPTZ,
                          FOREIGN KEY (tenancy_uuid)  REFERENCES tenancy(uuid)
 );
 
@@ -24,8 +24,8 @@ CREATE TABLE vehicle_policy (
                                 free_vehicle_limit INT NOT NULL DEFAULT 2,
                                 extra_vehicle_fee  NUMERIC(10,2) NOT NULL DEFAULT 0.00,
                                 notes              TEXT,
-                                created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
                                 FOREIGN KEY (property_uuid) REFERENCES property(uuid)
 );
 
@@ -40,6 +40,6 @@ CREATE TABLE pet (
                      pet_name   VARCHAR(120),
                      pet_type   VARCHAR(120),
                      pet_breed  VARCHAR(120),
-                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                     deleted_at TIMESTAMP
+                     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                     deleted_at TIMESTAMPTZ
 );

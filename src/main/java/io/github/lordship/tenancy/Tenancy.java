@@ -1,7 +1,7 @@
 package io.github.lordship.tenancy;
 
-import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record Tenancy(
@@ -13,9 +13,9 @@ public record Tenancy(
     boolean noPartialPayments,
     boolean acceptPayments,
     boolean exemptFromLateFees,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt,
-    LocalDateTime deletedAt
+    OffsetDateTime createdAt,
+    OffsetDateTime  updatedAt,
+    OffsetDateTime  deletedAt
 ) {
     public boolean isSoftDeleted() {
         return deletedAt != null;

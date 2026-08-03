@@ -2,15 +2,15 @@ package io.github.lordship.access.internal;
 
 import io.github.lordship.access.Role;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record RoleRow(
         UUID uuid,
         String roleName,
         String roleDescription,
-        LocalDateTime createdAt,
-        LocalDateTime deletedAt
+        OffsetDateTime createdAt,
+        OffsetDateTime deletedAt
 ) {
 
     public RoleRow(String name) {

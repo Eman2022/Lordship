@@ -13,7 +13,7 @@ CREATE TABLE audit_log (
                            operation      operation_type NOT NULL,
                            value_before   TEXT,
                            value_after    TEXT,
-                           changed_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                           changed_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_audit_record ON audit_log(table_name, record_id);

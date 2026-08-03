@@ -11,10 +11,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -36,7 +35,7 @@ public class LotServiceTest {
         return new LotRow(
                 UUID.randomUUID(), propertyId, "12",
                 "Rental lot", "Front row", 1,
-                LocalDateTime.now(), null
+                OffsetDateTime.now(ZoneOffset.UTC), null
         );
     }
 

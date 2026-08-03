@@ -3,8 +3,7 @@ package io.github.lordship.tenancy.internal;
 import io.github.lordship.tenancy.Tenancy;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Date;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record TenancyRow(
@@ -16,9 +15,9 @@ public record TenancyRow(
     boolean noPartialPayments,
     boolean acceptPayments,
     boolean exemptFromLateFees,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt,
-    LocalDateTime deletedAt
+    OffsetDateTime createdAt,
+    OffsetDateTime updatedAt,
+    OffsetDateTime deletedAt
 ) {
 
     public Tenancy toTenancy(){

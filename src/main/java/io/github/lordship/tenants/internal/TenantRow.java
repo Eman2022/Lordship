@@ -3,7 +3,7 @@ package io.github.lordship.tenants.internal;
 import io.github.lordship.tenants.Tenant;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record TenantRow(
@@ -12,9 +12,9 @@ public record TenantRow(
         UUID personId,
         LocalDate startDate,
         LocalDate endDate,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt,
-        LocalDateTime deletedAt
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt,
+        OffsetDateTime deletedAt
 ) {
 
     public Tenant toTenant(){

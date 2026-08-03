@@ -1,6 +1,6 @@
 package io.github.lordship.access;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 
@@ -9,8 +9,8 @@ public record Agent(
     UUID personId,
     String workPhone,
     String workEmail,
-    LocalDateTime createdAt,
-    LocalDateTime deletedAt
+    OffsetDateTime createdAt,
+    OffsetDateTime deletedAt
 ) {
 
     public boolean isSoftDeleted() {

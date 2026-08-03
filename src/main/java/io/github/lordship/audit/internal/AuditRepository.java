@@ -11,7 +11,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -46,7 +46,7 @@ public class AuditRepository {
             OperationType.valueOf(rs.getString("operation")),
             rs.getString("value_before"),
             rs.getString("value_after"),
-            rs.getObject("changed_at", LocalDateTime.class)
+            rs.getObject("changed_at", OffsetDateTime.class)
     );
 
     public AuditLogRow save(AuditLogRow auditLogRow) {

@@ -2,7 +2,7 @@ package io.github.lordship.access;
 
 import io.github.lordship.access.internal.GrantedRoleResponse;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 // record of a role being granted to an agent
@@ -12,8 +12,8 @@ public record GrantedRole(
     UUID roleId,
     UUID grantedBy,
     UUID revokedBy,
-    LocalDateTime createdAt,
-    LocalDateTime deletedAt
+    OffsetDateTime createdAt,
+    OffsetDateTime deletedAt
 ) {
 
     public GrantedRoleResponse toResponse() {

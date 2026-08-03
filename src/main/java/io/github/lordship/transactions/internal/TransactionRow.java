@@ -5,7 +5,7 @@ import io.github.lordship.transactions.TransactionType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record TransactionRow(
@@ -15,8 +15,8 @@ public record TransactionRow(
         BigDecimal amount,
         String description,
         LocalDate billingPeriod,
-        LocalDateTime postedAt,
-        LocalDateTime deletedAt
+        OffsetDateTime postedAt,
+        OffsetDateTime deletedAt
 ) {
     public Transaction toTransaction() {
         return new Transaction(

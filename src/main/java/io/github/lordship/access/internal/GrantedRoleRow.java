@@ -2,7 +2,7 @@ package io.github.lordship.access.internal;
 
 import io.github.lordship.access.GrantedRole;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record GrantedRoleRow(
@@ -11,8 +11,8 @@ public record GrantedRoleRow(
         UUID roleId,
         UUID grantedBy,
         UUID revokedBy,
-        LocalDateTime createdAt,
-        LocalDateTime deletedAt
+        OffsetDateTime createdAt,
+        OffsetDateTime deletedAt
 ) {
     public GrantedRoleRow(UUID agentId, UUID roleId, UUID grantedBy){
         this(

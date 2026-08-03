@@ -9,8 +9,8 @@ CREATE TABLE lot (
                      description   TEXT,
                      notes         TEXT,                 -- notes about the LOT, never the tenancy
                      sort_order    INT,                  -- manual ordering for the map/menu view
-                     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                     deleted_at    TIMESTAMP,
+                     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+                     deleted_at    TIMESTAMPTZ,
                      FOREIGN KEY (property_id) REFERENCES property(uuid)
 );
 -- NOT unique: real park data has duplicate labels (e.g. two "DF" lots in one
@@ -26,6 +26,6 @@ CREATE INDEX idx_lot_property ON lot (property_id) WHERE deleted_at IS NULL;
 CREATE TABLE lot_map (
                          lot_id     UUID PRIMARY KEY,
                          vertices   JSONB NOT NULL,
-                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                         updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                          FOREIGN KEY (lot_id) REFERENCES lot(uuid)
 );

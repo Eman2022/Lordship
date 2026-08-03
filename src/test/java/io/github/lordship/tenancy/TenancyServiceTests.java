@@ -16,10 +16,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -63,8 +63,8 @@ public class TenancyServiceTests {
                 false,
                 true,
                 false,
-                LocalDate.now().minusDays(10).atStartOfDay(),
-                LocalDate.now().minusDays(5).atStartOfDay(),
+                OffsetDateTime.now(ZoneOffset.UTC).minusDays(10).truncatedTo(ChronoUnit.DAYS),
+                OffsetDateTime.now(ZoneOffset.UTC).minusDays(5).truncatedTo(ChronoUnit.DAYS),
                 null
         );
     }

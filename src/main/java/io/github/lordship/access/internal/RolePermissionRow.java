@@ -1,6 +1,6 @@
 package io.github.lordship.access.internal;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 // represents a permission assigned to a role
@@ -8,8 +8,8 @@ public record RolePermissionRow(
         UUID uuid,
         UUID roleId,
         UUID permissionId,
-        LocalDateTime createdAt,
-        LocalDateTime deletedAt
+        OffsetDateTime createdAt,
+        OffsetDateTime deletedAt
 ) {
     public RolePermissionRow(UUID roleId, UUID permissionId){
         this(

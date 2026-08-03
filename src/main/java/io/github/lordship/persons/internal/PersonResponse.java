@@ -4,7 +4,7 @@ import io.github.lordship.persons.Person;
 import io.github.lordship.shared.SensitiveDataMasker;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record PersonResponse(
@@ -16,7 +16,7 @@ public record PersonResponse(
         String mailingAddress,
         UUID emergencyContact,
         String social,
-        LocalDateTime createdAt
+        OffsetDateTime createdAt
 ) {
 
     public static PersonResponse from(Person person, boolean canViewSsn) {
