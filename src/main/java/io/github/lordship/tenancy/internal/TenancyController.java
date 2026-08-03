@@ -80,6 +80,18 @@ public class TenancyController {
             }
         }
 
+        if (request.containsKey("lotId")) {
+            Object raw = request.get("lotId");
+            if (raw == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            try {
+                changes.put("lot_id", UUID.fromString(raw.toString()));
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
         return tenancyService.patchTenancy(uuid, changes)
                 .map(t -> ResponseEntity.ok(TenancyResponse.from(t)))
                 .orElse(ResponseEntity.notFound().build());

@@ -122,34 +122,6 @@ public class TenancyService {
     // mutable hashmap to be able to properly patch changes
     @Transactional
     public Optional<Tenancy> patchTenancy(UUID uuid, Map<String, Object> changes) {
-        Map<String, Object> mutable = new HashMap<>(changes);
-        if (mutable.containsKey("start_date")) {
-            Object startDate = mutable.get("start_date");
-            if (startDate instanceof String s && !s.isBlank()) {
-                mutable.put("start_date", LocalDate.parse(s));
-            } else {
-                mutable.put("start_date", null);
-            }
-        }
-
-        if (mutable.containsKey("end_date")) {
-            Object endDate = mutable.get("end_date");
-            if (endDate instanceof String s && !s.isBlank()) {
-                mutable.put("end_date", LocalDate.parse(s));
-            } else {
-                mutable.put("end_date", null);
-            }
-        }
-
-        if (mutable.containsKey("lot_id")) {
-            Object lotId = mutable.get("lot_id");
-            if (lotId instanceof String s && !s.isBlank()) {
-                mutable.put("lot_id", UUID.fromString(s));
-            } else {
-                mutable.put("lot_id", null);
-            }
-        }
-
         Optional<TenancyRow> previousTenancy = tenancyRepository.findById(uuid);
         if (previousTenancy.isEmpty()) {
             return Optional.empty();
@@ -157,14 +129,14 @@ public class TenancyService {
 
         TenancyRow before = previousTenancy.get();
 
-        Optional<TenancyRow> updatedTenancy = tenancyRepository.patch(uuid, mutable);
+        Optional<TenancyRow> updatedTenancy = tenancyRepository.patch(uuid, changes);
         if (updatedTenancy.isEmpty()) {
             return Optional.empty();
         }
         TenancyRow after = updatedTenancy.get();
 
         var diff = AuditMapper.diff(before, after);
-        if(!diff.before().isEmpty()) {
+        if (!diff.before().isEmpty()) {
             auditService.recordUpdate("tenancy", uuid, diff.before(), diff.after());
         }
 
