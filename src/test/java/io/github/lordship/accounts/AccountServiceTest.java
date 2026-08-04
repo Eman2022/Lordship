@@ -20,6 +20,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -67,6 +70,8 @@ public class AccountServiceTest {
         assertEquals(0, BigDecimal.ZERO.compareTo(account.balanceCached()));
         assertFalse(account.autopayEnabled());
         assertNull(account.notes());
+
+        verify(auditService).recordInsert(eq("account"), eq(account.uuid()), any());
     }
 
     @Test
@@ -110,6 +115,8 @@ public class AccountServiceTest {
         assertEquals(AccountStatus.DELINQUENT, updated.get().accountStatus());
         assertTrue(updated.get().autopayEnabled());
         assertEquals("Late on payment", updated.get().notes());
+
+        verify(auditService).recordUpdate(eq("account"), eq(created.uuid()), any(), any());
     }
 
     @Test
@@ -146,6 +153,8 @@ public class AccountServiceTest {
 
         Optional<Account> found = accountService.getAccount(created.uuid());
         assertTrue(found.isEmpty());
+
+        verify(auditService).recordDelete(eq("account"), eq(created.uuid()), any());
     }
 
     @Test

@@ -3,12 +3,19 @@ package io.github.lordship.accounts.internal;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository
 public class AccountRepository {
+
+    private static final Set<String> ALLOWED_COLUMNS = Set.of(
+            "account_status", "autopay_enabled", "notes"
+    );
 
     private final JdbcClient jdbc;
 
@@ -64,6 +71,29 @@ public class AccountRepository {
                 RETURNING *
                 """)
                 .paramSource(row)
+                .query(AccountRow.class)
+                .optional();
+    }
+
+    public Optional<AccountRow> patch(UUID uuid, Map<String, Object> changes) {
+        if (changes.isEmpty()) return findById(uuid);
+
+        for (String col : changes.keySet()) {
+            if (!ALLOWED_COLUMNS.contains(col)) {
+                throw new IllegalArgumentException("Invalid column: " + col);
+            }
+        }
+
+        StringBuilder sql = new StringBuilder("UPDATE account SET ");
+        changes.forEach((col, val) -> sql.append(col).append(" = :").append(col).append(", "));
+        sql.setLength(sql.length() - 2);
+        sql.append(" WHERE uuid = :uuid AND deleted_at IS NULL RETURNING *");
+
+        Map<String, Object> params = new HashMap<>(changes);
+        params.put("uuid", uuid);
+
+        return jdbc.sql(sql.toString())
+                .params(params)
                 .query(AccountRow.class)
                 .optional();
     }
