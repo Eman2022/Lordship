@@ -6,6 +6,7 @@ import io.github.lordship.lots.internal.LotRow;
 import io.github.lordship.lots.internal.LotUpdateRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -57,7 +58,22 @@ public class LotServiceTest {
         assertEquals(savedRow.uuid(), result.uuid());
         assertEquals("12", result.lotNumber());
         assertEquals("Rental lot", result.description());
-        verify(auditService).recordInsert(eq("lot"), eq(savedRow.uuid()), any());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(auditService).recordInsert(eq("lot"), eq(savedRow.uuid()), captor.capture());
+
+        // Keys must be the record component names AuditMapper produces, matching every
+        // other module's audit entries -- not the snake_case column names.
+        Map<String, Object> logged = captor.getValue();
+        assertEquals(propertyId, logged.get("propertyId"));
+        assertEquals("12", logged.get("lotNumber"));
+        assertEquals("Rental lot", logged.get("description"));
+        assertEquals("Front row", logged.get("notes"));
+        assertEquals(1, logged.get("sortOrder"));
+        assertFalse(logged.containsKey("lot_number"));
+        assertFalse(logged.containsKey("property_id"));
+        assertFalse(logged.containsKey("sort_order"));
     }
 
     @Test

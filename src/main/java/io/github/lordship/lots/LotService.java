@@ -1,5 +1,6 @@
 package io.github.lordship.lots;
 
+import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
 import io.github.lordship.lots.internal.LotRepository;
 import io.github.lordship.lots.internal.LotRow;
@@ -35,7 +36,7 @@ public class LotService {
                 request.sortOrder()
         ));
 
-        auditService.recordInsert("lot", saved.uuid(), snapshot(saved));
+        auditService.recordInsert("lot", saved.uuid(), AuditMapper.toMap(saved));
         return saved.toLot();
     }
 
