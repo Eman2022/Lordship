@@ -54,8 +54,12 @@ public class LotService {
                     existing.deletedAt()
             ));
 
-            // Captures renames and every other mutable-field change.
-            auditService.recordUpdate("lot", uuid, snapshot(existing), snapshot(updated));
+            // Only the fields that actually changed are logged, so a rename shows up as
+            // just lotNumber rather than the whole row.
+            var diff = AuditMapper.diff(existing, updated);
+            if (!diff.before().isEmpty()) {
+                auditService.recordUpdate("lot", uuid, diff.before(), diff.after());
+            }
             return updated.toLot();
         });
     }
@@ -85,10 +89,9 @@ public class LotService {
         }
         LotRow after = afterOpt.get();
 
-        Map<String, Object> beforeSnap = snapshot(before);
-        Map<String, Object> afterSnap = snapshot(after);
-        if (!beforeSnap.equals(afterSnap)) {
-            auditService.recordUpdate("lot", uuid, beforeSnap, afterSnap);
+        var diff = AuditMapper.diff(before, after);
+        if (!diff.before().isEmpty()) {
+            auditService.recordUpdate("lot", uuid, diff.before(), diff.after());
         }
         return Optional.of(after.toLot());
     }
