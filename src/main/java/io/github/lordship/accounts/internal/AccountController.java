@@ -8,7 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -64,6 +66,23 @@ public class AccountController {
                     );
                     return accountService.updateAccount(toUpdate);
                 })
+                .map(AccountResponse::from)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PreAuthorize("hasAuthority('accounts:edit')")
+    @PatchMapping("/{id}")
+    public ResponseEntity<AccountResponse> patchAccount(
+            @PathVariable UUID id,
+            @RequestBody Map<String, Object> request) {
+
+        Map<String, Object> changes = new HashMap<>();
+        if (request.containsKey("accountStatus"))  changes.put("account_status", request.get("accountStatus"));
+        if (request.containsKey("autopayEnabled")) changes.put("autopay_enabled", request.get("autopayEnabled"));
+        if (request.containsKey("notes"))          changes.put("notes", request.get("notes"));
+
+        return accountService.patchAccount(id, changes)
                 .map(AccountResponse::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
