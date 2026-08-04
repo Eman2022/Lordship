@@ -8,7 +8,6 @@ import io.github.lordship.lots.internal.LotUpdateRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -96,15 +95,11 @@ public class LotService {
         return Optional.of(after.toLot());
     }
 
-    // Soft delete recorded as an UPDATE (sets deleted_at). AuditService exposes
-    // no public delete hook, and a soft delete is a state change, not a removal.
     @Transactional
     public boolean deleteLot(UUID uuid) {
         return lotRepository.findById(uuid).map(existing -> {
             lotRepository.softDelete(uuid);
-            Map<String, Object> after = snapshot(existing);
-            after.put("deleted_at", "now");
-            auditService.recordUpdate("lot", uuid, snapshot(existing), after);
+            auditService.recordDelete("lot", uuid, AuditMapper.toMap(existing));
             return true;
         }).orElse(false);
     }
@@ -123,15 +118,5 @@ public class LotService {
         return lotRepository.findDuplicateNumbers(propertyCode).stream()
                 .map(LotRow::toLot)
                 .toList();
-    }
-
-    private static Map<String, Object> snapshot(LotRow row) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("property_id", row.propertyId());
-        map.put("lot_number", row.lotNumber());
-        map.put("description", row.description());
-        map.put("notes", row.notes());
-        map.put("sort_order", row.sortOrder());
-        return map;
     }
 }

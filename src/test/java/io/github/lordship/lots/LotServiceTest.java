@@ -147,7 +147,18 @@ public class LotServiceTest {
         // Assert
         assertTrue(result);
         verify(lotRepository).softDelete(existing.uuid());
-        verify(auditService).recordUpdate(eq("lot"), eq(existing.uuid()), any(), any());
+
+        // A soft delete is logged as a DELETE, the same as every other package -- not as
+        // an UPDATE carrying a hand-made deleted_at value.
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(auditService).recordDelete(eq("lot"), eq(existing.uuid()), captor.capture());
+        verify(auditService, never()).recordUpdate(any(), any(), any(), any());
+
+        Map<String, Object> logged = captor.getValue();
+        assertEquals(existing.propertyId(), logged.get("propertyId"));
+        assertEquals(existing.lotNumber(), logged.get("lotNumber"));
+        assertFalse(logged.containsKey("deleted_at"));
     }
 
     @Test
