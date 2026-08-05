@@ -9,7 +9,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,44 +62,26 @@ public class TenancyController {
         Map<String, Object> changes = new HashMap<>();
 
         if (request.containsKey("startDate")) {
-            Object raw = request.get("startDate");
-            try {
-                changes.put("start_date", raw == null ? null : LocalDate.parse(raw.toString()));
-            } catch (Exception e) {
-                return ResponseEntity.badRequest().build();
-            }
+            changes.put("start_date", request.get("startDate"));
         }
 
         if (request.containsKey("endDate")) {
-            Object raw = request.get("endDate");
-            try {
-                changes.put("end_date", raw == null ? null : LocalDate.parse(raw.toString()));
-            } catch (Exception e) {
-                return ResponseEntity.badRequest().build();
-            }
+            changes.put("end_date", request.get("endDate"));
         }
 
-        if (request.containsKey("lotId")) {
-            Object raw = request.get("lotId");
-            if (raw == null) {
-                return ResponseEntity.badRequest().build();
-            }
-            try {
-                changes.put("lot_id", UUID.fromString(raw.toString()));
-            } catch (Exception e) {
-                return ResponseEntity.badRequest().build();
-            }
+        try {
+            return tenancyService.patchTenancy(uuid, changes)
+                    .map(t -> ResponseEntity.ok(TenancyResponse.from(t)))
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
         }
-
-        return tenancyService.patchTenancy(uuid, changes)
-                .map(t -> ResponseEntity.ok(TenancyResponse.from(t)))
-                .orElse(ResponseEntity.notFound().build());
     }
 
     @PreAuthorize("hasAuthority('tenancy:edit')")
     @PatchMapping("/{uuid}/close")
     public ResponseEntity<TenancyResponse> close(@PathVariable UUID uuid,
-                                 @RequestBody @Valid TenancyUpdateRequest request) {
+                                                 @RequestBody @Valid TenancyUpdateRequest request) {
         Tenancy tenancy = tenancyService.endTenancy(uuid, request.endDate());
         return ResponseEntity.ok(TenancyResponse.from(tenancy));
     }

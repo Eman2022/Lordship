@@ -12,7 +12,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Validated
@@ -50,5 +52,34 @@ public class MeterController {
                 .map(MeterResponse::from)
                 .toList();
         return ResponseEntity.ok(responses);
+    }
+
+    @PreAuthorize("hasAuthority('meters:edit')")
+    @PatchMapping("/{uuid}")
+    public ResponseEntity<MeterResponse> patchMeter(
+            @PathVariable UUID uuid,
+            @RequestBody Map<String, Object> request) {
+
+        Map<String, Object> changes = new HashMap<>();
+
+        if (request.containsKey("title")) {
+            changes.put("title", request.get("title"));
+        }
+
+        if (request.containsKey("description")) {
+            changes.put("description", request.get("description"));
+        }
+
+        if (request.containsKey("installedAt")) {
+            changes.put("installed_at", request.get("installedAt"));
+        }
+
+        try {
+            return meterService.patchMeter(uuid, changes)
+                    .map(t -> ResponseEntity.ok(MeterResponse.from(t)))
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

@@ -9,7 +9,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -31,7 +30,7 @@ public class TenantController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(TenantResponse.from(tenant));
     }
-    @PreAuthorize("hasAuthority('tenants:read')")
+    @PreAuthorize("hasAuthority('tenants:view')")
     @GetMapping("/{uuid}")
     public ResponseEntity<TenantResponse> getById(@PathVariable UUID uuid) {
         return tenantService.findById(uuid)
@@ -39,7 +38,7 @@ public class TenantController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasAuthority('tenants:update')")
+    @PreAuthorize("hasAuthority('tenants:edit')")
     @PatchMapping("/{uuid}")
     public ResponseEntity<TenantResponse> patchTenant(
             @PathVariable UUID uuid,
@@ -48,36 +47,26 @@ public class TenantController {
         Map<String, Object> changes = new HashMap<>();
 
         if (request.containsKey("startDate")) {
-            try {
-                Object raw = request.get("startDate");
-                changes.put("startDate", raw == null ? null : LocalDate.parse(raw.toString()));
-            } catch (Exception e) {
-                return ResponseEntity.badRequest().build();
-            }
+            changes.put("start_date", request.get("startDate"));
         }
 
         if (request.containsKey("endDate")) {
-            try {
-                Object raw = request.get("endDate");
-                changes.put("endDate", raw == null ? null : LocalDate.parse(raw.toString()));
-            } catch (Exception e) {
-                return ResponseEntity.badRequest().build();
-            }
+            changes.put("end_date", request.get("endDate"));
         }
 
-        if (request.containsKey("lotId")) {
-            changes.put("lotId", request.get("lotId"));
+        try {
+            return tenantService.patchTenant(uuid, changes)
+                    .map(t -> ResponseEntity.ok(TenantResponse.from(t)))
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
         }
-
-        return tenantService.patch(uuid, changes)
-                .map(t -> ResponseEntity.ok(TenantResponse.from(t)))
-                .orElse(ResponseEntity.notFound().build());
     }
 
     @PreAuthorize("hasAuthority('tenants:delete')")
     @DeleteMapping("/{uuid}")
     public ResponseEntity<Void> deleteTenant(@PathVariable UUID uuid) {
-        return tenantService.delete(uuid)
+        return tenantService.softDelete(uuid)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
     }

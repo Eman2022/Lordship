@@ -3,8 +3,18 @@ package io.github.lordship.tenants.internal;
 import com.jayway.jsonpath.JsonPath;
 import io.github.lordship.TestAuthSupport;
 import io.github.lordship.access.AgentLoginRequest;
-import io.github.lordship.properties.internal.PropertyRow;
+import io.github.lordship.lots.Lot;
+import io.github.lordship.lots.LotCreationRequest;
+import io.github.lordship.lots.LotService;
+import io.github.lordship.persons.Person;
+import io.github.lordship.persons.PersonService;
+import io.github.lordship.persons.internal.PersonCreateRequest;
+import io.github.lordship.properties.Property;
+import io.github.lordship.properties.PropertyService;
+import io.github.lordship.tenants.internal.TenantRepository;
+import io.github.lordship.tenancy.TenancyService;
 import io.github.lordship.tenancy.internal.TenancyCreateRequest;
+import io.github.lordship.tenancy.internal.TenancyRow;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MvcResult;
@@ -21,6 +31,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -42,7 +53,35 @@ public class TenantControllerIT extends IntegrationTest {
     ObjectMapper objectMapper;
 
     @Autowired
+    TenancyService tenancyService;
+
+    @Autowired
+    LotService lotService;
+
+    @Autowired
+    PropertyService propertyService;
+
+    @Autowired
+    PersonService personService;
+
+    @Autowired
+    TenantRepository tenantRepository;
+
+    @Autowired
     JdbcClient jdbc;
+
+
+
+    private UUID setupFullChain() {
+        Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
+        Lot lot = lotService.createLot(new LotCreationRequest(property.uuid(), "1", null, null, null));
+        return tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid();
+    }
+
+    private UUID setupPerson() {
+        Person person = personService.createPersonFromName("Jack Lee");
+        return person.uuid();
+    }
 
     private String loginAsRoot() throws Exception {
         AgentLoginRequest loginRequest = new AgentLoginRequest(rootEmail, rootPassword);
@@ -55,31 +94,6 @@ public class TenantControllerIT extends IntegrationTest {
 
         String body = result.getResponse().getContentAsString();
         return objectMapper.readTree(body).get("token").asString();
-    }
-
-    private UUID insertTestProperty() {
-        PropertyRow propertyRow = jdbc.sql("""
-                INSERT INTO property (property_code, property_name, property_address)
-                VALUES ('TST01', 'Test Mobile Park', '999 Test Ave') RETURNING *
-                """).query(PropertyRow.class)
-                .single();
-        return propertyRow.uuid();
-    }
-
-    private UUID insertTestLot(UUID propertyId) {
-        return jdbc.sql("""
-                INSERT INTO lot (property_id, lot_number)
-                VALUES (:propertyId, '1')
-                RETURNING uuid
-                """)
-                .param("propertyId", propertyId)
-                .query(UUID.class)
-                .single();
-    }
-
-    private UUID setupFullChain() {
-        UUID propertyId = insertTestProperty();
-        return insertTestLot(propertyId);
     }
 
 
@@ -121,20 +135,6 @@ public class TenantControllerIT extends IntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
-
-
-    @Test
-    @WithMockUser(authorities = "tenants:update")
-    void patchTenant_shouldReturn400_whenInvalidDateProvided() throws Exception {
-        String invalidJson = """
-        { "startDate": "not-a-date" }
-    """;
-
-        mockMvc.perform(patch("/tenants/{uuid}", setupFullChain())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidJson))
-                .andExpect(status().isBadRequest());
-    }
 
     @Test
     void getTenant_shouldReturn403_whenNoTokenProvided() throws Exception {

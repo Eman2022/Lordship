@@ -19,7 +19,8 @@ public record Meters(
     LocalDateTime updatedAt,
     LocalDateTime deletedAt,
     MeterType utilityType,
-    MeterMeasurement measurement
+    MeterMeasurement measurement,
+    Boolean isMasterMeter
 ) {
     public boolean isSoftDeleted() {
         return deletedAt != null;

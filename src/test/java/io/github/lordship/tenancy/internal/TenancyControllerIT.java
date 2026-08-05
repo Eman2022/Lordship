@@ -181,13 +181,37 @@ public class TenancyControllerIT extends IntegrationTest {
                 TenancyRow.forInsert(lotId, LocalDate.now(), null)
         );
 
-        var invalidJson = """
-            { "endDate": "not-a-date" }
-            """;
+        // Invalid endDate only
+        String invalidEndDateJson = """
+        { "endDate": "not-a-date" }
+        """;
 
         mockMvc.perform(patch("/tenancy/{uuid}", saved.uuid())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidJson))
+                        .content(invalidEndDateJson))
+                .andExpect(status().isBadRequest());
+
+        // Invalid startDate only
+        String invalidStartDateJson = """
+        { "startDate": "not-a-date" }
+        """;
+
+        mockMvc.perform(patch("/tenancy/{uuid}", saved.uuid())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidStartDateJson))
+                .andExpect(status().isBadRequest());
+
+        // Both invalid
+        String invalidBothJson = """
+        {
+            "startDate": "not-a-date",
+            "endDate": "also-not-a-date"
+        }
+        """;
+
+        mockMvc.perform(patch("/tenancy/{uuid}", saved.uuid())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidBothJson))
                 .andExpect(status().isBadRequest());
     }
 }

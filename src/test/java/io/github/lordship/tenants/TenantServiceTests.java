@@ -159,7 +159,7 @@ public class TenantServiceTests {
         Map<String, Object> changes = new HashMap<>();
         changes.put("end_date", "2026-01-01");
 
-        Optional<Tenant> result = tenantService.patch(id, changes);
+        Optional<Tenant> result = tenantService.patchTenant(id, changes);
 
         assertTrue(result.isPresent());
         assertEquals(LocalDate.of(2026, 1, 1), result.get().endDate());
@@ -170,7 +170,7 @@ public class TenantServiceTests {
     void patchTenancy_returnsEmpty_whenNotFound() {
         when(tenantRepository.findById(any())).thenReturn(Optional.empty());
 
-        Optional<Tenant> result = tenantService.patch(UUID.randomUUID(), Map.of("end_date", "2026-01-01"));
+        Optional<Tenant> result = tenantService.patchTenant(UUID.randomUUID(), Map.of("end_date", "2026-01-01"));
 
         assertTrue(result.isEmpty());
     }
@@ -188,7 +188,7 @@ public class TenantServiceTests {
         Map<String, Object> changes = new HashMap<>();
         changes.put("end_date", null);
 
-        Optional<Tenant> result = tenantService.patch(id, changes);
+        Optional<Tenant> result = tenantService.patchTenant(id, changes);
 
         assertTrue(result.isPresent());
         assertNull(result.get().endDate());
@@ -207,7 +207,7 @@ public class TenantServiceTests {
         Map<String, Object> changes = new HashMap<>();
         changes.put("start_date", "2026-01-01");
 
-        Optional<Tenant> result = tenantService.patch(id, changes);
+        Optional<Tenant> result = tenantService.patchTenant(id, changes);
 
         assertTrue(result.isPresent());
         assertEquals(LocalDate.of(2026, 1, 1), result.get().startDate());

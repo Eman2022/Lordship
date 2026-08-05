@@ -59,7 +59,35 @@ public class MetersServiceTests {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
+/*
+    @Test
+    void create_shouldSaveAndAudit() {
+        MeterCreateRequest req = new MeterCreateRequest(
+                meterId, 1.0, 2.0, MeterType.WATER, MeterMeasurement.GALLONS, true
+        );
+
+        MeterRow saved = row(uuid1);
+        when(meterRepository.save(any())).thenReturn(saved);
+
+        Meters result = meterService.create(req);
+
+        assertEquals(uuid1, result.uuid());
+        verify(meterRepository).save(any());
+        verify(auditService).recordInsert(eq("meters"), eq(uuid1), any());
+    }
+
+    @Test
+    void findMetersById_shouldReturnMappedMeters() {
+        MeterRow saved = row(uuid1);
+        when(meterRepository.findById(uuid1)).thenReturn(Optional.of(saved));
+
+        Optional<Meters> result = meterService.findMetersById(uuid1);
+
+        assertTrue(result.isPresent());
+        assertEquals(uuid1, result.get().uuid());
+    } */
 }

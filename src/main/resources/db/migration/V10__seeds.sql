@@ -59,22 +59,16 @@ INSERT INTO permission (uuid, permission_name) VALUES
     (uuidv7(), 'audit:view'),
     (uuidv7(), 'audit:view_own'),
 
-    -- Tenancy (singular — original)
+    -- Tenancy
     (uuidv7(), 'tenancy:view'),
     (uuidv7(), 'tenancy:edit'),
     (uuidv7(), 'tenancy:create'),
     (uuidv7(), 'tenancy:delete'),
 
-    -- Tenancies (plural — used by TenancyController)
-    (uuidv7(), 'tenancies:create'),
-    (uuidv7(), 'tenancies:read'),
-    (uuidv7(), 'tenancies:update'),
-    (uuidv7(), 'tenancies:delete'),
-
     -- Tenants
     (uuidv7(), 'tenants:create'),
-    (uuidv7(), 'tenants:read'),
-    (uuidv7(), 'tenants:update'),
+    (uuidv7(), 'tenants:view'),
+    (uuidv7(), 'tenants:edit'),
     (uuidv7(), 'tenants:delete'),
 
     -- Lots
@@ -102,6 +96,12 @@ INSERT INTO permission (uuid, permission_name) VALUES
     (uuidv7(), 'meters:edit'),
     (uuidv7(), 'meters:create'),
     (uuidv7(), 'meters:delete'),
+
+    -- Meter Billing
+    (uuidv7(), 'meterbills:view'),
+    (uuidv7(), 'meterbills:edit'),
+    (uuidv7(), 'meterbills:create'),
+    (uuidv7(), 'meterbills:delete'),
 
     -- charge term
     (uuidv7(), 'charge_term:view'),
@@ -156,20 +156,18 @@ AND p.permission_name IN (
     'accounts:edit',
     'transactions:view',
     'transactions:edit',
-    'tenancies:create',
-    'tenancies:read',
-    'tenancies:update',
+    'tenancy:create',
+    'tenancy:view',
+    'tenancy:edit',
     'tenants:create',
-    'tenants:read',
-    'tenants:update',
+    'tenants:view',
+    'tenants:edit',
     'vehicles:view',
     'vehicles:edit',
     'vehicles:create',
     'vehicles:delete',
     'meters:view',
-    'meters:edit',
-    'meters:create',
-    'meters:delete'
+    'meterbills:view'
 );
 
 -- Property Manager
@@ -195,11 +193,14 @@ AND p.permission_name IN (
     'audit:view_own',
     'accounts:view',
     'transactions:view',
-    'tenancies:read',
-    'tenancies:update',
-    'tenants:read',
+    'tenancy:view',
+    'tenancy:edit',
+    'tenants:view',
     'tenants:create',
-    'tenants:update',
+    'tenants:edit',
     'vehicles:view',
-    'meters:view'
+    'meters:view',
+    'meters:edit',
+    'meterbills:view',
+    'meterbills:edit'
 );

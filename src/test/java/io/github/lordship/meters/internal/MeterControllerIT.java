@@ -54,7 +54,8 @@ public class MeterControllerIT extends IntegrationTest {
                 0.0,
                 0.0,
                 MeterType.WATER,
-                MeterMeasurement.GALLONS
+                MeterMeasurement.GALLONS,
+                true
         );
     }
 
@@ -84,5 +85,40 @@ public class MeterControllerIT extends IntegrationTest {
     }
 
     // REPOSITORY TESTS
+    @Test
+    void findAMeterById() {
+        UUID meterId = setupFullChain();
+        MeterRow saved = meterRepository.save(buildRow(meterId));
 
+        Optional<MeterRow> found = meterRepository.findById(saved.uuid());
+
+        assertTrue(found.isPresent());
+        assertEquals(saved.uuid(), found.get().uuid());
+    }
+
+    @Test
+    void softDeleteRemovesFromTable() {
+        UUID meterId = setupFullChain();
+        MeterRow saved = meterRepository.save(buildRow(meterId));
+
+        meterRepository.softDelete(saved.uuid());
+
+        assertTrue(meterRepository.findById(saved.uuid()).isEmpty());
+        assertTrue(meterRepository.findMeterByLot(saved.meterId()).isEmpty());
+    }
+
+    @Test
+    void patchUpdatesAllowedFields() {
+        UUID meterId = setupFullChain();
+        MeterRow saved = meterRepository.save(buildRow(meterId));
+
+        Map<String, Object> mutable = Map.of(
+                "title", "Updated Title"
+        );
+
+        Optional<MeterRow> patched = meterRepository.patch(saved.uuid(), mutable);
+
+        assertTrue(patched.isPresent());
+        assertEquals("Updated Title", patched.get().title());
+    }
 }

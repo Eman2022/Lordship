@@ -21,7 +21,8 @@ public record MeterRow(
         LocalDateTime updatedAt,
         LocalDateTime deletedAt,
         String utilityType,
-        String measurement
+        String measurement,
+        Boolean isMasterMeter
 ) {
     public Meters toMeters(){
         return new Meters(
@@ -37,7 +38,8 @@ public record MeterRow(
                 this.updatedAt,
                 this.deletedAt,
                 MeterType.valueOf(this.utilityType),
-                MeterMeasurement.valueOf(this.measurement)
+                MeterMeasurement.valueOf(this.measurement),
+                this.isMasterMeter
         );
     }
 
@@ -46,7 +48,8 @@ public record MeterRow(
             Double pointX,
             Double pointY,
             MeterType utilityType,
-            MeterMeasurement measurement
+            MeterMeasurement measurement,
+            Boolean isMasterMeter
     ) {
         return new MeterRow(
                 null,
@@ -61,7 +64,8 @@ public record MeterRow(
                 null,
                 null,
                 utilityType.name(),
-                measurement.name() // .name() is for the enum values
+                measurement.name(), // .name() is for the enum values,
+                isMasterMeter
         );
     }
 

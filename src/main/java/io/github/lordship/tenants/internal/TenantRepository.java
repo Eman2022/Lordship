@@ -12,8 +12,6 @@ public class TenantRepository {
     private final JdbcClient jdbc;
 
     private static final Set<String> ALLOWED_COLUMNS = Set.of(
-            "tenancy_id",
-            "person_id",
             "start_date",
             "end_date"
     );
@@ -61,7 +59,7 @@ public class TenantRepository {
                 .single();
     }
 
-    // Softdelete tenants
+    // Soft-delete tenants
     public void softDelete(UUID uuid) {
         jdbc.sql("UPDATE tenant SET deleted_at = CURRENT_TIMESTAMP WHERE uuid = :uuid")
                 .param("uuid", uuid)
@@ -90,7 +88,7 @@ public class TenantRepository {
         params.put("uuid", uuid);
 
         return jdbc.sql(sql.toString())
-                .params(params)
+                .paramSource(params)
                 .query(TenantRow.class)
                 .optional();
     }

@@ -14,6 +14,7 @@ public class MeterRepository {
     // Decide which data points should be modified
     private static final Set<String> ALLOWED_COLUMNS = Set.of(
             "title",
+            "description",
             "installed_at"
     );
 
@@ -24,9 +25,9 @@ public class MeterRepository {
     public MeterRow save(MeterRow row) {
         return jdbc.sql("""
                         INSERT INTO meters (
-                                meter_id, point_x, point_y, utility_type, measurement
+                                meter_id, point_x, point_y, utility_type, measurement, is_master_meter
                             ) VALUES (
-                                :meterId, :pointX, :pointY, :utilityType, :measurement
+                                :meterId, :pointX, :pointY, :utilityType, :measurement, :isMasterMeter
                             ) RETURNING *
                         """)
                 .paramSource(row)
