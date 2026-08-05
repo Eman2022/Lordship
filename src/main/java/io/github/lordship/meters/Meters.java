@@ -3,7 +3,7 @@ package io.github.lordship.meters;
 import org.springframework.cglib.core.Local;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record Meters(
@@ -15,9 +15,9 @@ public record Meters(
     Double pointX,
     Double pointY,
     LocalDate installedAt,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt,
-    LocalDateTime deletedAt,
+    OffsetDateTime createdAt,
+    OffsetDateTime updatedAt,
+    OffsetDateTime deletedAt,
     MeterType utilityType,
     MeterMeasurement measurement,
     Boolean isMasterMeter

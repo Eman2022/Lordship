@@ -11,6 +11,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,21 +52,21 @@ public class MetersServiceTests {
         return new MeterRow(
                 id,
                 meterId,
+                "Water meter",
                 null,
-                null,
-                null,
+                "065E1GHB",
                 0.0,
                 0.0,
                 null,
+                OffsetDateTime.now(ZoneOffset.UTC).minusDays(10).truncatedTo(ChronoUnit.DAYS),
+                OffsetDateTime.now(ZoneOffset.UTC).minusDays(5).truncatedTo(ChronoUnit.DAYS),
                 null,
                 null,
                 null,
-                null,
-                null,
-                null
+                true
         );
     }
-/*
+
     @Test
     void create_shouldSaveAndAudit() {
         MeterCreateRequest req = new MeterCreateRequest(
@@ -89,5 +92,5 @@ public class MetersServiceTests {
 
         assertTrue(result.isPresent());
         assertEquals(uuid1, result.get().uuid());
-    } */
+    }
 }

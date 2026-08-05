@@ -2,24 +2,8 @@
 -- V8: Meters
 -- ============================================================
 
-CREATE TABLE meter_type (
-                            code        TEXT PRIMARY KEY,
-                            description TEXT
-);
-
-CREATE TABLE meter_measurement (
-                           code        TEXT PRIMARY KEY,
-                           description TEXT
-);
-
-INSERT INTO meter_type (code, description) VALUES
-                           ('WATER', 'Water utility meter'),
-                           ('ENERGY', 'Energy utility meter');
-
-INSERT INTO meter_measurement (code, description) VALUES
-                          ('GALLONS', 'Water measurement'),
-                          ('KILOWATTHOURS', 'Energy measurement'),
-                          ('CUBICFEET', 'Water measurement');
+CREATE TYPE meter_type AS ENUM ('WATER', 'ENERGY');
+CREATE TYPE meter_measurement AS ENUM ('GALLONS', 'KILOWATTHOURS', 'CUBICFEET');
 
 CREATE TABLE meters (
                         uuid          UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -29,8 +13,8 @@ CREATE TABLE meters (
                         serial_number VARCHAR(255) UNIQUE,
                         point_x       DOUBLE PRECISION NOT NULL,
                         point_y       DOUBLE PRECISION NOT NULL,
-                        utility_type  TEXT NOT NULL REFERENCES meter_type(code),
-                        measurement   TEXT NOT NULL REFERENCES meter_measurement(code),
+                        utility_type  meter_type NOT NULL,
+                        measurement   meter_measurement NOT NULL,
                         installed_at  DATE,
                         created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
                         updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -48,8 +32,8 @@ CREATE TABLE meter_relationship (
 CREATE TABLE meter_reads (
                              uuid UUID PRIMARY KEY DEFAULT uuidv7(),
                              targeted_meter UUID NOT NULL,
-                             meter_type TEXT NOT NULL REFERENCES meter_type(code),
-                             meter_measurement TEXT NOT NULL REFERENCES meter_measurement(code),
+                             meter_type meter_type NOT NULL,
+                             meter_measurement meter_measurement NOT NULL,
                              meter_amount INT NOT NULL,
                              FOREIGN KEY (targeted_meter) REFERENCES meters(uuid)
 );

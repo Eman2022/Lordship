@@ -83,19 +83,6 @@ public class TenantControllerIT extends IntegrationTest {
         return person.uuid();
     }
 
-    private String loginAsRoot() throws Exception {
-        AgentLoginRequest loginRequest = new AgentLoginRequest(rootEmail, rootPassword);
-
-        MvcResult result = mockMvc.perform(post("/agents/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String body = result.getResponse().getContentAsString();
-        return objectMapper.readTree(body).get("token").asString();
-    }
-
 
     @Test
     void createTenant_unauthorized_returns403() throws Exception {
@@ -110,14 +97,15 @@ public class TenantControllerIT extends IntegrationTest {
     }
 
     @Test
-    @WithMockUser(authorities = "tenants:create")
     void createTenant_invalidPayload_returns400() throws Exception {
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
         var invalidJson = """
                     { "tenancyId": null, "personId": null }
                 """;
 
         mockMvc.perform(
                         post("/tenants/create")
+                                .header("Authorization", "Bearer " + token)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(invalidJson)
                 )
