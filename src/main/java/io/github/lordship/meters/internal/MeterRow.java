@@ -5,7 +5,7 @@ import io.github.lordship.meters.MeterType;
 import io.github.lordship.meters.Meters;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record MeterRow(
@@ -17,11 +17,12 @@ public record MeterRow(
         Double pointX,
         Double pointY,
         LocalDate installedAt,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt,
-        LocalDateTime deletedAt,
-        String utilityType,
-        String measurement
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt,
+        OffsetDateTime deletedAt,
+        MeterType utilityType,
+        MeterMeasurement measurement,
+        Boolean isMasterMeter
 ) {
     public Meters toMeters(){
         return new Meters(
@@ -36,8 +37,9 @@ public record MeterRow(
                 this.createdAt,
                 this.updatedAt,
                 this.deletedAt,
-                MeterType.valueOf(this.utilityType),
-                MeterMeasurement.valueOf(this.measurement)
+                this.utilityType,
+                this.measurement,
+                this.isMasterMeter
         );
     }
 
@@ -46,7 +48,8 @@ public record MeterRow(
             Double pointX,
             Double pointY,
             MeterType utilityType,
-            MeterMeasurement measurement
+            MeterMeasurement measurement,
+            Boolean isMasterMeter
     ) {
         return new MeterRow(
                 null,
@@ -60,9 +63,9 @@ public record MeterRow(
                 null,
                 null,
                 null,
-                utilityType.name(),
-                measurement.name() // .name() is for the enum values
+                utilityType,
+                measurement,
+                isMasterMeter
         );
     }
-
 }

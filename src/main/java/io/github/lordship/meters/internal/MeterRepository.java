@@ -14,6 +14,7 @@ public class MeterRepository {
     // Decide which data points should be modified
     private static final Set<String> ALLOWED_COLUMNS = Set.of(
             "title",
+            "description",
             "installed_at"
     );
 
@@ -23,13 +24,18 @@ public class MeterRepository {
 
     public MeterRow save(MeterRow row) {
         return jdbc.sql("""
-                        INSERT INTO meters (
-                                meter_id, point_x, point_y, utility_type, measurement
-                            ) VALUES (
-                                :meterId, :pointX, :pointY, :utilityType, :measurement
-                            ) RETURNING *
-                        """)
-                .paramSource(row)
+                    INSERT INTO meters (
+                            meter_id, point_x, point_y, utility_type, measurement, is_master_meter
+                        ) VALUES (
+                            :meterId, :pointX, :pointY, :utilityType::meter_type, :measurement::meter_measurement, :isMasterMeter
+                        ) RETURNING *
+                    """)
+                .param("meterId", row.meterId())
+                .param("pointX", row.pointX())
+                .param("pointY", row.pointY())
+                .param("utilityType", row.utilityType() != null ? row.utilityType().name() : null) // useful for binding enums
+                .param("measurement", row.measurement() != null ? row.measurement().name() : null)
+                .param("isMasterMeter", row.isMasterMeter())
                 .query(MeterRow.class)
                 .single();
     }

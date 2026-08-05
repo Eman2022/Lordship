@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 @Service
@@ -122,21 +123,76 @@ public class TenancyService {
     // mutable hashmap to be able to properly patch changes
     @Transactional
     public Optional<Tenancy> patchTenancy(UUID uuid, Map<String, Object> changes) {
-        Optional<TenancyRow> previousTenancy = tenancyRepository.findById(uuid);
-        if (previousTenancy.isEmpty()) {
+        Optional<TenancyRow> beforeOpt = tenancyRepository.findById(uuid);
+        if (beforeOpt.isEmpty()) {
             return Optional.empty();
         }
+        TenancyRow before = beforeOpt.get();
 
-        TenancyRow before = previousTenancy.get();
+        Map<String, Object> mutable = new HashMap<>(changes);
 
-        Optional<TenancyRow> updatedTenancy = tenancyRepository.patch(uuid, changes);
+        if (mutable.containsKey("start_date")) {
+            Object raw = mutable.get("start_date");
+            try {
+                if (raw instanceof String s && !s.isBlank()) {
+                    LocalDate parsed = LocalDate.parse(s);
+
+                    if (Objects.equals(before.startDate(), parsed)) {
+                        mutable.remove("start_date");
+                    } else {
+                        mutable.put("start_date", parsed);
+                    }
+
+                } else {
+                    // Will skip if not edited
+                    if (before.startDate() == null) {
+                        mutable.remove("start_date");
+                    } else {
+                        mutable.put("start_date", null);
+                    }
+                }
+            } catch(DateTimeParseException e) {
+                throw new IllegalArgumentException("Invalid date"); // Throws error if updated date is not valid
+            }
+        }
+
+        if (mutable.containsKey("end_date")) {
+            Object raw = mutable.get("end_date");
+
+            try {
+                if (raw instanceof String s && !s.isBlank()) {
+                    LocalDate parsed = LocalDate.parse(s);
+
+                    if (Objects.equals(before.endDate(), parsed)) {
+                        mutable.remove("end_date");
+                    } else {
+                        mutable.put("end_date", parsed);
+                    }
+
+                } else {
+                    if (before.endDate() == null) {
+                        mutable.remove("end_date");
+                    } else {
+                        mutable.put("end_date", null);
+                    }
+                }
+            } catch (DateTimeParseException e) {
+                throw new IllegalArgumentException("Invalid date"); // Same as startDate
+            }
+        }
+
+        if(mutable.isEmpty()) {
+            return Optional.of(before.toTenancy());
+        }
+
+        Optional<TenancyRow> updatedTenancy = tenancyRepository.patch(uuid, mutable);
         if (updatedTenancy.isEmpty()) {
             return Optional.empty();
         }
         TenancyRow after = updatedTenancy.get();
 
         var diff = AuditMapper.diff(before, after);
-        if (!diff.before().isEmpty()) {
+        if(!diff.before().isEmpty()) {
             auditService.recordUpdate("tenancy", uuid, diff.before(), diff.after());
         }
 

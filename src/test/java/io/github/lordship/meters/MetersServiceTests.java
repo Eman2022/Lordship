@@ -11,6 +11,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,17 +52,45 @@ public class MetersServiceTests {
         return new MeterRow(
                 id,
                 meterId,
+                "Water meter",
                 null,
-                null,
-                null,
+                "065E1GHB",
                 0.0,
                 0.0,
                 null,
+                OffsetDateTime.now(ZoneOffset.UTC).minusDays(10).truncatedTo(ChronoUnit.DAYS),
+                OffsetDateTime.now(ZoneOffset.UTC).minusDays(5).truncatedTo(ChronoUnit.DAYS),
                 null,
                 null,
                 null,
-                null,
-                null
+                true
         );
+    }
+
+    @Test
+    void create_shouldSaveAndAudit() {
+        MeterCreateRequest req = new MeterCreateRequest(
+                meterId, 1.0, 2.0, MeterType.WATER, MeterMeasurement.GALLONS, true
+        );
+
+        MeterRow saved = row(uuid1);
+        when(meterRepository.save(any())).thenReturn(saved);
+
+        Meters result = meterService.create(req);
+
+        assertEquals(uuid1, result.uuid());
+        verify(meterRepository).save(any());
+        verify(auditService).recordInsert(eq("meters"), eq(uuid1), any());
+    }
+
+    @Test
+    void findMetersById_shouldReturnMappedMeters() {
+        MeterRow saved = row(uuid1);
+        when(meterRepository.findById(uuid1)).thenReturn(Optional.of(saved));
+
+        Optional<Meters> result = meterService.findMetersById(uuid1);
+
+        assertTrue(result.isPresent());
+        assertEquals(uuid1, result.get().uuid());
     }
 }

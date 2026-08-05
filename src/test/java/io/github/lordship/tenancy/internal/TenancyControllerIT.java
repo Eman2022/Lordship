@@ -1,5 +1,9 @@
 package io.github.lordship.tenancy.internal;
 
+import com.jayway.jsonpath.JsonPath;
+import io.github.lordship.TestAuthSupport;
+import io.github.lordship.access.AgentLoginRequest;
+import org.springframework.beans.factory.annotation.Value;
 import tools.jackson.databind.ObjectMapper;
 import io.github.lordship.IntegrationTest;
 import io.github.lordship.properties.internal.PropertyRow;
@@ -10,7 +14,6 @@ import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -35,6 +38,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 public class TenancyControllerIT extends IntegrationTest {
 
+    @Value("${lordship.root.email}")
+    private String rootEmail;
+
+    @Value("${lordship.root.password}")
+    private String rootPassword;
+
     @Autowired
     MockMvc mockMvc;
 
@@ -43,6 +52,9 @@ public class TenancyControllerIT extends IntegrationTest {
 
     @Autowired
     TenancyRepository tenancyRepository;
+
+    @Autowired
+    TenancyService tenancyService;
 
     @Autowired
     JdbcClient jdbc;
@@ -78,6 +90,20 @@ public class TenancyControllerIT extends IntegrationTest {
     private UUID setupFullChain() {
         UUID propertyId = insertTestProperty();
         return insertTestLot(propertyId);
+    }
+
+
+    private UUID createTestTenancy(String token, UUID lotId) throws Exception {
+        MvcResult result = mockMvc.perform(
+                        post("/tenancy/create")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(new TenancyCreateRequest(lotId)))
+                )
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.uuid"));
     }
 
 
@@ -146,13 +172,14 @@ public class TenancyControllerIT extends IntegrationTest {
     }
 
     @Test
-    @WithMockUser(authorities = "tenancy:create")
     void createTenancy_shouldReturn400_whenLotIdIsMissing() throws Exception {
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
         var invalidJson = """
                     { "lotId": null }
                 """;
 
         mockMvc.perform(post("/tenancy/create")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidJson))
                 .andExpect(status().isBadRequest());
@@ -160,34 +187,60 @@ public class TenancyControllerIT extends IntegrationTest {
 
 
     @Test
-    @WithMockUser(authorities = "tenancy:view")
     void getActiveTenanciesByLot_shouldReturnOnlyActiveTenancies() throws Exception {
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
         UUID lotId = setupFullChain();
 
-        tenancyRepository.save(TenancyRow.forInsert(lotId, LocalDate.now(), null));
-        tenancyRepository.save(TenancyRow.forInsert(lotId, LocalDate.now().minusDays(10), LocalDate.now()));
+        // Create a closed tenancy
+        UUID closedTenancy = createTestTenancy(token, lotId);
 
-        mockMvc.perform(get("/tenancy/lot/{lotId}", lotId))
+        // Close tenancy before creating a second
+        mockMvc.perform(patch("/tenancy/{uuid}", closedTenancy)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"endDate\": \"" + LocalDate.now() + "\"}"))
+                .andExpect(status().isOk());
+
+        // Create the active tenancy
+        UUID activeTenancy = createTestTenancy(token, lotId);
+
+        mockMvc.perform(get("/tenancy/lot/{lotId}", lotId)
+                        .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].endDate").doesNotExist());
     }
 
     @Test
-    @WithMockUser(authorities = "tenancy:edit")
     void patchTenancy_shouldReturn400_whenInvalidDateProvided() throws Exception {
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
         UUID lotId = setupFullChain();
 
-        TenancyRow saved = tenancyRepository.save(
-                TenancyRow.forInsert(lotId, LocalDate.now(), null)
-        );
+        UUID tenancyId = createTestTenancy(token, lotId);
 
-        var invalidJson = """
-            { "endDate": "not-a-date" }
-            """;
-
-        mockMvc.perform(patch("/tenancy/{uuid}", saved.uuid())
+        // Invalid endDate
+        mockMvc.perform(patch("/tenancy/{uuid}", tenancyId)
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidJson))
+                        .content("{\"endDate\": \"not-a-date\"}"))
+                .andExpect(status().isBadRequest());
+
+        // Invalid startDate
+        mockMvc.perform(patch("/tenancy/{uuid}", tenancyId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"startDate\": \"not-a-date\"}"))
+                .andExpect(status().isBadRequest());
+
+        // Both invalid
+        mockMvc.perform(patch("/tenancy/{uuid}", tenancyId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                            "startDate": "not-a-date",
+                            "endDate": "also-not-a-date"
+                        }
+                    """))
                 .andExpect(status().isBadRequest());
     }
 }

@@ -14,4 +14,8 @@ public record Tenant(
         OffsetDateTime updatedAt,
         OffsetDateTime deletedAt
 ) {
+
+    public boolean isSoftDeleted() {
+        return deletedAt != null;
+    }
 }

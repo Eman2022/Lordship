@@ -20,6 +20,9 @@ public record MeterCreateRequest(
     MeterType utilityType,
 
     @NotNull
-    MeterMeasurement measurement
+    MeterMeasurement measurement,
+
+    @NotNull
+    Boolean isMasterMeter
 ) {
 }
