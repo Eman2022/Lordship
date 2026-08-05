@@ -1,11 +1,13 @@
 package io.github.lordship.lots;
 
+import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
 import io.github.lordship.lots.internal.LotRepository;
 import io.github.lordship.lots.internal.LotRow;
 import io.github.lordship.lots.internal.LotUpdateRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -30,6 +32,16 @@ public class LotServiceTest {
 
     @InjectMocks
     LotService lotService;
+
+    // Grabs the before/after maps handed to AuditService.recordUpdate so tests can
+    // assert the log holds only the fields that actually changed.
+    @SuppressWarnings("unchecked")
+    private AuditMapper.Diff capturedUpdate(UUID uuid) {
+        ArgumentCaptor<Map<String, Object>> before = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<Map<String, Object>> after = ArgumentCaptor.forClass(Map.class);
+        verify(auditService).recordUpdate(eq("lot"), eq(uuid), before.capture(), after.capture());
+        return new AuditMapper.Diff(before.getValue(), after.getValue());
+    }
 
     private LotRow stubRow(UUID propertyId) {
         return new LotRow(
@@ -57,7 +69,22 @@ public class LotServiceTest {
         assertEquals(savedRow.uuid(), result.uuid());
         assertEquals("12", result.lotNumber());
         assertEquals("Rental lot", result.description());
-        verify(auditService).recordInsert(eq("lot"), eq(savedRow.uuid()), any());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(auditService).recordInsert(eq("lot"), eq(savedRow.uuid()), captor.capture());
+
+        // Keys must be the record component names AuditMapper produces, matching every
+        // other module's audit entries -- not the snake_case column names.
+        Map<String, Object> logged = captor.getValue();
+        assertEquals(propertyId, logged.get("propertyId"));
+        assertEquals("12", logged.get("lotNumber"));
+        assertEquals("Rental lot", logged.get("description"));
+        assertEquals("Front row", logged.get("notes"));
+        assertEquals(1, logged.get("sortOrder"));
+        assertFalse(logged.containsKey("lot_number"));
+        assertFalse(logged.containsKey("property_id"));
+        assertFalse(logged.containsKey("sort_order"));
     }
 
     @Test
@@ -82,7 +109,13 @@ public class LotServiceTest {
         assertTrue(result.isPresent());
         assertEquals("14", result.get().lotNumber());
         assertEquals("Vacant lot", result.get().description());
-        verify(auditService).recordUpdate(eq("lot"), eq(existing.uuid()), any(), any());
+
+        // propertyId is unchanged (and not editable here), so it must stay out of the log.
+        AuditMapper.Diff logged = capturedUpdate(existing.uuid());
+        assertEquals(Set.of("lotNumber", "description", "notes", "sortOrder"), logged.before().keySet());
+        assertEquals(logged.before().keySet(), logged.after().keySet());
+        assertEquals("12", logged.before().get("lotNumber"));
+        assertEquals("14", logged.after().get("lotNumber"));
     }
 
     @Test
@@ -114,7 +147,18 @@ public class LotServiceTest {
         // Assert
         assertTrue(result);
         verify(lotRepository).softDelete(existing.uuid());
-        verify(auditService).recordUpdate(eq("lot"), eq(existing.uuid()), any(), any());
+
+        // A soft delete is logged as a DELETE, the same as every other package -- not as
+        // an UPDATE carrying a hand-made deleted_at value.
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(auditService).recordDelete(eq("lot"), eq(existing.uuid()), captor.capture());
+        verify(auditService, never()).recordUpdate(any(), any(), any(), any());
+
+        Map<String, Object> logged = captor.getValue();
+        assertEquals(existing.propertyId(), logged.get("propertyId"));
+        assertEquals(existing.lotNumber(), logged.get("lotNumber"));
+        assertFalse(logged.containsKey("deleted_at"));
     }
 
     @Test
@@ -154,16 +198,28 @@ public class LotServiceTest {
         // Assert
         assertTrue(result.isPresent());
         assertEquals("14", result.get().lotNumber());
-        verify(auditService).recordUpdate(eq("lot"), eq(before.uuid()), any(), any());
+
+        // Only lotNumber moved, so the log must not carry the four untouched fields.
+        AuditMapper.Diff logged = capturedUpdate(before.uuid());
+        assertEquals(Set.of("lotNumber"), logged.before().keySet());
+        assertEquals("12", logged.before().get("lotNumber"));
+        assertEquals(Set.of("lotNumber"), logged.after().keySet());
+        assertEquals("14", logged.after().get("lotNumber"));
     }
 
     @Test
     void patchLot_shouldNotRecordAudit_whenNoDiffProduced() {
         // Arrange
         LotRow before = stubRow(UUID.randomUUID());
+        // A separate instance carrying the same values: the diff has to come out empty on
+        // value equality, not because the stub handed back the very same object.
+        LotRow after = new LotRow(
+                before.uuid(), before.propertyId(), before.lotNumber(),
+                before.description(), before.notes(), before.sortOrder(),
+                before.createdAt(), before.deletedAt()
+        );
         when(lotRepository.findById(before.uuid())).thenReturn(Optional.of(before));
-        // patch returns a row identical to before
-        when(lotRepository.patch(eq(before.uuid()), any())).thenReturn(Optional.of(before));
+        when(lotRepository.patch(eq(before.uuid()), any())).thenReturn(Optional.of(after));
 
         Map<String, Object> changes = new HashMap<>();
         changes.put("lot_number", before.lotNumber());

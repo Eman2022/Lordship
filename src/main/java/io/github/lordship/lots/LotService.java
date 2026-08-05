@@ -1,5 +1,6 @@
 package io.github.lordship.lots;
 
+import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
 import io.github.lordship.lots.internal.LotRepository;
 import io.github.lordship.lots.internal.LotRow;
@@ -7,7 +8,6 @@ import io.github.lordship.lots.internal.LotUpdateRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,7 +35,7 @@ public class LotService {
                 request.sortOrder()
         ));
 
-        auditService.recordInsert("lot", saved.uuid(), snapshot(saved));
+        auditService.recordInsert("lot", saved.uuid(), AuditMapper.toMap(saved));
         return saved.toLot();
     }
 
@@ -53,8 +53,12 @@ public class LotService {
                     existing.deletedAt()
             ));
 
-            // Captures renames and every other mutable-field change.
-            auditService.recordUpdate("lot", uuid, snapshot(existing), snapshot(updated));
+            // Only the fields that actually changed are logged, so a rename shows up as
+            // just lotNumber rather than the whole row.
+            var diff = AuditMapper.diff(existing, updated);
+            if (!diff.before().isEmpty()) {
+                auditService.recordUpdate("lot", uuid, diff.before(), diff.after());
+            }
             return updated.toLot();
         });
     }
@@ -84,23 +88,18 @@ public class LotService {
         }
         LotRow after = afterOpt.get();
 
-        Map<String, Object> beforeSnap = snapshot(before);
-        Map<String, Object> afterSnap = snapshot(after);
-        if (!beforeSnap.equals(afterSnap)) {
-            auditService.recordUpdate("lot", uuid, beforeSnap, afterSnap);
+        var diff = AuditMapper.diff(before, after);
+        if (!diff.before().isEmpty()) {
+            auditService.recordUpdate("lot", uuid, diff.before(), diff.after());
         }
         return Optional.of(after.toLot());
     }
 
-    // Soft delete recorded as an UPDATE (sets deleted_at). AuditService exposes
-    // no public delete hook, and a soft delete is a state change, not a removal.
     @Transactional
     public boolean deleteLot(UUID uuid) {
         return lotRepository.findById(uuid).map(existing -> {
             lotRepository.softDelete(uuid);
-            Map<String, Object> after = snapshot(existing);
-            after.put("deleted_at", "now");
-            auditService.recordUpdate("lot", uuid, snapshot(existing), after);
+            auditService.recordDelete("lot", uuid, AuditMapper.toMap(existing));
             return true;
         }).orElse(false);
     }
@@ -119,15 +118,5 @@ public class LotService {
         return lotRepository.findDuplicateNumbers(propertyCode).stream()
                 .map(LotRow::toLot)
                 .toList();
-    }
-
-    private static Map<String, Object> snapshot(LotRow row) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("property_id", row.propertyId());
-        map.put("lot_number", row.lotNumber());
-        map.put("description", row.description());
-        map.put("notes", row.notes());
-        map.put("sort_order", row.sortOrder());
-        return map;
     }
 }
