@@ -152,13 +152,13 @@ public class AgentControllerIT extends IntegrationTest {
         RoleCreationRequest rcr = new RoleCreationRequest(testRoleName, testRoleDesc);
 
         // first make sure the role can't be created if we're not logged in
-        mockMvc.perform(post("/roles/create")
+        mockMvc.perform(post("/api/roles")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(rcr)))
                 .andExpect(status().isForbidden());
 
         // second make sure the role can be created by the authorized user
-        mockMvc.perform(post("/roles/create")
+        mockMvc.perform(post("/api/roles")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(rcr))
                     .header("Authorization", "Bearer " + rootUserToken))
