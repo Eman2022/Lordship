@@ -7,8 +7,9 @@ import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 
-// Default roles: Admin, Unassigned, Office Staff, Property Manager
 
+//  This request represents someone granting a role to an agent
+// Default roles: Admin, Unassigned, Office Staff, Property Manager
 public record GrantedRoleRequest(
 
         @NotNull
