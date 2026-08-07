@@ -75,6 +75,31 @@ public class AgentService {
         return new AgentWithPerson(agent, person);
     }
 
+    @Transactional
+    public boolean setAgentPassword(UUID agentId, String plainTextPassword) {
+        Optional<AgentRow> found = agentRepository.findById(agentId);
+        if (found.isEmpty()) {
+            return false;
+        }
+
+        String currentHash = found.get().agentPassword();
+        boolean unchanged = currentHash != null
+                && passwordService.verify(plainTextPassword, currentHash);
+        if (unchanged) {
+            return true;
+        }
+
+        int updated = agentRepository.updatePassword(agentId, passwordService.hash(plainTextPassword));
+        if (updated == 0) {
+            return false;
+        }
+
+        auditService.recordUpdate("agent", agentId,
+                Map.of("agent_password", "[redacted]"),
+                Map.of("agent_password", "[reset]"));
+        return true;
+    }
+
     public Optional<AgentAuthResult> verifyLogin(String workEmail, String plainTextPassword, String userAgentHeader, String ipAddress){
         UserAgent userAgent = UserAgent.parseUserAgentString(userAgentHeader);
 

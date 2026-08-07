@@ -113,7 +113,7 @@ public class PersonControllerIT extends IntegrationTest {
                 .andExpect(status().isOk());
 
         // make an agent who by default doesn't have the view ssn permissions
-        MvcResult registerResult = mockMvc.perform(post("/api/agents/register")
+        MvcResult registerResult = mockMvc.perform(post("/api/agents")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + token)
                 .content("""
