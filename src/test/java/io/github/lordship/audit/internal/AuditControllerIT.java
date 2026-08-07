@@ -53,7 +53,7 @@ public class AuditControllerIT extends IntegrationTest {
             }
             """;
 
-        MvcResult result1 = mockMvc.perform(post("/api/agents/register")
+        MvcResult result1 = mockMvc.perform(post("/api/agents")
                 .header("Authorization", "Bearer " + rootAuthToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(registerAgentBody))
@@ -89,7 +89,7 @@ public class AuditControllerIT extends IntegrationTest {
                 }
                 """;
 
-        MvcResult result3 = mockMvc.perform(post("/api/agents/login")
+        MvcResult result3 = mockMvc.perform(post("/api/agents/auth")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jimmyLogin))
                 .andExpect(status().isOk())

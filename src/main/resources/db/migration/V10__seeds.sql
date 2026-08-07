@@ -11,6 +11,7 @@ INSERT INTO permission (uuid, permission_name) VALUES
     -- Agents
     (uuidv7(), 'agents:view'),
     (uuidv7(), 'agents:edit'),
+    (uuidv7(), 'agents:reset_passwords'),
     (uuidv7(), 'agents:view_own'),
     (uuidv7(), 'agents:edit_own'),
     (uuidv7(), 'agents:create'),

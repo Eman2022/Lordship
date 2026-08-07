@@ -20,7 +20,7 @@ public record AgentRegistrationRequest (
     String workPhone,
 
     @NotBlank
-    @Size(min = 12, message = "Password must be at least 12 characters")
+    @Size(min = 12, max = 64, message = "Password must be at least 12 characters")
     String password
 
 ) {

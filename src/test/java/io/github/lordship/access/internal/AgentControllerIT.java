@@ -78,7 +78,7 @@ public class AgentControllerIT extends IntegrationTest {
         AgentRegistrationRequest agentRegistrationRequest = new AgentRegistrationRequest(testAgentName, null,
                 testAgentEmail, null, testAgentPass);
 
-        mockMvc.perform(post("/api/agents/register")
+        mockMvc.perform(post("/api/agents")
                      .header("Authorization", "Bearer " + rootUserToken) // don't forget your token!
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(agentRegistrationRequest)))
@@ -91,7 +91,7 @@ public class AgentControllerIT extends IntegrationTest {
         AgentLoginRequest newAgentLoginRequest = new AgentLoginRequest(testAgentEmail, testAgentPass);
 
         // Act
-        MvcResult testUserLoginResult = mockMvc.perform(post("/api/agents/login")
+        MvcResult testUserLoginResult = mockMvc.perform(post("/api/agents/auth")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(newAgentLoginRequest)))
         // Assert
@@ -135,7 +135,7 @@ public class AgentControllerIT extends IntegrationTest {
         AgentLoginRequest agentLoginRequest = new AgentLoginRequest(rootEmail, wrongPassword);
 
         // Act
-        mockMvc.perform(post("/api/agents/login")
+        mockMvc.perform(post("/api/agents/auth")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(agentLoginRequest)))
         // Assert

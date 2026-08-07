@@ -6,13 +6,17 @@ import io.github.lordship.persons.Person;
 import io.github.lordship.persons.PersonService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/agents")
@@ -25,7 +29,7 @@ public class AgentController {
     }
 
     @PreAuthorize("hasAuthority('agents:create')")
-    @PostMapping("/register")
+    @PostMapping
     public ResponseEntity<AgentRegistrationResponse> registerAgent(@Valid @RequestBody AgentRegistrationRequest request){
 
         AgentWithPerson agentWithPerson = agentService.registerAgent(request.nameFull(), request.workPhone(), request.workEmail(), request.password());
@@ -34,7 +38,7 @@ public class AgentController {
                 .body(AgentRegistrationResponse.from(agentWithPerson));
     }
 
-    @PostMapping("/login")
+    @PostMapping("/auth")
     public ResponseEntity<AgentLoginResponse> login(@Valid @RequestBody AgentLoginRequest request, HttpServletRequest httpRequest) {
 
         return agentService.verifyLogin(request.workEmail(),
@@ -45,5 +49,16 @@ public class AgentController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
+
+
+    @PreAuthorize("hasAuthority('agents:reset_passwords')")
+    @PutMapping("/{uuid}/password")
+    public ResponseEntity<Void> changePassword(@PathVariable UUID uuid,
+                                                  @Valid @RequestBody ChangePasswordRequest request){
+        return agentService.setAgentPassword(uuid, request.newPassword())
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
+    }
+
 
 }

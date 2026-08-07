@@ -28,6 +28,16 @@ public class AgentRepository {
         .single();
     }
 
+    public int updatePassword(UUID agentId, String hashedPassword) {
+        return jdbc.sql("""
+            UPDATE agent SET agent_password = :hashedPassword
+            WHERE uuid = :agentId AND deleted_at IS NULL
+            """)
+                .param("hashedPassword", hashedPassword)
+                .param("agentId", agentId)
+                .update();
+    }
+
     public Optional<AgentRow> findById(UUID uuid) {
         return jdbc.sql("SELECT * FROM agent WHERE uuid = :uuid AND deleted_at IS NULL")
                 .param("uuid", uuid)

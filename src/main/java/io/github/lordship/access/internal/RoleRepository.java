@@ -13,7 +13,6 @@ public class RoleRepository {
     private final JdbcClient jdbc;
 
 
-
     public RoleRepository(JdbcClient jdbc) { this.jdbc = jdbc;}
 
     public Optional<RoleRow> findByName(String roleName) {
@@ -49,7 +48,6 @@ public class RoleRepository {
                 .single();
     }
 
-
     public Optional<RoleRow> patch(UUID uuid, Map<String, Object> changes) {
         if (changes.isEmpty()) return findById(uuid);
 
@@ -83,5 +81,4 @@ public class RoleRepository {
         .param("uuid", uuid)
         .update();
     }
-
 }
