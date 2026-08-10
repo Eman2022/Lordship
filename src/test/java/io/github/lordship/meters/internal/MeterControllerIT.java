@@ -79,8 +79,8 @@ public class MeterControllerIT extends IntegrationTest {
 
     private UUID insertTestLot(UUID propertyId) {
         return jdbc.sql("""
-                INSERT INTO lot (property_id, lot_number)
-                VALUES (:propertyId, '1')
+                INSERT INTO lot (property_id, lot_number, target_rent)
+                VALUES (:propertyId, '1', 350.0)
                 RETURNING uuid
                 """)
                 .param("propertyId", propertyId)

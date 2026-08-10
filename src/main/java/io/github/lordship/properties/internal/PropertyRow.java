@@ -16,7 +16,6 @@ public record PropertyRow(
         String propertyState,
         LocalDate purchaseDate,
         Integer yearBuilt,
-        BigDecimal lateFeeRate,
         OffsetDateTime createdAt,
         OffsetDateTime deletedAt
 ) {
@@ -31,7 +30,6 @@ public record PropertyRow(
                 this.propertyState,
                 this.purchaseDate,
                 this.yearBuilt,
-                this.lateFeeRate,
                 this.createdAt,
                 this.deletedAt
         );
@@ -42,7 +40,6 @@ public PropertyRow(String propertyName, String propertyAddress){
                 null,
                 propertyName,
                 propertyAddress,
-                null,
                 null,
                 null,
                 null,
@@ -64,7 +61,6 @@ public PropertyRow(UUID uuid, String propertyCode, String propertyName, String p
             propertyState,
             purchaseDate,
             yearBuilt,
-            null,
             null,
             null
     );

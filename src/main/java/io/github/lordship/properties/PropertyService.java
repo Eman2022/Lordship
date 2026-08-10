@@ -38,9 +38,6 @@ public class PropertyService {
         return saved.toProperty();
     }
 
-//    public Optional<Property> findByPropertyCode(String propertyCode) {
-//        return propertyRepository.getPropertyOptional(propertyCode).map(PropertyRow::toProperty);
-//    }
 
     public Optional<Property> findByPropertyId(UUID propertyCode) {
         return propertyRepository.getPropertyOptional(propertyCode).map(PropertyRow::toProperty);

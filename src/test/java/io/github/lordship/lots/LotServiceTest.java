@@ -46,7 +46,7 @@ public class LotServiceTest {
     private LotRow stubRow(UUID propertyId) {
         return new LotRow(
                 UUID.randomUUID(), propertyId, "12",
-                "Rental lot", "Front row", 1,
+                "Rental lot", "Front row", 1, 350.0,
                 OffsetDateTime.now(ZoneOffset.UTC), null
         );
     }
@@ -59,7 +59,7 @@ public class LotServiceTest {
         when(lotRepository.save(any())).thenReturn(savedRow);
 
         LotCreationRequest request = new LotCreationRequest(
-                propertyId, "12", "Rental lot", "Front row", 1
+                propertyId, "12", "Rental lot", 350.0,"Front row", 1
         );
 
         // Act
@@ -94,13 +94,13 @@ public class LotServiceTest {
         LotRow existing = stubRow(propertyId);
         LotRow updated = new LotRow(
                 existing.uuid(), propertyId, "14",
-                "Vacant lot", "Ready for assignment", 3,
+                "Vacant lot", "Ready for assignment", 3, 350.0,
                 existing.createdAt(), null
         );
         when(lotRepository.findById(existing.uuid())).thenReturn(Optional.of(existing));
         when(lotRepository.update(any())).thenReturn(updated);
 
-        LotUpdateRequest request = new LotUpdateRequest("14", "Vacant lot", "Ready for assignment", 3);
+        LotUpdateRequest request = new LotUpdateRequest("14", "Vacant lot", "Ready for assignment", 3, 350.0);
 
         // Act
         Optional<Lot> result = lotService.updateLot(existing.uuid(), request);
@@ -124,7 +124,7 @@ public class LotServiceTest {
         UUID unknownUuid = UUID.randomUUID();
         when(lotRepository.findById(unknownUuid)).thenReturn(Optional.empty());
 
-        LotUpdateRequest request = new LotUpdateRequest("14", "Vacant lot", "Ready for assignment", 3);
+        LotUpdateRequest request = new LotUpdateRequest("14", "Vacant lot", "Ready for assignment", 3, 350.0);
 
         // Act
         Optional<Lot> result = lotService.updateLot(unknownUuid, request);
@@ -183,7 +183,7 @@ public class LotServiceTest {
         LotRow before = stubRow(propertyId);
         LotRow after = new LotRow(
                 before.uuid(), propertyId, "14",
-                "Rental lot", "Front row", 1,
+                "Rental lot", "Front row", 1, 350.0,
                 before.createdAt(), null
         );
         when(lotRepository.findById(before.uuid())).thenReturn(Optional.of(before));
@@ -215,7 +215,7 @@ public class LotServiceTest {
         // value equality, not because the stub handed back the very same object.
         LotRow after = new LotRow(
                 before.uuid(), before.propertyId(), before.lotNumber(),
-                before.description(), before.notes(), before.sortOrder(),
+                before.description(), before.notes(), before.sortOrder(), 350.0,
                 before.createdAt(), before.deletedAt()
         );
         when(lotRepository.findById(before.uuid())).thenReturn(Optional.of(before));

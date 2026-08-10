@@ -15,7 +15,7 @@ public class LotRepository {
 
     // Whitelisted so the dynamic patch UPDATE can never touch an arbitrary column.
     private static final Set<String> ALLOWED_COLUMNS = Set.of(
-            "lot_number", "description", "notes", "sort_order"
+            "lot_number", "description", "notes", "sort_order", "target_rent"
     );
 
     private final JdbcClient jdbc;
@@ -28,10 +28,10 @@ public class LotRepository {
         return jdbc.sql("""
             INSERT INTO lot (
                 property_id, lot_number,
-                description, notes, sort_order
+                description, notes, target_rent, sort_order
             ) VALUES (
                 :propertyId, :lotNumber,
-                :description, :notes, :sortOrder
+                :description, :notes, :targetRent, :sortOrder
             ) RETURNING *
             """)
                 .paramSource(row)
@@ -45,6 +45,7 @@ public class LotRepository {
                 lot_number    = :lotNumber,
                 description   = :description,
                 notes         = :notes,
+                target_rent   = :targetRent,
                 sort_order    = :sortOrder
             WHERE uuid = :uuid AND deleted_at IS NULL
             RETURNING *

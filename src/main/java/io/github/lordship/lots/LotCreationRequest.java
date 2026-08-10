@@ -15,6 +15,8 @@ public record LotCreationRequest(
 
         String description,
 
+        Double targetRent,
+
         String notes,
 
         Integer sortOrder

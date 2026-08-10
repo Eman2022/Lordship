@@ -10,6 +10,7 @@ public record Lot(
     String description,
     String notes,
     Integer sortOrder,
+    Double targetRent,
     OffsetDateTime createdAt,
     OffsetDateTime deletedAt
 ) {

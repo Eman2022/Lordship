@@ -31,6 +31,7 @@ public class LotService {
                 request.propertyId(),
                 request.lotNumber(),
                 request.description(),
+                request.targetRent(),
                 request.notes(),
                 request.sortOrder()
         ));
@@ -49,6 +50,8 @@ public class LotService {
                     request.description(),
                     request.notes(),
                     request.sortOrder(),
+                    request.targetRent(),
+
                     existing.createdAt(),
                     existing.deletedAt()
             ));

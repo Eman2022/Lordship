@@ -5,6 +5,7 @@
 CREATE TABLE lot (
                      uuid          UUID PRIMARY KEY DEFAULT uuidv7(),
                      property_id   UUID NOT NULL,
+                     target_rent   NUMERIC(12,2) NOT NULL CHECK (target_rent >= 0),
                      lot_number    TEXT NOT NULL,        -- human-facing id; numeric OR lettered (e.g. "DF"); mutable
                      description   TEXT,
                      notes         TEXT,                 -- notes about the LOT, never the tenancy

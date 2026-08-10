@@ -49,8 +49,8 @@ public class LotControllerIT extends IntegrationTest {
 
     private UUID insertTestLot(UUID propertyId, String lotNumber) {
         return jdbc.sql("""
-                INSERT INTO lot (property_id, lot_number, description, notes, sort_order)
-                VALUES (:propertyId, :lotNumber, 'Rental lot', :notes, 1)
+                INSERT INTO lot (property_id, lot_number, description, notes, sort_order, target_rent)
+                VALUES (:propertyId, :lotNumber, 'Rental lot', :notes, 1, 350.0)
                 RETURNING uuid
                 """)
                 .param("propertyId", propertyId)
@@ -63,7 +63,7 @@ public class LotControllerIT extends IntegrationTest {
     @Test
     void createLot_shouldReturn403_whenUnauthorized() throws Exception {
         // Arrange
-        LotCreationRequest request = new LotCreationRequest(UUID.randomUUID(), "12", null, null, 1);
+        LotCreationRequest request = new LotCreationRequest(UUID.randomUUID(), "12",  null,350.0, null, 1);
 
         // Act
         mockMvc.perform(post("/lots")
@@ -80,7 +80,7 @@ public class LotControllerIT extends IntegrationTest {
         UUID propertyId = insertTestProperty("L001");
 
         LotCreationRequest request = new LotCreationRequest(
-                propertyId, "12", "Rental lot", "Front row", 1
+                propertyId, "12", "Rental lot", 350.0, "Front row", 1
         );
 
         // Act
