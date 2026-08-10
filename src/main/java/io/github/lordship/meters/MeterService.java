@@ -40,6 +40,16 @@ public class MeterService {
 
     @Transactional
     public Meters create(MeterCreateRequest request) {
+        if (request.utilityType() == MeterType.ENERGY &&
+                request.measurement() != MeterMeasurement.KWH) {
+            throw new IllegalArgumentException("ENERGY meters must use KWH as a measurement"); // energy meters must use KWH
+        }
+
+        if (request.utilityType() == MeterType.WATER &&
+                request.measurement() == MeterMeasurement.KWH) {
+            throw new IllegalArgumentException("WATER meters cannot use KWH as a measurement"); // water meters cannot use KWH
+        }
+
         MeterRow row = meterRepository.save(
                 MeterRow.forInsert(
                         request.meterId(),
@@ -84,18 +94,27 @@ public class MeterService {
                 } else {
                     mutable.put("title", newTitle);
                 }
-
             }
 
         if (mutable.containsKey("description")) {
             Object raw = mutable.get("description");
-            String newTitle = (raw == null) ? null : raw.toString();
-            if (Objects.equals(before.title(), newTitle)) {
+            String newDescription = (raw == null) ? null : raw.toString();
+            if (Objects.equals(before.description(), newDescription)) {
                 mutable.remove("description");
             } else {
-                mutable.put("description", newTitle);
+                mutable.put("description", newDescription);
             }
 
+        }
+
+        if (mutable.containsKey("serial_number")) {
+            Object raw = mutable.get("serial_number");
+            String newSerial = (raw == null) ? null : raw.toString();
+            if (Objects.equals(before.serialNumber(), newSerial)) {
+                mutable.remove("serial_number");
+            } else {
+                mutable.put("serial_number", newSerial);
+            }
         }
 
         if (mutable.containsKey("installed_at")) {
@@ -121,6 +140,44 @@ public class MeterService {
                 throw new IllegalArgumentException("Invalid date"); // Throws error if updated date is not valid
                 }
         }
+
+        if (mutable.containsKey("measurement")) {
+            Object raw = mutable.get("measurement");
+
+            if (raw == null) {
+                throw new IllegalArgumentException("measurement cannot be null");
+            }
+
+            String value = raw.toString().trim();
+
+            MeterMeasurement mm;
+            try {
+                mm = MeterMeasurement.valueOf(value);
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException(
+                        "Invalid measurement: " + value +
+                                ". Allowed: GAL, KWH, CBF"
+                );
+            }
+
+            // ensures that the proper measurements are used for the meter
+            if (before.utilityType() == MeterType.ENERGY &&
+                    mm != MeterMeasurement.KWH) {
+                throw new IllegalArgumentException("ENERGY meters must use KWH as a measurement");
+            }
+
+            if (before.utilityType() == MeterType.WATER &&
+                    mm == MeterMeasurement.KWH) {
+                throw new IllegalArgumentException("WATER meters cannot use KWH as a measurement");
+            }
+
+            if (Objects.equals(before.measurement(), mm)) {
+                mutable.remove("measurement");
+            } else {
+                mutable.put("measurement", mm.name());
+            }
+        }
+
         if(mutable.isEmpty()) {
             return Optional.of(before.toMeters());
         }
@@ -139,4 +196,12 @@ public class MeterService {
         return Optional.of(after.toMeters());
     }
 
+    @Transactional
+    public boolean softDelete(UUID uuid) {
+        return meterRepository.findById(uuid).map(meterRow -> {
+            meterRepository.softDelete(uuid);
+            auditService.recordDelete("meters", uuid, AuditMapper.toMap(meterRow));
+            return true;
+        }).orElse(false);
+    }
 }

@@ -1,38 +1,29 @@
 package io.github.lordship.meters.internal;
 
+import com.jayway.jsonpath.JsonPath;
 import io.github.lordship.IntegrationTest;
-import io.github.lordship.access.AgentLoginRequest;
+import io.github.lordship.TestAuthSupport;
 import io.github.lordship.meters.MeterMeasurement;
 import io.github.lordship.meters.MeterType;
 import io.github.lordship.properties.internal.PropertyRow;
-import io.micrometer.core.instrument.Meter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
@@ -54,6 +45,7 @@ public class MeterControllerIT extends IntegrationTest {
     @Autowired
     MeterRepository meterRepository;
 
+
     @Autowired
     JdbcClient jdbc;
 
@@ -63,7 +55,7 @@ public class MeterControllerIT extends IntegrationTest {
                 0.0,
                 0.0,
                 MeterType.WATER,
-                MeterMeasurement.GALLONS,
+                MeterMeasurement.GAL,
                 true
         );
     }
@@ -93,17 +85,17 @@ public class MeterControllerIT extends IntegrationTest {
         return insertTestLot(propertyId);
     }
 
-    private String loginAsRoot() throws Exception {
-        AgentLoginRequest loginRequest = new AgentLoginRequest(rootEmail, rootPassword);
-
-        MvcResult result = mockMvc.perform(post("/agents/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isOk())
+    private UUID createTestMeter(String token, UUID meterId) throws Exception {
+        MvcResult result = mockMvc.perform(
+                        post("/meters/create")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(new MeterCreateRequest(meterId, 1.0, 1.0, MeterType.WATER, MeterMeasurement.GAL, false)))
+                )
+                .andExpect(status().isCreated())
                 .andReturn();
 
-        String body = result.getResponse().getContentAsString();
-        return objectMapper.readTree(body).get("token").asString();
+        return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.uuid"));
     }
 
     // REPOSITORY TESTS
@@ -142,5 +134,63 @@ public class MeterControllerIT extends IntegrationTest {
 
         assertTrue(patched.isPresent());
         assertEquals("Updated Title", patched.get().title());
+    }
+
+    // CONTROLLER TESTS
+    @Test
+    void getMeter_shouldReturn403_whenNoTokenProvided() throws Exception {
+        mockMvc.perform(get("/meters/{uuid}", UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createMeter_shouldReturn403_whenNoTokenProvided() throws Exception {
+        var request = new MeterCreateRequest(UUID.randomUUID(), 1.0, 1.0, MeterType.WATER, MeterMeasurement.GAL, false);
+
+        mockMvc.perform(post("/meters/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createMeter_shouldReturn400_whenMeterIdIsMissing() throws Exception {
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        var invalidJson = """
+                    { "meterId": null }
+                """;
+
+        mockMvc.perform(post("/meters/create")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidJson))
+                .andExpect(status().isBadRequest());
+    }
+
+
+    @Test
+    void patchMeter_shouldReturn400_whenInvalidDateProvided() throws Exception {
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        UUID lotId = setupFullChain();
+
+        UUID meterId = createTestMeter(token, lotId);
+
+        // Invalid date
+        mockMvc.perform(patch("/meters/{uuid}", meterId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"installedAt\": \"not-a-date\"}"))
+                .andExpect(status().isBadRequest());
+
+        // Checks installedAt
+        mockMvc.perform(patch("/meters/{uuid}", meterId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                            "installedAt": "not-a-date",
+                        }
+                    """))
+                .andExpect(status().isBadRequest());
     }
 }
