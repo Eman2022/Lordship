@@ -2,7 +2,6 @@ package io.github.lordship.tenancy.internal;
 
 import com.jayway.jsonpath.JsonPath;
 import io.github.lordship.TestAuthSupport;
-import io.github.lordship.access.AgentLoginRequest;
 import org.springframework.beans.factory.annotation.Value;
 import tools.jackson.databind.ObjectMapper;
 import io.github.lordship.IntegrationTest;
@@ -10,20 +9,14 @@ import io.github.lordship.properties.internal.PropertyRow;
 import io.github.lordship.tenancy.TenancyService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;

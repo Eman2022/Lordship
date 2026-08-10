@@ -1,7 +1,6 @@
 package io.github.lordship.meters;
 
 import io.github.lordship.audit.AuditService;
-import io.github.lordship.meters.Meters;
 import io.github.lordship.meters.internal.MeterCreateRequest;
 import io.github.lordship.meters.internal.MeterRepository;
 import io.github.lordship.meters.internal.MeterRow;
@@ -14,7 +13,6 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -70,7 +68,7 @@ public class MetersServiceTests {
     @Test
     void create_shouldSaveAndAudit() {
         MeterCreateRequest req = new MeterCreateRequest(
-                meterId, 1.0, 2.0, MeterType.WATER, MeterMeasurement.GALLONS, true
+                meterId, 1.0, 2.0, MeterType.WATER, MeterMeasurement.GAL, true
         );
 
         MeterRow saved = row(uuid1);
@@ -92,5 +90,179 @@ public class MetersServiceTests {
 
         assertTrue(result.isPresent());
         assertEquals(uuid1, result.get().uuid());
+    }
+
+    // Test create method with energy meter
+    @Test
+    void create_energyMeter_withKWH_succeeds() {
+        MeterCreateRequest req = new MeterCreateRequest(
+                UUID.randomUUID(),
+                1.0,
+                2.0,
+                MeterType.ENERGY,
+                MeterMeasurement.KWH,
+                false
+        );
+
+        MeterRow saved = MeterRow.forInsert(
+                req.meterId(), req.pointX(), req.pointY(),
+                req.utilityType(), req.measurement(), req.isMasterMeter()
+        );
+
+        when(meterRepository.save(any())).thenReturn(saved);
+
+        Meters result = meterService.create(req);
+
+        assertEquals(MeterMeasurement.KWH, result.measurement());
+        verify(auditService).recordInsert(eq("meters"), any(), any());
+    }
+
+    @Test
+    void create_energyMeter_withInvalidMeasurement_throws() {
+        MeterCreateRequest req = new MeterCreateRequest(
+                UUID.randomUUID(),
+                1.0,
+                2.0,
+                MeterType.ENERGY,
+                MeterMeasurement.GAL,
+                false
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> meterService.create(req));
+    }
+
+    // Test create method with water meter
+    @Test
+    void create_waterMeter_withGallons_succeeds() {
+        MeterCreateRequest req = new MeterCreateRequest(
+                UUID.randomUUID(),
+                1.0,
+                2.0,
+                MeterType.WATER,
+                MeterMeasurement.GAL,
+                false
+        );
+
+        MeterRow saved = MeterRow.forInsert(
+                req.meterId(), req.pointX(), req.pointY(),
+                req.utilityType(), req.measurement(), req.isMasterMeter()
+        );
+
+        when(meterRepository.save(any())).thenReturn(saved);
+
+        Meters result = meterService.create(req);
+
+        assertEquals(MeterMeasurement.GAL, result.measurement());
+        verify(auditService).recordInsert(eq("meters"), any(), any());
+    }
+
+    @Test
+    void create_waterMeter_withKWH_throws() {
+        MeterCreateRequest req = new MeterCreateRequest(
+                UUID.randomUUID(),
+                1.0,
+                2.0,
+                MeterType.WATER,
+                MeterMeasurement.KWH,
+                false
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> meterService.create(req));
+    }
+
+    // Test patch method with energy meter
+    @Test
+    void patch_energyMeter_toGallons_throws() {
+        UUID id = UUID.randomUUID();
+
+        MeterRow before = new MeterRow(
+                id, UUID.randomUUID(), "Energy meter", "Should throw error", "123456789",
+                1.0, 2.0, LocalDate.now(), OffsetDateTime.now(), null,
+                null, MeterType.ENERGY, MeterMeasurement.KWH, false
+        );
+
+
+        when(meterRepository.findById(id)).thenReturn(Optional.of(before));
+
+        Map<String, Object> changes = Map.of("measurement", "GAL");
+
+        assertThrows(IllegalArgumentException.class, () -> meterService.patchMeter(id, changes));
+    }
+
+    // Test patch method with water meter
+    @Test
+    void patch_waterMeter_toGallons_succeeds() {
+        UUID id = UUID.randomUUID();
+
+        MeterRow before = new MeterRow(
+                id, UUID.randomUUID(), "Energy meter", "Should patch successfully", "123456789",
+                1.0, 2.0, LocalDate.now(), OffsetDateTime.now(), null,
+                null, MeterType.WATER, MeterMeasurement.CBF, false
+        );
+
+        when(meterRepository.findById(id)).thenReturn(Optional.of(before));
+        MeterRow after = new MeterRow(
+                before.uuid(),
+                before.meterId(),
+                before.title(),
+                before.description(),
+                before.serialNumber(),
+                before.pointX(),
+                before.pointY(),
+                before.installedAt(),
+                before.createdAt(),
+                OffsetDateTime.now(),
+                null,
+                MeterType.WATER,
+                MeterMeasurement.GAL,   // patch CBF to GAL
+                before.isMasterMeter()
+        );
+
+        when(meterRepository.patch(eq(id), any())).thenReturn(Optional.of(after));
+
+        Map<String, Object> changes = Map.of("measurement", "GAL");
+
+        Optional<Meters> result = meterService.patchMeter(id, changes);
+
+        assertTrue(result.isPresent());
+        verify(auditService).recordUpdate(eq("meters"), eq(id), any(), any());
+    }
+
+    @Test
+    void patch_waterMeter_toKWH_throws() {
+        UUID id = UUID.randomUUID();
+
+        MeterRow before = new MeterRow(
+                id, UUID.randomUUID(), "Energy meter", "Should patch successfully", "123456789",
+                1.0, 2.0, LocalDate.now(), OffsetDateTime.now(), null,
+                null, MeterType.WATER, MeterMeasurement.GAL, false
+        );
+
+        when(meterRepository.findById(id)).thenReturn(Optional.of(before));
+
+        Map<String, Object> changes = Map.of("measurement", "KWH");
+
+        assertThrows(IllegalArgumentException.class, () -> meterService.patchMeter(id, changes));
+    }
+
+    // Check if audit successfully ignores redundant patches
+    @Test
+    void patch_noChanges_doesNotAudit() {
+        UUID id = UUID.randomUUID();
+
+        MeterRow before = new MeterRow(
+                id, UUID.randomUUID(), "Water meter", "Should patch successfully", "123456789",
+                1.0, 2.0, LocalDate.now(), OffsetDateTime.now(), null,
+                null, MeterType.WATER, MeterMeasurement.GAL, false
+        );
+
+        when(meterRepository.findById(id)).thenReturn(Optional.of(before));
+
+        Map<String, Object> changes = Map.of("title", "Water meter"); // Setting title "patch" to same val as create
+
+        Optional<Meters> result = meterService.patchMeter(id, changes);
+
+        assertTrue(result.isPresent());
+        verify(auditService, never()).recordUpdate(any(), any(), any(), any());
     }
 }

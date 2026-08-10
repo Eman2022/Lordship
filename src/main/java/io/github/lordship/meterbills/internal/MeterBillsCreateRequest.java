@@ -1,7 +1,9 @@
 package io.github.lordship.meterbills.internal;
 
+import io.github.lordship.meters.MeterMeasurement;
 import jakarta.validation.constraints.NotNull;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 public record MeterBillsCreateRequest(
@@ -9,6 +11,18 @@ public record MeterBillsCreateRequest(
         UUID billedMeter,
 
         @NotNull
-        Integer billedAmount
+        Integer billedAmount,
+
+        @NotNull
+        Integer rateAmount,
+
+        @NotNull
+        MeterMeasurement rateUnit,
+
+        @NotNull
+        LocalDate periodStart,
+
+        @NotNull
+        LocalDate periodEnd
 ) {
 }

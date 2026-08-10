@@ -82,4 +82,12 @@ public class MeterController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @PreAuthorize("hasAuthority('meters:delete')")
+    @DeleteMapping("/{uuid}")
+    public ResponseEntity<Void> deleteMeter(@PathVariable UUID uuid) {
+        return meterService.softDelete(uuid)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
+    }
 }
