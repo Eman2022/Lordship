@@ -12,6 +12,7 @@ public record LotRow(
         String description,
         String notes,
         Integer sortOrder,
+        Double targetRent,
         OffsetDateTime createdAt,
         OffsetDateTime deletedAt
 ) {
@@ -23,6 +24,7 @@ public record LotRow(
                 this.description,
                 this.notes,
                 this.sortOrder,
+                this.targetRent,
                 this.createdAt,
                 this.deletedAt
         );
@@ -30,7 +32,7 @@ public record LotRow(
 
     // Convenience constructor for inserts (DB fills uuid, created_at).
     public LotRow(UUID propertyId, String lotNumber,
-                  String description, String notes, Integer sortOrder) {
-        this(null, propertyId, lotNumber, description, notes, sortOrder, null, null);
+                  String description, Double targetRent, String notes, Integer sortOrder) {
+        this(null, propertyId, lotNumber, description, notes, sortOrder, targetRent,null, null);
     }
 }

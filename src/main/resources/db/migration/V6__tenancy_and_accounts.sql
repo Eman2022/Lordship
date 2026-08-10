@@ -10,7 +10,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TABLE tenancy (
+CREATE TABLE tenancy ( -- needs added: lease anniversary
                          uuid                  UUID PRIMARY KEY DEFAULT uuidv7(),
                          lot_id                UUID NOT NULL,
                          start_date            DATE,
@@ -67,7 +67,7 @@ CREATE INDEX idx_account_tenancy_id ON account(tenancy_id) WHERE deleted_at IS N
 
 -- ── Transaction ───────────────────────────────────────────────────────────────
 
-CREATE TABLE transaction (
+CREATE TABLE transaction ( --TODO:  needs nullable field: a uuid for the batch billing process
                              uuid           UUID PRIMARY KEY DEFAULT uuidv7(),
                              account_id     UUID NOT NULL REFERENCES account(uuid),
                              type           VARCHAR(50) NOT NULL,

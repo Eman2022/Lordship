@@ -14,7 +14,6 @@ public record Property(
         String propertyState,
         LocalDate purchaseDate,
         Integer yearBuilt,
-        BigDecimal lateFeeRate,
         OffsetDateTime createdAt,
         OffsetDateTime deletedAt
 ) {}

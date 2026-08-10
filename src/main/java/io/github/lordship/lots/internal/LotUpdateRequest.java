@@ -15,7 +15,10 @@ public record LotUpdateRequest(
         String notes,
 
         //optional
-        Integer sortOrder
+        Integer sortOrder,
+
+        // optional
+        Double targetRent
 
 ) {
 }

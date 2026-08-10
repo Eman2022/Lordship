@@ -20,11 +20,6 @@ public class PropertyController {
         this.propertyService = propertyService;
     }
 
-    private static final Set<String> ALLOWED_COLUMNS = Set.of(
-            // fill in with the property table's patchable columns
-            "property_name", "property_address", "property_code", "year_built"
-    );
-
     @PreAuthorize("hasAuthority('properties:create')")
     @PostMapping("/create")
     ResponseEntity<Property> createProperty(@Valid @RequestBody PropertyCreateRequest request) {

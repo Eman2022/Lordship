@@ -54,7 +54,6 @@ public class PropertyRepository {
                 .list();
     }
 
-
     public Optional<PropertyRow> patch(UUID uuid, Map<String, Object> changes) {
         if (changes.isEmpty()) return getPropertyOptional(uuid);
 

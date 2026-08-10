@@ -38,6 +38,7 @@ public class LotRepositoryTest extends IntegrationTest {
                 propertyId,
                 "12",
                 "Rental lot",
+                350.0,
                 "Front row",
                 1
         );
@@ -87,6 +88,7 @@ public class LotRepositoryTest extends IntegrationTest {
                 "Vacant lot",
                 "Ready for assignment",
                 3,
+                350.0,
                 saved.createdAt(),
                 saved.deletedAt()
         ));
@@ -96,6 +98,7 @@ public class LotRepositoryTest extends IntegrationTest {
         assertEquals("14", updated.lotNumber());
         assertEquals("Vacant lot", updated.description());
         assertEquals("Ready for assignment", updated.notes());
+        assertEquals(350.0, updated.targetRent());
         assertEquals(3, updated.sortOrder());
     }
 
@@ -122,6 +125,7 @@ public class LotRepositoryTest extends IntegrationTest {
                 "lot_number", "14",
                 "description", "Vacant lot",
                 "notes", "Ready for assignment",
+                "target_rent", 150.0,
                 "sort_order", 3
         );
 
@@ -134,6 +138,7 @@ public class LotRepositoryTest extends IntegrationTest {
         assertEquals("14", row.lotNumber());
         assertEquals("Vacant lot", row.description());
         assertEquals("Ready for assignment", row.notes());
+        assertEquals(150.0, row.targetRent());
         assertEquals(3, row.sortOrder());
     }
 

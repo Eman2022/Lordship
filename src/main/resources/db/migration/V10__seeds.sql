@@ -105,6 +105,7 @@ INSERT INTO permission (uuid, permission_name) VALUES
     (uuidv7(), 'meterbills:delete'),
 
     -- charge term
+    (uuidv7(), 'charge_term:create_migrations'),
     (uuidv7(), 'charge_term:view'),
     (uuidv7(), 'charge_term:edit'),
     (uuidv7(), 'charge_term:create'),
@@ -163,6 +164,10 @@ AND p.permission_name IN (
     'tenants:create',
     'tenants:view',
     'tenants:edit',
+    'charge_term:view',
+    'charge_term:edit',
+    'charge_term:create',
+    'charge_term:delete',
     'vehicles:view',
     'vehicles:edit',
     'vehicles:create',
@@ -199,6 +204,7 @@ AND p.permission_name IN (
     'tenants:view',
     'tenants:create',
     'tenants:edit',
+    'charge_term:view',
     'vehicles:view',
     'meters:view',
     'meters:edit',
