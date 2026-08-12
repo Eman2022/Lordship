@@ -114,3 +114,5 @@ CREATE UNIQUE INDEX uq_active_assignment
 -- property_manager FK deferred from V1, now that agent exists
 ALTER TABLE property
     ADD CONSTRAINT fk_property_manager FOREIGN KEY (property_manager) REFERENCES agent(uuid);
+ALTER TABLE property_fee_cap
+    ADD CONSTRAINT fk_agent_editor FOREIGN KEY (created_by) REFERENCES agent(uuid);
