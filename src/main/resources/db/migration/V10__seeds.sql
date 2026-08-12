@@ -207,7 +207,7 @@ AND p.permission_name IN (
     'charge_term:view',
     'vehicles:view',
     'meters:view',
-    'meters:edit',
+    'meters:edit', -- are we sure we want the property manager to be able to edit meter setups?
     'meterbills:view',
     'meterbills:edit'
 );
