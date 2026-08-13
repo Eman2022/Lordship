@@ -10,7 +10,7 @@ public record MeterBillsResponse(
         UUID uuid,
         UUID billedMeter,
         int billedAmount,
-        int rateAmount,
+        double rateAmount,
         MeterMeasurement rateUnit,
         LocalDate periodStart,
         LocalDate periodEnd

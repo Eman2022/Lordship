@@ -2,13 +2,8 @@ package io.github.lordship.meters;
 
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
+import io.github.lordship.meters.internal.*;
 import io.github.lordship.shared.EncryptionService;
-import io.github.lordship.meters.internal.MeterCreateRequest;
-import io.github.lordship.meters.internal.MeterRepository;
-import io.github.lordship.meters.internal.MeterRow;
-import io.github.lordship.tenancy.Tenancy;
-import io.github.lordship.tenancy.internal.TenancyRow;
-import io.github.lordship.tenants.internal.TenantRow;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,12 +11,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
 @Service
 public class MeterService {
     private final MeterRepository meterRepository;
+    private final MeterReadRepository meterReadRepository;
+    private final MeterRelationRepository meterRelationRepository;
     private final EncryptionService encryptionService;
     private final AuditService auditService;
 
@@ -29,11 +27,15 @@ public class MeterService {
 
     public MeterService(
             MeterRepository meterRepository,
+            MeterReadRepository meterReadRepository,
+            MeterRelationRepository meterRelationRepository,
             EncryptionService encryptionService,
             AuditService auditService
 
     ) {
         this.meterRepository = meterRepository;
+        this.meterReadRepository = meterReadRepository;
+        this.meterRelationRepository = meterRelationRepository;
         this.encryptionService = encryptionService;
         this.auditService = auditService;
     }
@@ -57,7 +59,11 @@ public class MeterService {
                         request.pointY(),
                         request.utilityType(),
                         request.measurement(),
-                        request.isMasterMeter()
+                        request.isMasterMeter(),
+                        request.rolloverMax(),
+                        request.meterMultiplier(),
+                        request.readDueDay(),
+                        request.isBimonthly()
                 )
         );
 
@@ -203,5 +209,107 @@ public class MeterService {
             auditService.recordDelete("meters", uuid, AuditMapper.toMap(meterRow));
             return true;
         }).orElse(false);
+    }
+
+
+    // METER READS
+    @Transactional
+    public MeterRead recordRead(UUID meterId, int rawAmount, OffsetDateTime readAt, boolean isEstimated) {
+        MeterRow meter = meterRepository.findById(meterId) // Must find actual meter
+                .orElseThrow(() -> new EntityNotFoundException("Meter not found: " + meterId));
+
+        Optional<MeterReadRow> previous = meterReadRepository.findLatestAtOrBefore(meterId, readAt);
+
+        int rolloverCount = previous.map(MeterReadRow::rolloverCount).orElse(0);
+        if (previous.isPresent() && rawAmount < previous.get().meterAmount()) { // If the newest meter reading is lower than the last; rollover occured
+            log.info("Rollover detected for meter uuid={}: {} -> {}", meterId, previous.get().meterAmount(), rawAmount);
+            rolloverCount++;
+        }
+
+        MeterReadRow saved = meterReadRepository.save(
+                MeterReadRow.forInsert(meterId, rawAmount, readAt, isEstimated, rolloverCount)
+        );
+
+        auditService.recordInsert("meter_reads", saved.uuid(), AuditMapper.toMap(saved));
+        return saved.toMeterRead();
+    }
+
+
+    public int getUsageForPeriod(UUID meterId, OffsetDateTime start, OffsetDateTime end) {
+        MeterRow meter = meterRepository.findById(meterId)
+                .orElseThrow(() -> new EntityNotFoundException("Meter not found: " + meterId));
+
+        MeterReadRow startRead = meterReadRepository.findLatestAtOrBefore(meterId, start)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No reading exists at or before period start for meter " + meterId));
+        MeterReadRow endRead = meterReadRepository.findLatestAtOrBefore(meterId, end)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No reading exists at or before period end for meter " + meterId));
+
+        int startValue = adjustedValue(startRead, meter.rolloverMax());
+        int endValue = adjustedValue(endRead, meter.rolloverMax());
+
+        if (endValue < startValue) { // Edge case: 0 or 1 readings when starting invoicing; what if start and end value same? what if one value?
+            throw new IllegalStateException(
+                    "Computed negative usage for meter " + meterId +
+                            " — check rollover_max is set correctly, or investigate a possible meter replacement.");
+        }
+
+        return (int) (endValue - startValue);
+    }
+
+
+    private int adjustedValue(MeterReadRow read, Integer rolloverMax) {
+        if (read.rolloverCount() == 0 || rolloverMax == null) {
+            return read.meterAmount();
+        }
+        return read.meterAmount() + ((int) read.rolloverCount() * rolloverMax);
+    }
+
+
+    // METER RELATIONS
+    @Transactional
+    public MeterRelation linkMeters(UUID parentMeterId, UUID childMeterId, Boolean hasUnmetered, LocalDate effectiveFrom) {
+        MeterRow parent = meterRepository.findById(parentMeterId)
+                .orElseThrow(() -> new EntityNotFoundException("Parent meter not found: " + parentMeterId));
+        MeterRow child = meterRepository.findById(childMeterId)
+                .orElseThrow(() -> new EntityNotFoundException("Child meter not found: " + childMeterId));
+
+        if (!Boolean.TRUE.equals(parent.isMasterMeter())) {
+            throw new IllegalArgumentException("Parent meter must be flagged is_master_meter=true");
+        }
+        if (parent.utilityType() != child.utilityType()) {
+            throw new IllegalArgumentException( // Obviously a child meter cannot be of different type than its parent
+                    "Cannot link meters of different utility types: " + parent.utilityType() + " / " + child.utilityType());
+        }
+        if (meterRelationRepository.findActiveByChild(childMeterId, effectiveFrom).isPresent()) {
+            throw new IllegalStateException("Meter " + childMeterId + " already has an active parent as of " + effectiveFrom);
+        }
+
+        MeterRelationRow saved = meterRelationRepository.save(
+                MeterRelationRow.forInsert(parentMeterId, childMeterId, hasUnmetered, effectiveFrom)
+        );
+
+        auditService.recordInsert("meter_relationship", saved.uuid(), AuditMapper.toMap(saved));
+        return saved.toMeterRelation();
+    }
+
+
+    @Transactional
+    public MeterRelation unlinkMeter(UUID childMeterId, LocalDate effectiveTo) {
+        MeterRelationRow active = meterRelationRepository.findActiveByChild(childMeterId, effectiveTo)
+                .orElseThrow(() -> new EntityNotFoundException("No active relationship for meter " + childMeterId));
+
+        MeterRelationRow closed = meterRelationRepository.close(active.uuid(), effectiveTo);
+
+        auditService.recordUpdate("meter_relationship", closed.uuid(),
+                Map.of("effective_to", "null"), Map.of("effective_to", effectiveTo.toString()));
+        return closed.toMeterRelation();
+    }
+
+
+    public Optional<UUID> resolveParentMeter(UUID childMeterId, LocalDate asOfDate) {
+        return meterRelationRepository.findActiveByChild(childMeterId, asOfDate)
+                .map(MeterRelationRow::parentMeter);
     }
 }

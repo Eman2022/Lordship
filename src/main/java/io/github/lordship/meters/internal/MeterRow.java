@@ -22,7 +22,11 @@ public record MeterRow(
         OffsetDateTime deletedAt,
         MeterType utilityType,
         MeterMeasurement measurement,
-        Boolean isMasterMeter
+        Boolean isMasterMeter,
+        Integer rolloverMax,
+        Double meterMultiplier,
+        Integer readDueDay,
+        Boolean isBimonthly
 ) {
     public Meters toMeters(){
         return new Meters(
@@ -39,7 +43,11 @@ public record MeterRow(
                 this.deletedAt,
                 this.utilityType,
                 this.measurement,
-                this.isMasterMeter
+                this.isMasterMeter,
+                this.rolloverMax,
+                this.meterMultiplier,
+                this.readDueDay,
+                this.isBimonthly
         );
     }
 
@@ -49,7 +57,11 @@ public record MeterRow(
             Double pointY,
             MeterType utilityType,
             MeterMeasurement measurement,
-            Boolean isMasterMeter
+            Boolean isMasterMeter,
+            Integer rolloverMax,
+            Double meterMultiplier,
+            Integer readDueDay,
+            Boolean isBimonthly
     ) {
         return new MeterRow(
                 null,
@@ -65,7 +77,11 @@ public record MeterRow(
                 null,
                 utilityType,
                 measurement,
-                isMasterMeter
+                isMasterMeter,
+                rolloverMax,
+                meterMultiplier,
+                readDueDay,
+                isBimonthly
         );
     }
 }

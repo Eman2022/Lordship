@@ -14,7 +14,7 @@ public record MeterBillsCreateRequest(
         Integer billedAmount,
 
         @NotNull
-        Integer rateAmount,
+        Double rateAmount,
 
         @NotNull
         MeterMeasurement rateUnit,

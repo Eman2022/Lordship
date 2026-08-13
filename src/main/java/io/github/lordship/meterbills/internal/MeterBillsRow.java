@@ -12,7 +12,7 @@ public record MeterBillsRow(
         UUID uuid,
         UUID billedMeter,
         Integer billedAmount,
-        Integer rateAmount,
+        Double rateAmount,
         MeterMeasurement rateUnit,
         LocalDate periodStart,
         LocalDate periodEnd,
@@ -37,7 +37,7 @@ public record MeterBillsRow(
     public static MeterBillsRow forInsert(
             UUID billedMeter,
             int billedAmount,
-            int rateAmount,
+            double rateAmount,
             MeterMeasurement rateUnit,
             LocalDate periodStart,
             LocalDate periodEnd

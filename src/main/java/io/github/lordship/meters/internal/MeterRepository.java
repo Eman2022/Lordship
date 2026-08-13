@@ -27,9 +27,9 @@ public class MeterRepository {
     public MeterRow save(MeterRow row) {
         return jdbc.sql("""
                     INSERT INTO meters (
-                            meter_id, title, description, serial_number, point_x, point_y, utility_type, measurement, is_master_meter
+                            meter_id, title, description, serial_number, point_x, point_y, utility_type, measurement, is_master_meter, rollover_max, meter_multiplier, read_due_day, is_bimonthly
                         ) VALUES (
-                            :meterId, :title, :description, :serialNumber, :pointX, :pointY, :utilityType::meter_type, :measurement::meter_measurement, :isMasterMeter
+                            :meterId, :title, :description, :serialNumber, :pointX, :pointY, :utilityType::meter_type, :measurement::meter_measurement, :isMasterMeter, :rolloverMax, :meterMultiplier, :readDueDay, :isBiMonthly
                         ) RETURNING *
                     """)
                 .param("meterId", row.meterId())
@@ -41,6 +41,10 @@ public class MeterRepository {
                 .param("utilityType", row.utilityType() != null ? row.utilityType().name() : null) // useful for binding enums
                 .param("measurement", row.measurement() != null ? row.measurement().name() : null)
                 .param("isMasterMeter", row.isMasterMeter())
+                .param("rolloverMax", row.rolloverMax())
+                .param("meterMultiplier", row.meterMultiplier())
+                .param("readDueDay", row.readDueDay())
+                .param("isBimonthly", row.isBimonthly())
                 .query(MeterRow.class)
                 .single();
     }

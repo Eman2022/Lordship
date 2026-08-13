@@ -1,10 +1,13 @@
-package io.github.lordship.meters.internal;
+package meterbilling.internal;
 
 import com.jayway.jsonpath.JsonPath;
 import io.github.lordship.IntegrationTest;
 import io.github.lordship.TestAuthSupport;
 import io.github.lordship.meters.MeterMeasurement;
 import io.github.lordship.meters.MeterType;
+import io.github.lordship.meters.internal.MeterCreateRequest;
+import io.github.lordship.meters.internal.MeterRepository;
+import io.github.lordship.meters.internal.MeterRow;
 import io.github.lordship.properties.internal.PropertyRow;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +23,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
@@ -45,17 +47,18 @@ public class MeterControllerIT extends IntegrationTest {
     @Autowired
     MeterRepository meterRepository;
 
+
     @Autowired
     JdbcClient jdbc;
 
     private MeterRow buildRow(UUID meterId) {
         return MeterRow.forInsert(
                 meterId,
-                1.0,
-                2.0,
+                0.0,
+                0.0,
                 MeterType.WATER,
-                MeterMeasurement.KWH,
-                false,
+                MeterMeasurement.GAL,
+                true,
                 99999,
                 1.0,
                 15,
@@ -93,9 +96,7 @@ public class MeterControllerIT extends IntegrationTest {
                         post("/meters/create")
                                 .header("Authorization", "Bearer " + token)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(new MeterCreateRequest(meterId, 1.0, 1.0, MeterType.WATER, MeterMeasurement.GAL, false, 99999,                 1.0,
-                                        15,
-                                        false)))
+                                .content(objectMapper.writeValueAsString(new MeterCreateRequest(meterId, 1.0, 1.0, MeterType.WATER, MeterMeasurement.GAL, false, 99999, 1.0, 15, false)))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -150,9 +151,7 @@ public class MeterControllerIT extends IntegrationTest {
 
     @Test
     void createMeter_shouldReturn403_whenNoTokenProvided() throws Exception {
-        var request = new MeterCreateRequest(UUID.randomUUID(), 1.0, 1.0, MeterType.WATER, MeterMeasurement.GAL, false, 99999,                 1.0,
-                15,
-                false);
+        var request = new MeterCreateRequest(UUID.randomUUID(), 1.0, 1.0, MeterType.WATER, MeterMeasurement.GAL, false, 99999, 1.0, 15, false);
 
         mockMvc.perform(post("/meters/create")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -176,7 +175,7 @@ public class MeterControllerIT extends IntegrationTest {
 
 
     @Test
-    void patchMeter_shouldReturn400_whenInvalidDateProvided() throws Exception {
+    void patchRequest_shouldReturn400_whenInvalidDateProvided() throws Exception {
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
         UUID lotId = setupFullChain();
 

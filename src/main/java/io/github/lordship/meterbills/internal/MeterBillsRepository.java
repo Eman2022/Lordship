@@ -50,6 +50,16 @@ public class MeterBillsRepository {
                 .optional();
     }
 
+    public Optional<MeterBillsRow> findByBilledMeter(UUID billedMeter) {
+        return jdbc.sql("""
+                        SELECT * from meter_billing WHERE billed_meter = :billedMeter
+                        AND period_start IS NOT NULL AND period_end IS NULL
+                        """)
+                .param("billedMeter", billedMeter)
+                .query(MeterBillsRow.class)
+                .optional();
+    }
+
     public void softDelete(UUID uuid) {
         jdbc.sql("UPDATE meter_billing SET deleted_at = CURRENT_TIMESTAMP WHERE uuid = :uuid")
                 .param("uuid", uuid)

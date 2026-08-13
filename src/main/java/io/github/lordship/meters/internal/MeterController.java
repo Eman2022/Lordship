@@ -1,17 +1,20 @@
 package io.github.lordship.meters.internal;
 
+import io.github.lordship.meters.MeterRead;
+import io.github.lordship.meters.MeterRelation;
 import io.github.lordship.meters.MeterService;
 import io.github.lordship.meters.Meters;
-import io.github.lordship.meters.MeterService;
-import io.github.lordship.meters.internal.MeterCreateRequest;
-import io.github.lordship.tenancy.internal.TenancyResponse;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +48,7 @@ public class MeterController {
     }
 
     @PreAuthorize("hasAuthority('meters:view')")
-    @GetMapping("/lot/{lotId}")
+    @GetMapping("/meters/{meterId}")
     public ResponseEntity<List<MeterResponse>> getMeterByLot(@PathVariable UUID meterId) {
         List<MeterResponse> responses = meterService.findActiveMetersByLot(meterId)
                 .stream()
@@ -89,5 +92,73 @@ public class MeterController {
         return meterService.softDelete(uuid)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
+    }
+
+    @PreAuthorize("hasAuthority('meters:edit')")
+    @PostMapping("/{uuid}/reads")
+    public ResponseEntity<MeterReadResponse> recordRead(
+            @PathVariable UUID uuid,
+            @RequestBody @Valid MeterReadCreateRequest request) {
+        try {
+            MeterRead read = meterService.recordRead(
+                    uuid, request.meterAmount(), request.readAt(), request.isEstimated());
+            return ResponseEntity.status(HttpStatus.CREATED).body(MeterReadResponse.from(read));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+/*
+    @PreAuthorize("hasAuthority('meters:view')")
+    @GetMapping("/{uuid}/usage")
+    public ResponseEntity<UsageResponse> getUsageForPeriod(
+            @PathVariable UUID uuid,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime end) {
+        try {
+            int usage = meterService.getUsageForPeriod(uuid, start, end);
+            return ResponseEntity.ok(new UsageResponse(uuid, start, end, usage));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.unprocessableEntity().build(); // Returns error 422 --> a read exists but can't be computed
+        }
+    } */
+
+    @PreAuthorize("hasAuthority('meters:edit')")
+    @PostMapping("/relationships")
+    public ResponseEntity<MeterRelationResponse> linkMeters(
+            @RequestBody @Valid MeterRelationCreateRequest request) {
+        try {
+            MeterRelation relationship = meterService.linkMeters(
+                    request.parentMeter(), request.childMeter(), request.hasUnmeteredRemainder(), request.effectiveFrom());
+            return ResponseEntity.status(HttpStatus.CREATED).body(MeterRelationResponse.from(relationship));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PreAuthorize("hasAuthority('meters:edit')")
+    @PatchMapping("/relationships/{childMeterId}/unlink")
+    public ResponseEntity<MeterRelationResponse> unlinkMeter(
+            @PathVariable UUID childMeterId,
+            @RequestBody @Valid MeterRelationCloseRequest request) {
+        try {
+            MeterRelation relationship = meterService.unlinkMeter(childMeterId, request.effectiveTo());
+            return ResponseEntity.ok(MeterRelationResponse.from(relationship));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PreAuthorize("hasAuthority('meters:view')")
+    @GetMapping("/relationships/{childMeterId}/parent")
+    public ResponseEntity<UUID> resolveParentMeter(
+            @PathVariable UUID childMeterId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOf) {
+        return meterService.resolveParentMeter(childMeterId, asOf)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }
