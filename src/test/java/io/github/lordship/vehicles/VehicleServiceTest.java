@@ -144,6 +144,7 @@ public class VehicleServiceTest {
     void deleteVehicle_returnsTrue_andRecordsAudit_whenVehicleExists() {
         VehicleRow existing = row(UUID.randomUUID(), UUID.randomUUID(), "ABC123");
         when(vehicleRepository.findById(existing.uuid())).thenReturn(Optional.of(existing));
+        when(vehicleRepository.softDelete(existing.uuid())).thenReturn(true);
 
         boolean deleted = vehicleService.deleteVehicle(existing.uuid());
 

@@ -7,8 +7,10 @@ CREATE TYPE operation_type AS ENUM ('INSERT', 'UPDATE', 'DELETE');
 
 -- note: later statute can be looked up using agreement_type + property.state
 CREATE TYPE agreement_type AS ENUM (
-    'RESIDENTIAL','MANUFACTURED_HOME_LOT','RV_LOT',
-    'TRANSIENT_LODGING','COMMERCIAL','STORAGE','UTILITY_SERVICE'
+    'RESIDENTIAL','LAND',
+    'TRANSIENT','COMMERCIAL',
+    'STORAGE',
+    'UTILITY_SERVICE' -- for example: a sub-parcel on your parcel that pays you for a utility
     );
 
 -- ── Property ─────────────────────────────────────────────────────────────────
@@ -167,6 +169,6 @@ CREATE UNIQUE INDEX property_fee_waiver_uq
 
 
 INSERT INTO charge_term_defaults (property, name, agreement_type)
-VALUES (NULL, 'Standard Manufactured Home Lot Lease', 'MANUFACTURED_HOME_LOT'),
+VALUES (NULL, 'Standard Manufactured Home Lot Lease', 'LAND'),
        (NULL, 'Standard Residential Lease',           'RESIDENTIAL'),
        (NULL, 'Standard Storage Agreement',           'STORAGE');

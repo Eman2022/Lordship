@@ -93,7 +93,11 @@ public class TransactionService {
         if (row.billingPeriod().isBefore(closedBefore)) {
             throw new IllegalStateException("Cannot delete a transaction from a closed billing period: " + uuid);
         }
-        transactionRepository.softDelete(uuid);
+        if (transactionRepository.softDelete(uuid).isEmpty()) {
+            // Already deleted by a concurrent call -- that call owns the audit entry
+            // and the balance recompute, so there is nothing left to do here.
+            return;
+        }
         BigDecimal newBalance = transactionRepository.computeBalance(row.accountId());
         transactionRepository.updateBalanceCached(row.accountId(), newBalance);
         auditService.recordDelete("transaction", uuid, AuditMapper.toMap(row));

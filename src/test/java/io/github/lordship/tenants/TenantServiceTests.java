@@ -127,6 +127,7 @@ public class TenantServiceTests {
         TenantRow saved = row(UUID.randomUUID(), UUID.randomUUID(), LocalDate.now(), null);
 
         when(tenantRepository.findById(id)).thenReturn(Optional.of(saved));
+        when(tenantRepository.softDelete(id)).thenReturn(true);
 
         boolean result = tenantService.delete(id);
 

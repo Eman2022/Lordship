@@ -95,4 +95,3 @@ public class PropertyService {
         return deleted;
     }
 }
-

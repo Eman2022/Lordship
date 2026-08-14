@@ -202,7 +202,9 @@ public class TenancyService {
     @Transactional
     public boolean softDelete(UUID uuid) {
         return tenancyRepository.findById(uuid).map(tenancy -> {
-            tenancyRepository.softDelete(uuid);
+            if (!tenancyRepository.softDelete(uuid)) {
+                return false;
+            }
             auditService.recordDelete("tenancy", uuid, AuditMapper.toMap(tenancy));
             return true;
         }).orElse(false);

@@ -11,15 +11,7 @@ public record LotCreationRequest(
         UUID propertyId,
 
         @NotBlank
-        String lotNumber,
-
-        String description,
-
-        Double targetRent,
-
-        String notes,
-
-        Integer sortOrder
+        String lotNumber
 
 ) {
 }

@@ -217,6 +217,7 @@ public class TenancyServiceTests {
         TenancyRow before = row(uuid1, LocalDate.now().minusDays(20), null);
 
         when(tenancyRepository.findById(uuid1)).thenReturn(Optional.of(before));
+        when(tenancyRepository.softDelete(uuid1)).thenReturn(true);
 
         boolean result = tenancyService.softDelete(uuid1);
 

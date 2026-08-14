@@ -71,8 +71,8 @@ public class TenancyControllerIT extends IntegrationTest {
 
     private UUID insertTestLot(UUID propertyId) {
         return jdbc.sql("""
-                        INSERT INTO lot (property_id, lot_number, target_rent)
-                        VALUES (:propertyId, '1', 350.0)
+                        INSERT INTO lot (property_id, lot_number)
+                        VALUES (:propertyId, '1')
                         RETURNING uuid
                         """)
                 .param("propertyId", propertyId)
@@ -84,7 +84,6 @@ public class TenancyControllerIT extends IntegrationTest {
         UUID propertyId = insertTestProperty();
         return insertTestLot(propertyId);
     }
-
 
     private UUID createTestTenancy(String token, UUID lotId) throws Exception {
         MvcResult result = mockMvc.perform(
@@ -98,7 +97,6 @@ public class TenancyControllerIT extends IntegrationTest {
 
         return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.uuid"));
     }
-
 
     // REPOSITORY TESTS
     @Test

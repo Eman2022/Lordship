@@ -48,13 +48,13 @@ public class PropertyAssignmentRepository {
                 .set();
     }
 
-    public void endAssignment(UUID uuid) {
-        jdbc.sql("""
+    public boolean endAssignment(UUID uuid) {
+        return jdbc.sql("""
                 UPDATE agent_property_assignment
                 SET removed_at = now()
                 WHERE uuid = :uuid AND removed_at IS NULL
                 """)
                 .param("uuid", uuid)
-                .update();
+                .update() > 0;
     }
 }

@@ -103,6 +103,7 @@ public class PersonServiceTest {
                 OffsetDateTime.now(ZoneOffset.UTC), null
         );
         when(personRepository.findById(stubRow.uuid())).thenReturn(Optional.of(stubRow));
+        when(personRepository.softDelete(stubRow.uuid())).thenReturn(true);
 
         // Act
         boolean result = personService.deletePerson(stubRow.uuid());

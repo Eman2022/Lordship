@@ -36,7 +36,9 @@ public class PropertyAssignmentService {
     @Transactional
     public boolean endAssignment(UUID assignmentId) {   // covers unassignAgentFromProperty
         return propertyAssignmentRepository.findById(assignmentId).map(assignment -> {
-            propertyAssignmentRepository.endAssignment(assignmentId);
+            if (!propertyAssignmentRepository.endAssignment(assignmentId)) {
+                return false;
+            }
             auditService.recordDelete("agent_property_assignment", assignmentId, AuditMapper.toMap(assignment));
             return true;
         }).orElse(false);

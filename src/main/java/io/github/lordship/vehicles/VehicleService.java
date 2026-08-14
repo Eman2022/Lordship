@@ -98,7 +98,9 @@ public class VehicleService {
     @Transactional
     public boolean deleteVehicle(UUID uuid) {
         return vehicleRepository.findById(uuid).map(vehicle -> {
-            vehicleRepository.softDelete(uuid);
+            if (!vehicleRepository.softDelete(uuid)) {
+                return false;
+            }
             auditService.recordDelete("vehicle", uuid, AuditMapper.toMap(vehicle));
             return true;
         }).orElse(false);

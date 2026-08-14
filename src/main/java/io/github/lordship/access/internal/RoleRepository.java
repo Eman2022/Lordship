@@ -72,13 +72,13 @@ public class RoleRepository {
                 .optional();
     }
 
-    public void softDelete(UUID uuid) {
-        jdbc.sql("""
+    public boolean softDelete(UUID uuid) {
+        return jdbc.sql("""
                 UPDATE agent_role
                 SET deleted_at = now()
                 WHERE uuid = :uuid AND deleted_at IS NULL
         """)
         .param("uuid", uuid)
-        .update();
+        .update() > 0;
     }
 }
