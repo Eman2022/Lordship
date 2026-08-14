@@ -60,10 +60,10 @@ public class TenantRepository {
     }
 
     // Soft-delete tenants
-    public void softDelete(UUID uuid) {
-        jdbc.sql("UPDATE tenant SET deleted_at = CURRENT_TIMESTAMP WHERE uuid = :uuid")
+    public boolean softDelete(UUID uuid) {
+        return jdbc.sql("UPDATE tenant SET deleted_at = CURRENT_TIMESTAMP WHERE uuid = :uuid AND deleted_at IS NULL")
                 .param("uuid", uuid)
-                .update();
+                .update() > 0;
     }
 
     public Optional<TenantRow> patch(UUID uuid, Map<String, Object> changes) {

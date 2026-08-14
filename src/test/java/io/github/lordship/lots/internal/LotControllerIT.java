@@ -49,8 +49,8 @@ public class LotControllerIT extends IntegrationTest {
 
     private UUID insertTestLot(UUID propertyId, String lotNumber) {
         return jdbc.sql("""
-                INSERT INTO lot (property_id, lot_number, description, notes, sort_order, target_rent)
-                VALUES (:propertyId, :lotNumber, 'Rental lot', :notes, 1, 350.0)
+                INSERT INTO lot (property_id, lot_number, description, notes, sort_order)
+                VALUES (:propertyId, :lotNumber, 'Rental lot', :notes, 1)
                 RETURNING uuid
                 """)
                 .param("propertyId", propertyId)
@@ -63,39 +63,47 @@ public class LotControllerIT extends IntegrationTest {
     @Test
     void createLot_shouldReturn403_whenUnauthorized() throws Exception {
         // Arrange
-        LotCreationRequest request = new LotCreationRequest(UUID.randomUUID(), "12",  null,350.0, null, 1);
+        LotCreationRequest request = new LotCreationRequest(UUID.randomUUID(), "12");
 
         // Act
-        mockMvc.perform(post("/lots")
+        mockMvc.perform(post("/api/lots")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-        // Assert
+                // Assert
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void createLot_shouldReturn201_withCorrectFields() throws Exception {
+    void createLot_shouldReturn201_withMinimalFields() throws Exception {
         // Arrange
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
         UUID propertyId = insertTestProperty("L001");
 
-        LotCreationRequest request = new LotCreationRequest(
-                propertyId, "12", "Rental lot", 350.0, "Front row", 1
-        );
+        LotCreationRequest request = new LotCreationRequest(propertyId, "12");
 
         // Act
-        mockMvc.perform(post("/lots")
+        mockMvc.perform(post("/api/lots")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-        // Assert
+                // Assert: only what was supplied (plus DB defaults) comes back -- everything
+                // else is left for a follow-up PATCH, per the create-minimal design.
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.uuid").exists())
                 .andExpect(jsonPath("$.propertyId").value(propertyId.toString()))
                 .andExpect(jsonPath("$.lotNumber").value("12"))
-                .andExpect(jsonPath("$.description").value("Rental lot"))
-                .andExpect(jsonPath("$.notes").value("Front row"))
-                .andExpect(jsonPath("$.sortOrder").value(1));
+                .andExpect(jsonPath("$.isRentable").value(true))
+                .andExpect(jsonPath("$.notRentableReason").doesNotExist())
+                .andExpect(jsonPath("$.lotAddress").doesNotExist())
+                .andExpect(jsonPath("$.description").doesNotExist())
+                .andExpect(jsonPath("$.notes").doesNotExist())
+                .andExpect(jsonPath("$.sortOrder").doesNotExist())
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.deletedAt").doesNotExist())
+                // The DB's default rectangle, since shape_data wasn't supplied at creation.
+                .andExpect(jsonPath("$.shapeData.vertices.length()").value(4))
+                .andExpect(jsonPath("$.permissibleAgreementTypes").isArray())
+                .andExpect(jsonPath("$.permissibleAgreementTypes").isEmpty());
     }
 
     @Test
@@ -106,10 +114,10 @@ public class LotControllerIT extends IntegrationTest {
         insertTestLot(propertyId, "7");
 
         // Act
-        mockMvc.perform(get("/lots")
+        mockMvc.perform(get("/api/lots")
                         .param("property", "L002")
                         .header("Authorization", "Bearer " + token))
-        // Assert
+                // Assert
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].uuid").exists())
                 .andExpect(jsonPath("$[0].propertyId").value(propertyId.toString()))
@@ -124,13 +132,13 @@ public class LotControllerIT extends IntegrationTest {
         UUID lotId = insertTestLot(propertyId, "5");
 
         // Act
-        mockMvc.perform(patch("/lots/" + lotId)
+        mockMvc.perform(patch("/api/lots/" + lotId)
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "lotNumber": "99", "description": "Updated lot" }
                                 """))
-        // Assert
+                // Assert
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.lotNumber").value("99"))
                 .andExpect(jsonPath("$.description").value("Updated lot"))
@@ -145,13 +153,13 @@ public class LotControllerIT extends IntegrationTest {
         UUID lotId = insertTestLot(propertyId, "6");
 
         // Act
-        mockMvc.perform(patch("/lots/" + lotId)
+        mockMvc.perform(patch("/api/lots/" + lotId)
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "notes": null }
                                 """))
-        // Assert
+                // Assert
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.notes").doesNotExist());
     }
@@ -162,13 +170,13 @@ public class LotControllerIT extends IntegrationTest {
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
 
         // Act
-        mockMvc.perform(patch("/lots/" + UUID.randomUUID())
+        mockMvc.perform(patch("/api/lots/" + UUID.randomUUID())
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "lotNumber": "99" }
                                 """))
-        // Assert
+                // Assert
                 .andExpect(status().isNotFound());
     }
 
@@ -180,12 +188,12 @@ public class LotControllerIT extends IntegrationTest {
         UUID lotId = insertTestLot(propertyId, "9");
 
         // Act
-        mockMvc.perform(delete("/lots/" + lotId)
+        mockMvc.perform(delete("/api/lots/" + lotId)
                         .header("Authorization", "Bearer " + token))
-        // Assert
+                // Assert
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/lots/" + lotId)
+        mockMvc.perform(get("/api/lots/" + lotId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound());
     }
