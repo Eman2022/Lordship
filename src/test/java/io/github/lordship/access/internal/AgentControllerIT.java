@@ -6,6 +6,8 @@ import io.github.lordship.TestAuthSupport;
 import io.github.lordship.access.Agent;
 import io.github.lordship.access.AgentLoginRequest;
 import io.github.lordship.access.AgentService;
+import io.github.lordship.access.internal.agents.AgentRegistrationRequest;
+import io.github.lordship.access.internal.rbac.RoleCreationRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
