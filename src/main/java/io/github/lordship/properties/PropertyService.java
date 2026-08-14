@@ -7,8 +7,14 @@ import io.github.lordship.properties.internal.PropertyRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.text.Normalizer;
 import java.util.*;
 import java.time.LocalDate;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @Service
 public class PropertyService {
@@ -19,13 +25,13 @@ public class PropertyService {
         this.propertyRepository = propertyRepository;
         this.auditService = auditService;
     }
-
+//
     @Transactional
     public Property createProperty(String propertyName, String propertyAddress) {
-        String propertyCode = UUID.randomUUID().toString()
-                .replace("-", "")
-                .substring(0, 5)
-                .toUpperCase();
+        Set<String> usedCodes = propertyRepository.findUsedPropertyCodes();
+
+        String propertyCode = generatePropertyCode(propertyName, usedCodes);
+
         PropertyRow row = new PropertyRow(
                 null,
                 propertyCode,
@@ -93,5 +99,54 @@ public class PropertyService {
             auditService.recordDelete("property", uuid, AuditMapper.toMap(before));
         }
         return deleted;
+    }
+
+    // code for making better setting the initial property code
+    private static final Pattern NON_LETTERS = Pattern.compile("[^A-Z]");
+
+    private static List<String> lettersByWord(String propertyName) {
+        if (propertyName == null || propertyName.isBlank()) {
+            return List.of();
+        }
+        String normalized = Normalizer.normalize(propertyName, Normalizer.Form.NFD)
+                .toUpperCase(Locale.ROOT);
+        return Arrays.stream(normalized.split("\\s+"))
+                .map(word -> NON_LETTERS.matcher(word).replaceAll(""))
+                .filter(word -> !word.isEmpty())
+                .toList();
+    }
+
+    private static Stream<String> candidateCodes(List<String> words) {
+        char lead = words.getFirst().charAt(0);
+        String firstWord = words.getFirst();
+
+        Stream<String> otherWordInitials = words.stream().skip(1)
+                .map(word -> "" + lead + word.charAt(0));
+        Stream<String> ownLetters = firstWord.chars().skip(1)
+                .mapToObj(c -> "" + lead + (char) c);
+        Stream<String> alphabet = IntStream.rangeClosed('A', 'Z')
+                .mapToObj(c -> "" + lead + (char) c);
+        Stream<String> numbered = IntStream.rangeClosed(1, 999)
+                .mapToObj(n -> lead + String.valueOf(n));
+
+        return Stream.of(otherWordInitials, ownLetters, alphabet, numbered)
+                .flatMap(Function.identity())
+                .distinct();
+    }
+
+    private String generatePropertyCode(String propertyName, Set<String> usedCodes) {
+        List<String> words = lettersByWord(propertyName);
+        if (words.isEmpty()) {
+            throw new IllegalArgumentException("Property name must contain letters: " + propertyName);
+        }
+        Set<String> taken = usedCodes.stream()
+                .map(code -> code.toUpperCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+
+        return candidateCodes(words)
+                .filter(code -> !taken.contains(code))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Unable to generate a unique property code for: " + propertyName));
     }
 }
