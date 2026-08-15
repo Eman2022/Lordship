@@ -114,7 +114,9 @@ public class PersonService {
     @Transactional
     public boolean deletePerson(UUID uuid) {
         return personRepository.findById(uuid).map(person -> {
-            personRepository.softDelete(uuid);
+            if (!personRepository.softDelete(uuid)) {
+                return false;
+            }
             auditService.recordDelete("person", uuid, AuditMapper.toMap(person));
             return true;
         }).orElse(false);

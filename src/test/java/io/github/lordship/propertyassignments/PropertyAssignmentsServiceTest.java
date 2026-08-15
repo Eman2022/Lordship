@@ -65,6 +65,7 @@ public class PropertyAssignmentsServiceTest {
                 LocalDateTime.now(), null);
 
         when(propertyAssignmentRepository.findById(assignmentId)).thenReturn(Optional.of(stubRow));
+        when(propertyAssignmentRepository.endAssignment(assignmentId)).thenReturn(true);
 
         // Act
         boolean result = propertyAssignmentService.endAssignment(assignmentId);

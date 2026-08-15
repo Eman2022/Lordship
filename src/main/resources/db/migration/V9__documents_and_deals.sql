@@ -148,6 +148,9 @@ CREATE TABLE tenancy_charge_term (
                                      created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
                                      created_by        UUID NOT NULL REFERENCES agent(uuid),
 
+                                     CONSTRAINT term_source_same_tenancy -- enforces
+                                         FOREIGN KEY (source_uuid, tenancy) REFERENCES instrument (uuid, tenancy),
+
                                      CONSTRAINT term_late_fee_amount_matches_method CHECK (
                                          status = 'PROPOSED' OR
                                          CASE WHEN late_fee_method = 'FLAT' THEN late_fee_amount > 0
@@ -194,9 +197,6 @@ CREATE TABLE tenancy_charge_term (
                                              OR source = 'MIGRATION'
                                              OR source_uuid IS NOT NULL
                                          ),
-
-                                     CONSTRAINT term_source_same_tenancy
-                                         FOREIGN KEY (source_uuid, tenancy) REFERENCES instrument (uuid, tenancy),
 
                                      CONSTRAINT term_cancel_facts CHECK (
                                          status <> 'CANCELLED'

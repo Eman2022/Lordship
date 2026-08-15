@@ -76,10 +76,10 @@ public class TenancyRepository {
     }
 
     // Stores deleted tenancies instead of removing them
-    public void softDelete(UUID uuid) {
-        jdbc.sql("UPDATE tenancy SET deleted_at = CURRENT_TIMESTAMP WHERE uuid = :uuid")
+    public boolean softDelete(UUID uuid) {
+        return jdbc.sql("UPDATE tenancy SET deleted_at = CURRENT_TIMESTAMP WHERE uuid = :uuid AND deleted_at IS NULL")
                 .param("uuid", uuid)
-                .update();
+                .update() > 0;
     }
 
     public Optional<TenancyRow> patch(UUID uuid, Map<String, Object> changes) {

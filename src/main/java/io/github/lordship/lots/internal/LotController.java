@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,7 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/lots")
+@RequestMapping("/api/lots")
 public class LotController {
 
     private final LotService lotService;
@@ -44,26 +43,18 @@ public class LotController {
     @PreAuthorize("hasAuthority('lots:view')")
     @GetMapping
     public ResponseEntity<List<LotResponse>> listByProperty(@RequestParam("property") String propertyCode) {
-        List<LotResponse> lots = lotService.findByProperty(propertyCode).stream()
-                .map(LotResponse::from)
-                .toList();
-        return ResponseEntity.ok(lots);
+        return ResponseEntity.ok(
+                lotService.findByProperty(propertyCode)
+                        .stream()
+                        .map(LotResponse::from)
+                        .toList()
+        );
     }
 
     @PreAuthorize("hasAuthority('lots:view')")
     @GetMapping("/{uuid}")
     public ResponseEntity<LotResponse> getLot(@PathVariable UUID uuid) {
         return lotService.findById(uuid)
-                .map(LotResponse::from)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PreAuthorize("hasAuthority('lots:edit')")
-    @PutMapping("/{uuid}")
-    public ResponseEntity<LotResponse> updateLot(@PathVariable UUID uuid,
-                                                 @Valid @RequestBody LotUpdateRequest request) {
-        return lotService.updateLot(uuid, request)
                 .map(LotResponse::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -77,11 +68,13 @@ public class LotController {
 
         Map<String, Object> changes = new HashMap<>();
 
-        if (request.containsKey("lotNumber"))   changes.put("lot_number", request.get("lotNumber"));
-        if (request.containsKey("description")) changes.put("description", request.get("description"));
-        if (request.containsKey("targetRent"))  changes.put("target_rent", request.get("targetRent"));
-        if (request.containsKey("notes"))       changes.put("notes", request.get("notes"));
-        if (request.containsKey("sortOrder"))   changes.put("sort_order", request.get("sortOrder"));
+        if (request.containsKey("lotNumber"))         changes.put("lot_number", request.get("lotNumber"));
+        if (request.containsKey("lotAddress"))        changes.put("lot_address", request.get("lotAddress"));
+        if (request.containsKey("description"))       changes.put("description", request.get("description"));
+        if (request.containsKey("notes"))             changes.put("notes", request.get("notes"));
+        if (request.containsKey("sortOrder"))         changes.put("sort_order", request.get("sortOrder"));
+        if (request.containsKey("isRentable"))        changes.put("is_rentable", request.get("isRentable"));
+        if (request.containsKey("notRentableReason")) changes.put("not_rentable_reason", request.get("notRentableReason"));
 
         return lotService.patchLot(uuid, changes)
                 .map(LotResponse::from)

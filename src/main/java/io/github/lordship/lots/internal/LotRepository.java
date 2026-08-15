@@ -1,5 +1,6 @@
 package io.github.lordship.lots.internal;
 
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -13,58 +14,43 @@ import java.util.UUID;
 @Repository
 public class LotRepository {
 
-    // Whitelisted so the dynamic patch UPDATE can never touch an arbitrary column.
     private static final Set<String> ALLOWED_COLUMNS = Set.of(
-            "lot_number", "description", "notes", "sort_order", "target_rent"
+            "lot_number", "lot_address", "description", "notes",
+            "sort_order", "is_rentable", "not_rentable_reason"
     );
 
     private final JdbcClient jdbc;
+    private final LotRowMapper rowMapper;
 
-    public LotRepository(JdbcClient jdbc) {
+    public LotRepository(JdbcClient jdbc, ObjectMapper objectMapper) {
         this.jdbc = jdbc;
+        this.rowMapper = new LotRowMapper(objectMapper);
     }
 
     public LotRow save(LotRow row) {
         return jdbc.sql("""
             INSERT INTO lot (
-                property_id, lot_number,
-                description, notes, target_rent, sort_order
+                property_id, lot_number, lot_address,
+                is_rentable, not_rentable_reason,
+                description, notes, sort_order
             ) VALUES (
-                :propertyId, :lotNumber,
-                :description, :notes, :targetRent, :sortOrder
+                :propertyId, :lotNumber, :lotAddress,
+                :isRentable, :notRentableReason,
+                :description, :notes, :sortOrder
             ) RETURNING *
             """)
                 .paramSource(row)
-                .query(LotRow.class)
-                .single();
-    }
-
-    public LotRow update(LotRow row) {
-        return jdbc.sql("""
-            UPDATE lot SET
-                lot_number    = :lotNumber,
-                description   = :description,
-                notes         = :notes,
-                target_rent   = :targetRent,
-                sort_order    = :sortOrder
-            WHERE uuid = :uuid AND deleted_at IS NULL
-            RETURNING *
-            """)
-                .paramSource(row)
-                .query(LotRow.class)
+                .query(rowMapper)
                 .single();
     }
 
     public Optional<LotRow> findById(UUID uuid) {
         return jdbc.sql("SELECT * FROM lot WHERE uuid = :uuid AND deleted_at IS NULL")
                 .param("uuid", uuid)
-                .query(LotRow.class)
+                .query(rowMapper)
                 .optional();
     }
 
-    // Partial update: only the columns present in `changes` are written. Trades
-    // compile-time type safety for generality, so callers must pass already-coerced
-    // values (e.g. Integer sort_order). Column names are whitelisted.
     public Optional<LotRow> patch(UUID uuid, Map<String, Object> changes) {
         if (changes.isEmpty()) return findById(uuid);
 
@@ -76,7 +62,6 @@ public class LotRepository {
 
         StringBuilder sql = new StringBuilder("UPDATE lot SET ");
         changes.forEach((col, val) -> sql.append(col).append(" = :").append(col).append(", "));
-        // trim trailing comma and space
         sql.setLength(sql.length() - 2);
         sql.append(" WHERE uuid = :uuid AND deleted_at IS NULL RETURNING *");
 
@@ -85,7 +70,7 @@ public class LotRepository {
 
         return jdbc.sql(sql.toString())
                 .params(params)
-                .query(LotRow.class)
+                .query(rowMapper)
                 .optional();
     }
 
@@ -99,13 +84,10 @@ public class LotRepository {
             ORDER BY sort_order NULLS LAST, lot_number
             """)
                 .param("propertyCode", propertyCode)
-                .query(LotRow.class)
+                .query(rowMapper)
                 .list();
     }
 
-    // Surfaces lots that share a number within a property (e.g. duplicate "DF"
-    // labels seen in real park data). The application flags these rather than
-    // the DB rejecting them.
     public List<LotRow> findDuplicateNumbers(String propertyCode) {
         return jdbc.sql("""
             SELECT l.* FROM lot l
@@ -120,13 +102,13 @@ public class LotRepository {
             ORDER BY LOWER(lot_number)
             """)
                 .param("propertyCode", propertyCode)
-                .query(LotRow.class)
+                .query(rowMapper)
                 .list();
     }
 
-    public void softDelete(UUID uuid) {
-        jdbc.sql("UPDATE lot SET deleted_at = CURRENT_TIMESTAMP WHERE uuid = :uuid AND deleted_at IS NULL")
+    public boolean softDelete(UUID uuid) {
+        return jdbc.sql("UPDATE lot SET deleted_at = CURRENT_TIMESTAMP WHERE uuid = :uuid AND deleted_at IS NULL")
                 .param("uuid", uuid)
-                .update();
+                .update() > 0;
     }
 }

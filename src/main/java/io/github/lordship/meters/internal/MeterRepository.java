@@ -66,10 +66,10 @@ public class MeterRepository {
                 .list();
     }
 
-    public void softDelete(UUID uuid) {
-        jdbc.sql("UPDATE meters SET deleted_at = CURRENT_TIMESTAMP WHERE uuid = :uuid")
+    public boolean softDelete(UUID uuid) {
+        return jdbc.sql("UPDATE meters SET deleted_at = CURRENT_TIMESTAMP WHERE uuid = :uuid AND deleted_at IS NULL")
                 .param("uuid", uuid)
-                .update();
+                .update() > 0;
     }
 
     public Optional<MeterRow> patch(UUID uuid, Map<String, Object> changes) {

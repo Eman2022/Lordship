@@ -56,8 +56,8 @@ public class VehicleControllerIT {
 
     private UUID insertTestLot(UUID propertyUuid) {
         return jdbc.sql("""
-                INSERT INTO lot (property_id, lot_number, target_rent)
-                VALUES (:propertyUuid, '1', 350.0)
+                INSERT INTO lot (property_id, lot_number)
+                VALUES (:propertyUuid, '1')
                 RETURNING uuid
                 """)
                 .param("propertyUuid", propertyUuid)

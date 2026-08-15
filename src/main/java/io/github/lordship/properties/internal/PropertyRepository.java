@@ -79,6 +79,16 @@ public class PropertyRepository {
                 .optional();
     }
 
+    public Set<String> findUsedPropertyCodes() {
+        return jdbc.sql("""
+            SELECT property_code
+            FROM property
+            WHERE property_code IS NOT NULL
+              AND deleted_at IS NULL
+            """)
+                .query(String.class)
+                .set();
+    }
 
     public boolean softDelete(UUID uuid) {
         int rows = jdbc.sql("UPDATE property SET deleted_at = NOW() WHERE uuid = :uuid AND deleted_at IS NULL")

@@ -94,7 +94,9 @@ public class RoleService {
     @Transactional
     public boolean deleteRole(UUID uuid) {
         return roleRepository.findById(uuid).map(roleRow -> {
-            roleRepository.softDelete(uuid);
+            if (!roleRepository.softDelete(uuid)) {
+                return false;
+            }
             auditService.recordDelete("agent_role", uuid, AuditMapper.toMap(roleRow));
             return true;
         }).orElse(false);

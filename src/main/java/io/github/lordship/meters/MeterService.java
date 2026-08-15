@@ -205,7 +205,9 @@ public class MeterService {
     @Transactional
     public boolean softDelete(UUID uuid) {
         return meterRepository.findById(uuid).map(meterRow -> {
-            meterRepository.softDelete(uuid);
+            if (!meterRepository.softDelete(uuid)) {
+                return false;
+            }
             auditService.recordDelete("meters", uuid, AuditMapper.toMap(meterRow));
             return true;
         }).orElse(false);

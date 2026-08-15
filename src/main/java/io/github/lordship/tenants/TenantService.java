@@ -55,7 +55,9 @@ public class TenantService
     @Transactional
     public boolean delete(UUID uuid) {
         return tenantRepository.findById(uuid).map(before -> {
-            tenantRepository.softDelete(uuid);
+            if (!tenantRepository.softDelete(uuid)) {
+                return false;
+            }
             auditService.recordDelete("tenant", uuid, AuditMapper.toMap(before));
             return true;
         }).orElse(false);
@@ -141,7 +143,9 @@ public class TenantService
     @Transactional
     public boolean softDelete(UUID uuid) {
         return tenantRepository.findById(uuid).map(tenant -> {
-            tenantRepository.softDelete(uuid);
+            if (!tenantRepository.softDelete(uuid)) {
+                return false;
+            }
             auditService.recordDelete("tenancy", uuid, AuditMapper.toMap(tenant));
             return true;
         }).orElse(false);

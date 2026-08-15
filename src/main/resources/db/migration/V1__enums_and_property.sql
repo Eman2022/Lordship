@@ -7,8 +7,10 @@ CREATE TYPE operation_type AS ENUM ('INSERT', 'UPDATE', 'DELETE');
 
 -- note: later statute can be looked up using agreement_type + property.state
 CREATE TYPE agreement_type AS ENUM (
-    'RESIDENTIAL','MANUFACTURED_HOME_LOT','RV_LOT',
-    'TRANSIENT_LODGING','COMMERCIAL','STORAGE','UTILITY_SERVICE'
+    'RESIDENTIAL','LAND',
+    'TRANSIENT','COMMERCIAL',
+    'STORAGE',
+    'UTILITY_SERVICE' -- for example: a sub-parcel on your parcel that pays you for a utility
     );
 
 -- ── Property ─────────────────────────────────────────────────────────────────
@@ -23,11 +25,6 @@ CREATE TABLE property (
                           purchase_date    DATE,
                           year_built       INT,
                           property_manager UUID, -- FK to agent added in V3 after agent table exists
-
-    -- note: rent skips the template chain. Seeds lot.target_rent,
-    -- which seeds tenancy_charge_term.rent_amount.
-                          default_target_rent NUMERIC(12,2) NOT NULL DEFAULT 500 CHECK (default_target_rent >= 0),
-
                           created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
                           deleted_at       TIMESTAMPTZ
 );
@@ -167,6 +164,6 @@ CREATE UNIQUE INDEX property_fee_waiver_uq
 
 
 INSERT INTO charge_term_defaults (property, name, agreement_type)
-VALUES (NULL, 'Standard Manufactured Home Lot Lease', 'MANUFACTURED_HOME_LOT'),
+VALUES (NULL, 'Standard Manufactured Home Lot Lease', 'LAND'),
        (NULL, 'Standard Residential Lease',           'RESIDENTIAL'),
        (NULL, 'Standard Storage Agreement',           'STORAGE');
