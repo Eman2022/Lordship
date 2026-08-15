@@ -18,6 +18,7 @@ public record StandardTermsRow(
 
         BigDecimal carFee,
         Integer allowedCars,
+
         BigDecimal petFee,
         Integer allowedPets,
 
@@ -26,17 +27,22 @@ public record StandardTermsRow(
 
         FeeMethod ruleViolationFeeMethod,
         BigDecimal ruleViolationFeeAmount,
+
         FeeMethod nsfFeeMethod,
         BigDecimal nsfFeeAmount,
+
         FeeMethod lateFeeMethod,
         BigDecimal lateFeeAmount,
 
         UtilityMethod waterMethod,
         BigDecimal waterFlatAmount,
+
         UtilityMethod powerMethod,
         BigDecimal powerFlatAmount,
+
         UtilityMethod sewerMethod,
         BigDecimal sewerFlatAmount,
+
         UtilityMethod trashMethod,
         BigDecimal trashFlatAmount,
 

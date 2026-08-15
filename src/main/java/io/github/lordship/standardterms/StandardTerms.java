@@ -8,9 +8,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-// One property's standard deal for one agreement type: the terms a new tenancy
-// is created from. A row with a null property is a global template -- admin-only,
-// never usable directly, copied into a property before it can be offered.
+// One property's standard deal for one agreement type: the terms a new tenancy is created from.
 public record StandardTerms(
         UUID uuid,
         UUID property,
@@ -37,14 +35,14 @@ public record StandardTerms(
 
         UtilityMethod waterMethod,
         BigDecimal waterFlatAmount,
+
         UtilityMethod powerMethod,
-
         BigDecimal powerFlatAmount,
+
         UtilityMethod sewerMethod,
-
         BigDecimal sewerFlatAmount,
-        UtilityMethod trashMethod,
 
+        UtilityMethod trashMethod,
         BigDecimal trashFlatAmount,
 
         String note,

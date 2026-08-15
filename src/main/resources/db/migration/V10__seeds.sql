@@ -105,6 +105,7 @@ INSERT INTO permission (uuid, permission_name) VALUES
     (uuidv7(), 'meterbills:delete'),
 
     -- standard term
+    (uuidv7(), 'standard_terms:manage_global'),
     (uuidv7(), 'standard_term:view'),
     (uuidv7(), 'standard_term:edit'),
     (uuidv7(), 'standard_term:create'),

@@ -137,17 +137,29 @@ public class StandardTermsRepository {
                 .list();
     }
 
-    // At most one set per scope + agreement type. IS NOT DISTINCT FROM so a null
-    // property matches the global row rather than matching nothing.
-    public Optional<StandardTermsRow> findByPropertyAndAgreementType(UUID propertyId, AgreementType agreementType) {
+    // Property-scoped only. Global templates may have several per agreement type,
+// so they are looked up by name instead.
+    public Optional<StandardTermsRow> findByPropertyAndAgreementType(UUID property, AgreementType agreementType) {
         return jdbc.sql("""
-                SELECT * FROM standard_terms
-                WHERE property IS NOT DISTINCT FROM :property
-                  AND agreement_type = :agreementType::agreement_type
-                  AND deleted_at IS NULL
-                """)
-                .param("property", propertyId)
+            SELECT * FROM standard_terms
+            WHERE property = :property
+              AND agreement_type = :agreementType::agreement_type
+              AND deleted_at IS NULL
+            """)
+                .param("property", property)
                 .param("agreementType", nameOf(agreementType))
+                .query(StandardTermsRow.class)
+                .optional();
+    }
+
+    public Optional<StandardTermsRow> findGlobalByName(String name) {
+        return jdbc.sql("""
+            SELECT * FROM standard_terms
+            WHERE property IS NULL
+              AND lower(name) = lower(:name)
+              AND deleted_at IS NULL
+            """)
+                .param("name", name)
                 .query(StandardTermsRow.class)
                 .optional();
     }

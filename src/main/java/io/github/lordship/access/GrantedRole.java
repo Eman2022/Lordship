@@ -15,7 +15,6 @@ public record GrantedRole(
     OffsetDateTime createdAt,
     OffsetDateTime deletedAt
 ) {
-
     public GrantedRoleResponse toResponse() {
         return new GrantedRoleResponse(uuid, agentId, roleId, grantedBy);
     }

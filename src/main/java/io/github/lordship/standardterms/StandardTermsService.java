@@ -90,7 +90,7 @@ public class StandardTermsService {
 
     @Transactional
     public StandardTerms createGlobalTemplate(String name, AgreementType agreementType) {
-        requireScopeIsFree(null, agreementType);
+        requireGlobalNameIsFree(name);
 
         StandardTermsRow saved = standardTermsRepository.save(
                 new StandardTermsRow(null, name, agreementType));
@@ -112,7 +112,7 @@ public class StandardTermsService {
         if (template.property() != null) {
             throw new IllegalArgumentException("Only a global template can be copied into a property");
         }
-        requireScopeIsFree(property, template.agreementType());
+        requirePropertyScopeIsFree(property, template.agreementType());
 
         StandardTermsRow saved = standardTermsRepository.saveCopy(template.copyTo(property));
         auditService.recordInsert("standard_terms", saved.uuid(), AuditMapper.toMap(saved));
@@ -157,11 +157,19 @@ public class StandardTermsService {
         }).orElse(false);
     }
 
-    // At most one set per scope per agreement type -- global (property null) included.
-    private void requireScopeIsFree(UUID property, AgreementType agreementType) {
+    // A property may hold only one set per agreement type.
+    private void requirePropertyScopeIsFree(UUID property, AgreementType agreementType) {
         if (standardTermsRepository.findByPropertyAndAgreementType(property, agreementType).isPresent()) {
             throw new IllegalStateException(
-                    "A standard terms set already exists for agreement type " + agreementType);
+                    "This property already has a standard terms set for " + agreementType);
+        }
+    }
+
+    // Globals may repeat an agreement type -- WA_Land_Lease and OR_Land_Lease -- so
+// the name is the identity.
+    private void requireGlobalNameIsFree(String name) {
+        if (standardTermsRepository.findGlobalByName(name).isPresent()) {
+            throw new IllegalStateException("A global template named " + name + " already exists");
         }
     }
 
