@@ -1,15 +1,12 @@
 package io.github.lordship.vehicles.internal;
 
 import io.github.lordship.vehicles.Vehicle;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record VehicleRow (
         UUID uuid,
-        UUID tenancyUuid,
+        UUID tenancyId,
         String make,
         String model,
         Integer year,
@@ -17,13 +14,13 @@ public record VehicleRow (
         String plateState,
         String color,
         String notes,
-        LocalDateTime createdAt,
-        LocalDateTime deletedAt
+        OffsetDateTime createdAt,
+        OffsetDateTime deletedAt
 ) {
-    public VehicleRow(UUID tenancyUuid, String plateNumber) {
+    public VehicleRow(UUID tenancyId, String plateNumber) {
         this(
                 null,
-                tenancyUuid,
+                tenancyId,
                 null,
                 null,
                 null,
@@ -38,7 +35,7 @@ public record VehicleRow (
     public Vehicle toVehicle() {
         return new Vehicle(
                 this.uuid,
-                this.tenancyUuid,
+                this.tenancyId,
                 this.make,
                 this.model,
                 this.year,

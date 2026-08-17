@@ -1,5 +1,6 @@
 package io.github.lordship.vehicles.internal;
 
+import io.github.lordship.vehicles.Vehicle;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -14,22 +15,22 @@ public class VehicleRepository {
         this.jdbc = jdbc;
     }
 
-//    private static final Set<String> ALLOWED_COLUMNS = Set.of(
-//            // fill in with the property table's patchable columns
-//            "", "", "", ""
-//    );
+    private static final Set<String> PATCHABLE_COLUMNS = Set.of(
+            "make", "model", "year", "plate_number", "plate_state",
+            "color", "notes"
+    );
 
-    public VehicleRow save(VehicleRow row) {
+
+    public VehicleRow save(UUID tenancyId, String plateNumber) {
         return jdbc.sql("""
                 INSERT INTO vehicle (
-                    tenancy_uuid, make, model, year,
-                    plate_number, plate_state, color, notes
+                    tenancy_id, plate_number
                 ) VALUES (
-                    :tenancyUuid, :make, :model, :year,
-                    :plateNumber, :plateState, :color, :notes
+                    :tenancyId, :plateNumber
                 ) RETURNING *
                 """)
-                .paramSource(row)
+                .param("tenancyId", tenancyId)
+                .param("plateNumber", plateNumber)
                 .query(VehicleRow.class)
                 .single();
     }
@@ -42,7 +43,7 @@ public class VehicleRepository {
     }
 
     public List<VehicleRow> findByTenancy(UUID tenancyUuid) {
-        return jdbc.sql("SELECT * FROM vehicle WHERE tenancy_uuid = :tenancyUuid AND deleted_at IS NULL ORDER BY created_at ASC")
+        return jdbc.sql("SELECT * FROM vehicle WHERE tenancy_id = :tenancyUuid AND deleted_at IS NULL ORDER BY created_at ASC")
                 .param("tenancyUuid", tenancyUuid)
                 .query(VehicleRow.class)
                 .list();
@@ -52,7 +53,7 @@ public class VehicleRepository {
         return jdbc.sql("""
             SELECT DISTINCT v.*
             FROM vehicle v
-            LEFT JOIN tenancy t ON v.tenancy_uuid = t.uuid
+            LEFT JOIN tenancy t ON v.tenancy_id = t.uuid
             LEFT JOIN lot l ON t.lot_id = l.uuid
             WHERE (l.property_id = :propertyUuid)
               AND v.deleted_at IS NULL
@@ -63,9 +64,9 @@ public class VehicleRepository {
                 .list();
     }
 
-    public int countByTenancy(UUID tenancyUuid) {
-        return jdbc.sql("SELECT COUNT(*) FROM vehicle WHERE tenancy_uuid = :tenancyUuid AND deleted_at IS NULL")
-                .param("tenancyUuid", tenancyUuid)
+    public int countByTenancy(UUID tenancyId) {
+        return jdbc.sql("SELECT COUNT(*) FROM vehicle WHERE tenancy_id = :tenancyId AND deleted_at IS NULL")
+                .param("tenancyId", tenancyId)
                 .query(Integer.class)
                 .single();
     }
@@ -78,10 +79,10 @@ public class VehicleRepository {
         JOIN lot l  ON t.lot_id = l.uuid
         JOIN lot l2 ON l2.property_id = l.property_id
         JOIN tenancy t2 ON t2.lot_id = l2.uuid
-        JOIN vehicle v ON v.tenancy_uuid = t2.uuid
+        JOIN vehicle v ON v.tenancy_id = t2.uuid
         WHERE t.uuid = :tenancyUuid
           AND v.plate_number = :plateNumber
-          AND v.tenancy_uuid != :tenancyUuid
+          AND v.tenancy_id != :tenancyUuid
           AND v.deleted_at IS NULL
         """)
                 .param("plateNumber", plateNumber)
@@ -105,12 +106,18 @@ public class VehicleRepository {
     public Optional<VehicleRow> patch(UUID uuid, Map<String, Object> changes) {
         if (changes.isEmpty()) return findById(uuid);
 
+        for (String col : changes.keySet()) {
+            if (!PATCHABLE_COLUMNS.contains(col)) {
+                throw new IllegalArgumentException("Invalid column: " + col);
+            }
+        }
+
         String setClauses = changes.keySet().stream()
                 .map(col -> col + " = :" + col)
                 .collect(Collectors.joining(", "));
 
         String sql = "UPDATE vehicle SET " + setClauses +
-                ", updated_at = NOW() WHERE uuid = :uuid AND deleted_at IS NULL RETURNING *";
+                " WHERE uuid = :uuid AND deleted_at IS NULL RETURNING *";
 
         changes.put("uuid", uuid);
 
@@ -127,26 +134,4 @@ public class VehicleRepository {
         return rows > 0;
     }
 
-    // Policy methods
-    public Optional<VehiclePolicyRow> findPolicyByProperty(UUID propertyUuid) {
-        return jdbc.sql("SELECT * FROM vehicle_policy WHERE property_uuid = :propertyUuid")
-                .param("propertyUuid", propertyUuid)
-                .query(VehiclePolicyRow.class)
-                .optional();
-    }
-    public VehiclePolicyRow savePolicy(VehiclePolicyRow row) {
-        return jdbc.sql("""
-                INSERT INTO vehicle_policy (property_uuid, free_vehicle_limit, extra_vehicle_fee, notes)
-                VALUES (:propertyUuid, :freeVehicleLimit, :extraVehicleFee, :notes)
-                ON CONFLICT (property_uuid) DO UPDATE SET
-                    free_vehicle_limit = EXCLUDED.free_vehicle_limit,
-                    extra_vehicle_fee = EXCLUDED.extra_vehicle_fee,
-                    notes = EXCLUDED.notes,
-                    updated_at = NOW()
-                RETURNING *
-                """)
-                .paramSource(row)
-                .query(VehiclePolicyRow.class)
-                .single();
-    }
 }
