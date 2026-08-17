@@ -44,22 +44,16 @@ public class PropertyAssignmentsRepositoryTest extends IntegrationTest {
     Random random = new Random();
 
     private AgentRow buildAgent() {
-        PersonRow personRow = new PersonRow("Some Guy");
-        PersonRow personRowSaved = personRepository.save(personRow);
+        PersonRow personRowSaved = personRepository.save("Some Guy");
         return agentRepository.save(new AgentRow(personRowSaved.uuid(), "", "workEmail" + String.valueOf(random.nextInt(999999)) + "@Lordship.com", "supergoodNicePass123123,"));
     }
 
-
-    private PropertyRow buildProperty() {
-        PropertyRow propertyRow = new PropertyRow("Test Property", "2161 Pretty Ave, Tacoma WA 91234");
-        return propertyRepository.save(propertyRow);
-    }
 
     private PropertyAssignmentRow buildRow() {
         Optional<AgentRow> rootAgentRowOpt = agentRepository.findByWorkEmail(rootEmail);
         assertTrue(rootAgentRowOpt.isPresent());
         AgentRow rootAgentRow = rootAgentRowOpt.get();
-        PropertyRow propertyRow = buildProperty();
+        PropertyRow propertyRow = testData.insertProperty("Test Property", "2161 Pretty Ave, Tacoma WA 91234", "TP");
         AgentRow agentRow = buildAgent();
         return new PropertyAssignmentRow(agentRow.uuid(), propertyRow.uuid(), rootAgentRow.uuid());
     }

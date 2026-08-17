@@ -32,14 +32,14 @@ public class PersonService {
 
     @Transactional
     public Person createPersonFromName(String nameFull) {
-        PersonRow row = personRepository.save(new PersonRow(nameFull));
+        PersonRow row = personRepository.save(nameFull);
         auditService.recordInsert("person", row.uuid(), AuditMapper.toMap(row));
         return row.toPerson(encryptionService);
     }
 
     @Transactional
     public Person systemInsertRootPerson(String nameFull, UUID correlationId) {
-        PersonRow row = personRepository.save(new PersonRow(nameFull));
+        PersonRow row = personRepository.save(nameFull);
         auditService.recordSystemInsert(correlationId, "person", row.uuid(), AuditMapper.toMap(row));
         return row.toPerson(encryptionService);
     }

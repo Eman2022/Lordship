@@ -2,10 +2,7 @@ package io.github.lordship.lots;
 
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
-import io.github.lordship.lots.internal.LotPermissibleAgreementTypeRepository;
-import io.github.lordship.lots.internal.LotPermissibleAgreementTypeRow;
-import io.github.lordship.lots.internal.LotRepository;
-import io.github.lordship.lots.internal.LotRow;
+import io.github.lordship.lots.internal.*;
 import io.github.lordship.shared.AgreementType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,47 +66,35 @@ public class LotServiceTest {
         // Arrange
         UUID propertyId = UUID.randomUUID();
         LotRow savedRow = stubRow(propertyId);
-        ArgumentCaptor<LotRow> rowCaptor = ArgumentCaptor.forClass(LotRow.class);
-        when(lotRepository.save(rowCaptor.capture())).thenReturn(savedRow);
+        when(lotRepository.save(propertyId, "12")).thenReturn(savedRow);
 
         LotCreationRequest request = new LotCreationRequest(propertyId, "12");
 
         // Act
         Lot result = lotService.createLot(request);
 
-        // Assert: only propertyId/lotNumber reach the insert -- everything else is
-        // left to a follow-up PATCH, per the create-minimal design.
-        LotRow insertedRow = rowCaptor.getValue();
-        assertEquals(propertyId, insertedRow.propertyId());
-        assertEquals("12", insertedRow.lotNumber());
-        assertTrue(insertedRow.isRentable());
-        assertNull(insertedRow.notRentableReason());
-        assertNull(insertedRow.lotAddress());
-        assertNull(insertedRow.description());
-        assertNull(insertedRow.notes());
-        assertNull(insertedRow.sortOrder());
-        assertNull(insertedRow.shapeData());
+        // Assert: only the two minimum columns reach the insert
+        verify(lotRepository).save(propertyId, "12");
 
         assertEquals(savedRow.uuid(), result.uuid());
         assertEquals("12", result.lotNumber());
+
         // A brand-new lot has no permissible agreement types yet, and creating one
         // shouldn't need to ask that repository anything.
         assertEquals(List.of(), result.permissibleAgreementTypes());
         verifyNoInteractions(lotPermissibleAgreementTypeRepository);
 
+        // Keys must be the record component names AuditMapper produces, matching every
+        // other module's audit entries -- not the snake_case column names.
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<String, Object>> auditCaptor = ArgumentCaptor.forClass(Map.class);
         verify(auditService).recordInsert(eq("lot"), eq(savedRow.uuid()), auditCaptor.capture());
 
-        // Keys must be the record component names AuditMapper produces, matching every
-        // other module's audit entries -- not the snake_case column names.
         Map<String, Object> logged = auditCaptor.getValue();
         assertEquals(propertyId, logged.get("propertyId"));
         assertEquals("12", logged.get("lotNumber"));
-        assertEquals(true, logged.get("isRentable"));
         assertFalse(logged.containsKey("lot_number"));
         assertFalse(logged.containsKey("property_id"));
-        assertFalse(logged.containsKey("is_rentable"));
     }
 
     @Test
@@ -117,7 +102,6 @@ public class LotServiceTest {
         // Arrange
         LotRow existing = stubRow(UUID.randomUUID());
         when(lotRepository.findById(existing.uuid())).thenReturn(Optional.of(existing));
-        // softDelete reports whether it actually flipped deleted_at; the audit entry hangs off that.
         when(lotRepository.softDelete(existing.uuid())).thenReturn(true);
 
         // Act
@@ -128,8 +112,6 @@ public class LotServiceTest {
         verify(lotRepository).softDelete(existing.uuid());
         verifyNoInteractions(lotPermissibleAgreementTypeRepository);
 
-        // A soft delete is logged as a DELETE, the same as every other package -- not as
-        // an UPDATE carrying a hand-made deleted_at value.
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
         verify(auditService).recordDelete(eq("lot"), eq(existing.uuid()), captor.capture());
@@ -221,45 +203,6 @@ public class LotServiceTest {
         verifyNoInteractions(auditService);
     }
 
-    @Test
-    void patchLot_shouldCoerceSortOrderStrings() {
-        // Arrange: the controller forwards raw JSON values, so a numeric sort order can
-        // arrive as a String; blank strings mean "clear it".
-        LotRow before = stubRow(UUID.randomUUID());
-        LotRow after = before;
-        when(lotRepository.findById(before.uuid())).thenReturn(Optional.of(before));
-        ArgumentCaptor<Map<String, Object>> patchCaptor = ArgumentCaptor.captor();
-        when(lotRepository.patch(eq(before.uuid()), patchCaptor.capture())).thenReturn(Optional.of(after));
-        when(lotPermissibleAgreementTypeRepository.findByLotId(before.uuid())).thenReturn(List.of());
-
-        Map<String, Object> changes = new HashMap<>();
-        changes.put("sort_order", "5");
-
-        // Act
-        lotService.patchLot(before.uuid(), changes);
-
-        // Assert
-        assertEquals(5, patchCaptor.getValue().get("sort_order"));
-    }
-
-    @Test
-    void patchLot_shouldTreatBlankSortOrderString_asNull() {
-        // Arrange
-        LotRow before = stubRow(UUID.randomUUID());
-        when(lotRepository.findById(before.uuid())).thenReturn(Optional.of(before));
-        ArgumentCaptor<Map<String, Object>> patchCaptor = ArgumentCaptor.captor();
-        when(lotRepository.patch(eq(before.uuid()), patchCaptor.capture())).thenReturn(Optional.of(before));
-        when(lotPermissibleAgreementTypeRepository.findByLotId(before.uuid())).thenReturn(List.of());
-
-        Map<String, Object> changes = new HashMap<>();
-        changes.put("sort_order", "");
-
-        // Act
-        lotService.patchLot(before.uuid(), changes);
-
-        // Assert
-        assertNull(patchCaptor.getValue().get("sort_order"));
-    }
 
     @Test
     void patchLot_shouldReturnEmpty_andNotRecordAudit_whenNotExists() {

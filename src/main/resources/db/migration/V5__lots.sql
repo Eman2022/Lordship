@@ -2,7 +2,7 @@
 -- V5: Lots
 -- ============================================================
 
-CREATE TABLE lot ( --TODO: add square footage, also, add a MFH (manufactured home) table
+CREATE TABLE lot ( --TODO: add square footage, also, add a MFH (manufactured home) table to know what exists on each lot
                      uuid          UUID PRIMARY KEY DEFAULT uuidv7(),
                      property_id   UUID NOT NULL,
                      is_rentable   BOOLEAN NOT NULL DEFAULT TRUE,
@@ -11,7 +11,7 @@ CREATE TABLE lot ( --TODO: add square footage, also, add a MFH (manufactured hom
                      lot_address   TEXT,
                      description   TEXT,
                      notes         TEXT,                 -- notes about the LOT, never the tenancy
-                     sort_order    INT,                  -- manual ordering for the map/menu view
+                     sort_order    INT NOT NULL,         -- manual ordering for the map/menu view; per-property, 1..N
                      shape_data    JSONB NOT NULL DEFAULT '{"vertices":[[0,0],[47,0],[47,68],[0,68]],"bbox":[0,0,47,68],"centroid":[23.5,34]}'::jsonb,
                      created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
                      deleted_at    TIMESTAMPTZ,
@@ -40,3 +40,6 @@ CREATE TABLE lot_permissible_agreement_type ( -- shows what agreements are permi
 
 CREATE INDEX idx_lot_number_per_property
     ON lot (property_id, LOWER(lot_number)) WHERE deleted_at IS NULL;
+
+CREATE INDEX idx_lot_sort_order_per_property
+    ON lot (property_id, sort_order) WHERE deleted_at IS NULL;

@@ -6,6 +6,6 @@ import java.math.BigDecimal;
 
 public record PermissibleAgreementType(
         AgreementType agreementType,
-        BigDecimal targetRent
+        BigDecimal targetRate
 ) {
 }
