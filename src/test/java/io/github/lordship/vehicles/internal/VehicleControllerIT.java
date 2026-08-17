@@ -1,6 +1,10 @@
 package io.github.lordship.vehicles.internal;
 
+import io.github.lordship.IntegrationTest;
 import io.github.lordship.TestAuthSupport;
+import io.github.lordship.lots.internal.LotRow;
+import io.github.lordship.properties.internal.PropertyRow;
+import io.github.lordship.tenancy.internal.TenancyRow;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,12 +25,9 @@ import java.util.UUID;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional
 
-public class VehicleControllerIT {
+@Transactional
+public class VehicleControllerIT extends IntegrationTest {
 
     @Autowired
     MockMvc mockMvc;
@@ -44,47 +45,6 @@ public class VehicleControllerIT {
     @Value("${lordship.root.password}")
     private String rootPassword;
 
-    private UUID insertTestProperty() {
-        return jdbc.sql("""
-                INSERT INTO property (property_code, property_name, property_address)
-                VALUES ('TST01', 'Test Mobile Park', '999 Test Ave')
-                RETURNING uuid
-                """)
-                .query(UUID.class)
-                .single();
-    }
-
-    private UUID insertTestLot(UUID propertyUuid) {
-        return jdbc.sql("""
-                INSERT INTO lot (property_id, lot_number)
-                VALUES (:propertyUuid, '1')
-                RETURNING uuid
-                """)
-                .param("propertyUuid", propertyUuid)
-                .query(UUID.class)
-                .single();
-    }
-
-    private UUID insertTestTenancy(UUID lotUuid) {
-        return jdbc.sql("""
-                INSERT INTO tenancy (lot_id, start_date)
-                VALUES (:lotUuid, CURRENT_DATE)
-                RETURNING uuid
-                """)
-                .param("lotUuid", lotUuid)
-                .query(UUID.class)
-                .single();
-    }
-
-    private UUID setupFullChain() {
-        UUID propertyUuid = insertTestProperty();
-        UUID lotUuid = insertTestLot(propertyUuid);
-        return insertTestTenancy(lotUuid);
-    }
-
-    private UUID setupFullChainAndGetProperty() {
-        return insertTestProperty();
-    }
 
     private Map<String, Object> buildVehicleRequest(UUID tenancyUuid) {
         return Map.of(
@@ -160,17 +120,18 @@ public class VehicleControllerIT {
     // ── Authorized tests ──────────────────────────────────────
 
     @Test
-    void authorizedRegisterReturns201() throws Exception {
+    void createVehicle_returns201_whenAuthorized() throws Exception {
+        // Arrange
         String token = loginAsRoot();
-        UUID propertyUuid = insertTestProperty();
-        UUID lotUuid = insertTestLot(propertyUuid);
-        UUID tenancyUuid = insertTestTenancy(lotUuid);
+        UUID tenancyUuid = testData.insertChainToTenancy().uuid();
 
+        // Act
         mockMvc.perform(post("/api/vehicles/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 buildVehicleRequest(tenancyUuid))))
+        // Assert
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.vehicle.uuid").exists())
                 .andExpect(jsonPath("$.vehicle.plateNumber").exists())
@@ -178,13 +139,11 @@ public class VehicleControllerIT {
     }
 
     @Test
-    void authorizedGetByIdReturns200() throws Exception {
+    void getById_returns200AndVehicle_whenAuthorized() throws Exception {
+        // Arrange
         String token = loginAsRoot();
-        UUID propertyUuid = insertTestProperty();
-        UUID lotUuid = insertTestLot(propertyUuid);
-        UUID tenancyUuid = insertTestTenancy(lotUuid);
+        UUID tenancyUuid = testData.insertChainToTenancy().uuid();
 
-        // Register first
         String registerBody = mockMvc.perform(post("/api/vehicles/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -198,9 +157,10 @@ public class VehicleControllerIT {
         String vehicleUuid = objectMapper.readTree(registerBody)
                 .get("vehicle").get("uuid").asString();
 
-        // Fetch by ID
+        // Act
         mockMvc.perform(get("/api/vehicles/" + vehicleUuid)
                         .header("Authorization", "Bearer " + token))
+        // Assert
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.uuid").value(vehicleUuid));
     }
@@ -208,9 +168,7 @@ public class VehicleControllerIT {
     @Test
     void getByTenancy_whenAuthorized_returns200() throws Exception {
         String token = loginAsRoot();
-        UUID propertyUuid = insertTestProperty();
-        UUID lotUuid = insertTestLot(propertyUuid);
-        UUID tenancyUuid = insertTestTenancy(lotUuid);
+        UUID tenancyUuid = testData.insertChainToTenancy().uuid();
 
         mockMvc.perform(post("/api/vehicles/create")
                         .header("Authorization", "Bearer " + token)
@@ -228,19 +186,21 @@ public class VehicleControllerIT {
     @Test
     void getByProperty_whenAuthorized_returns200() throws Exception {
         String token = loginAsRoot();
-        UUID propertyUuid = insertTestProperty();
-        UUID lotUuid = insertTestLot(propertyUuid);
-        UUID tenancyUuid = insertTestTenancy(lotUuid);
+
+        PropertyRow pr = testData.insertProperty("Test Property");
+        LotRow lr = testData.insertLot(pr.uuid(), "1");
+        TenancyRow tr = testData.insertTenancy(lr.uuid());
+
 
         mockMvc.perform(post("/api/vehicles/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                buildVehicleRequest(tenancyUuid))))
+                                buildVehicleRequest(tr.uuid()))))
                 .andDo(print())
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/vehicles/byproperty/" + propertyUuid)
+        mockMvc.perform(get("/api/vehicles/byproperty/" + pr.uuid())
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
     }
@@ -248,9 +208,7 @@ public class VehicleControllerIT {
     @Test
     void authorizedPatchReturns200() throws Exception {
         String token = loginAsRoot();
-        UUID propertyUuid = insertTestProperty();
-        UUID lotUuid = insertTestLot(propertyUuid);
-        UUID tenancyUuid = insertTestTenancy(lotUuid);
+        UUID tenancyUuid = testData.insertChainToTenancy().uuid();
 
         String registerBody = mockMvc.perform(post("/api/vehicles/create")
                         .header("Authorization", "Bearer " + token)
@@ -276,9 +234,7 @@ public class VehicleControllerIT {
     @Test
     void authorizedDeleteReturns204() throws Exception {
         String token = loginAsRoot();
-        UUID propertyUuid = insertTestProperty();
-        UUID lotUuid = insertTestLot(propertyUuid);
-        UUID tenancyUuid = insertTestTenancy(lotUuid);
+        UUID tenancyUuid = testData.insertChainToTenancy().uuid();
 
         String registerBody = mockMvc.perform(post("/api/vehicles/create")
                         .header("Authorization", "Bearer " + token)
@@ -307,7 +263,7 @@ public class VehicleControllerIT {
     @Test
     void authorizedSetAndGetPolicyReturns200() throws Exception {
         String token = loginAsRoot();
-        UUID propertyUuid = insertTestProperty();
+        UUID propertyUuid = testData.insertProperty("TP").uuid();
 
         // Set policy
         mockMvc.perform(put("/api/vehicles/policy/" + propertyUuid)
@@ -333,13 +289,13 @@ public class VehicleControllerIT {
     @Test
     void registerFlagsPlateConflictAcrossTenancies() throws Exception {
         String token = loginAsRoot();
-        UUID propertyUuid = insertTestProperty();
+        UUID propertyUuid = testData.insertProperty("TP").uuid();
 
-        UUID lotUuid1 = insertTestLot(propertyUuid);
-        UUID tenancyUuid1 = insertTestTenancy(lotUuid1);
+        UUID lotUuid1 = testData.insertLot(propertyUuid, "1").uuid();
+        UUID tenancyUuid1 = testData.insertTenancy(lotUuid1).uuid();
 
-        UUID lotUuid2 = insertTestLot(propertyUuid);
-        UUID tenancyUuid2 = insertTestTenancy(lotUuid2);
+        UUID lotUuid2 = testData.insertLot(propertyUuid, "2").uuid();
+        UUID tenancyUuid2 = testData.insertTenancy(lotUuid2).uuid();
 
         // Use a fixed plate for both so the conflict is detectable
         Map<String, Object> tenancy1 = Map.of(

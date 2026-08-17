@@ -30,7 +30,7 @@ public record LotResponse(
             BigDecimal targetRent
     ) {
         public static AgreementTypeResponse from(PermissibleAgreementType type) {
-            return new AgreementTypeResponse(type.agreementType(), type.targetRent());
+            return new AgreementTypeResponse(type.agreementType(), type.targetRate());
         }
     }
 

@@ -2,7 +2,6 @@ package io.github.lordship.lots.internal;
 
 import io.github.lordship.IntegrationTest;
 import io.github.lordship.TestAuthSupport;
-import io.github.lordship.lots.LotCreationRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,29 +35,6 @@ public class LotControllerIT extends IntegrationTest {
     @Autowired
     JdbcClient jdbc;
 
-    private UUID insertTestProperty(String propertyCode) {
-        return jdbc.sql("""
-                INSERT INTO property (property_code, property_name, property_address)
-                VALUES (:propertyCode, 'Test Mobile Park', '999 Test Ave')
-                RETURNING uuid
-                """)
-                .param("propertyCode", propertyCode)
-                .query(UUID.class)
-                .single();
-    }
-
-    private UUID insertTestLot(UUID propertyId, String lotNumber) {
-        return jdbc.sql("""
-                INSERT INTO lot (property_id, lot_number, description, notes, sort_order)
-                VALUES (:propertyId, :lotNumber, 'Rental lot', :notes, 1)
-                RETURNING uuid
-                """)
-                .param("propertyId", propertyId)
-                .param("lotNumber", lotNumber)
-                .param("notes", "Front row")
-                .query(UUID.class)
-                .single();
-    }
 
     @Test
     void createLot_shouldReturn403_whenUnauthorized() throws Exception {
@@ -77,7 +53,7 @@ public class LotControllerIT extends IntegrationTest {
     void createLot_shouldReturn201_withMinimalFields() throws Exception {
         // Arrange
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
-        UUID propertyId = insertTestProperty("L001");
+        UUID propertyId = testData.insertProperty("L001").uuid();
 
         LotCreationRequest request = new LotCreationRequest(propertyId, "12");
 
@@ -97,7 +73,6 @@ public class LotControllerIT extends IntegrationTest {
                 .andExpect(jsonPath("$.lotAddress").doesNotExist())
                 .andExpect(jsonPath("$.description").doesNotExist())
                 .andExpect(jsonPath("$.notes").doesNotExist())
-                .andExpect(jsonPath("$.sortOrder").doesNotExist())
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.deletedAt").doesNotExist())
                 // The DB's default rectangle, since shape_data wasn't supplied at creation.
@@ -110,8 +85,8 @@ public class LotControllerIT extends IntegrationTest {
     void listByProperty_shouldReturn200_withLots() throws Exception {
         // Arrange
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
-        UUID propertyId = insertTestProperty("L002");
-        insertTestLot(propertyId, "7");
+        UUID propertyId = testData.insertProperty("L002").uuid();
+        testData.insertLot(propertyId, "7");
 
         // Act
         mockMvc.perform(get("/api/lots")
@@ -128,15 +103,15 @@ public class LotControllerIT extends IntegrationTest {
     void patchLot_shouldUpdateField_andReturn200() throws Exception {
         // Arrange
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
-        UUID propertyId = insertTestProperty("L004");
-        UUID lotId = insertTestLot(propertyId, "5");
+        UUID propertyId = testData.insertProperty("L004").uuid();
+        UUID lotId = testData.insertLot(propertyId, "5").uuid();
 
         // Act
         mockMvc.perform(patch("/api/lots/" + lotId)
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "lotNumber": "99", "description": "Updated lot" }
+                                { "lotNumber": "99", "description": "Updated lot", "notes": "Front row" }
                                 """))
                 // Assert
                 .andExpect(status().isOk())
@@ -149,8 +124,8 @@ public class LotControllerIT extends IntegrationTest {
     void patchLot_shouldClearField_whenExplicitNullProvided() throws Exception {
         // Arrange
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
-        UUID propertyId = insertTestProperty("L005");
-        UUID lotId = insertTestLot(propertyId, "6");
+        UUID propertyId = testData.insertProperty("L005").uuid();
+        UUID lotId = testData.insertLot(propertyId, "6").uuid();
 
         // Act
         mockMvc.perform(patch("/api/lots/" + lotId)
@@ -184,8 +159,8 @@ public class LotControllerIT extends IntegrationTest {
     void deleteLot_shouldReturn204_andSubsequentGetReturns404() throws Exception {
         // Arrange
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
-        UUID propertyId = insertTestProperty("L003");
-        UUID lotId = insertTestLot(propertyId, "9");
+        UUID propertyId = testData.insertProperty("L003").uuid();
+        UUID lotId = testData.insertLot(propertyId, "9").uuid();
 
         // Act
         mockMvc.perform(delete("/api/lots/" + lotId)

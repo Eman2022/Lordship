@@ -2,10 +2,7 @@ package io.github.lordship.lots;
 
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
-import io.github.lordship.lots.internal.LotPermissibleAgreementTypeRepository;
-import io.github.lordship.lots.internal.LotPermissibleAgreementTypeRow;
-import io.github.lordship.lots.internal.LotRepository;
-import io.github.lordship.lots.internal.LotRow;
+import io.github.lordship.lots.internal.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,11 +29,7 @@ public class LotService {
 
     @Transactional
     public Lot createLot(LotCreationRequest request) {
-        LotRow saved = lotRepository.save(new LotRow(
-                request.propertyId(),
-                request.lotNumber()
-        ));
-
+        LotRow saved = lotRepository.save(request.propertyId(), request.lotNumber());
         auditService.recordInsert("lot", saved.uuid(), AuditMapper.toMap(saved));
         return saved.toLot(List.of());
     }
@@ -67,15 +60,6 @@ public class LotService {
                 throw new IllegalArgumentException("notRentableReason is required when a lot is not rentable");
             }
             changes.put("not_rentable_reason", reasonAfter);
-        }
-
-        if (changes.containsKey("sort_order")) {
-            Object so = changes.get("sort_order");
-            if (so instanceof String s && !s.isBlank()) {
-                changes.put("sort_order", Integer.parseInt(s));
-            } else if (so instanceof String) {
-                changes.put("sort_order", null);
-            }
         }
 
         Optional<LotRow> afterOpt = lotRepository.patch(uuid, changes);

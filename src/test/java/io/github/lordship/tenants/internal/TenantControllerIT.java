@@ -2,7 +2,7 @@ package io.github.lordship.tenants.internal;
 
 import io.github.lordship.TestAuthSupport;
 import io.github.lordship.lots.Lot;
-import io.github.lordship.lots.LotCreationRequest;
+import io.github.lordship.lots.internal.LotCreationRequest;
 import io.github.lordship.lots.LotService;
 import io.github.lordship.persons.Person;
 import io.github.lordship.persons.PersonService;

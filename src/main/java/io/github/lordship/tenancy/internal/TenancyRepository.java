@@ -28,17 +28,15 @@ public class TenancyRepository {
         this.jdbc = jdbcClient;
     }
 
-    public TenancyRow save(TenancyRow row) {
+    public TenancyRow save(UUID lotUuid) {
         return jdbc.sql("""
                         INSERT INTO tenancy (
-                                lot_id, start_date, end_date,
-                                no_personal_checks, no_partial_payments, accept_payments, exempt_from_late_fees
+                                lot_id
                             ) VALUES (
-                                :lotId, :startDate, :endDate,
-                                :noPersonalChecks, :noPartialPayments, :acceptPayments, :exemptFromLateFees
+                                :lotId
                             ) RETURNING *
                         """)
-                .paramSource(row)
+                .param("lotId", lotUuid)
                 .query(TenancyRow.class)
                 .single();
     }

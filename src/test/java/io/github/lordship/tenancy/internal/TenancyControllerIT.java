@@ -52,38 +52,6 @@ public class TenancyControllerIT extends IntegrationTest {
     @Autowired
     JdbcClient jdbc;
 
-    private TenancyRow buildRow(UUID lotId) {
-        return TenancyRow.forInsert(
-                lotId,
-                LocalDate.now(),
-                LocalDate.of(2026, 10, 21)
-        );
-    }
-
-    private UUID insertTestProperty() {
-        PropertyRow propertyRow = jdbc.sql("""
-                        INSERT INTO property (property_code, property_name, property_address)
-                        VALUES ('TST01', 'Test Mobile Park', '999 Test Ave') RETURNING *
-                        """).query(PropertyRow.class)
-                .single();
-        return propertyRow.uuid();
-    }
-
-    private UUID insertTestLot(UUID propertyId) {
-        return jdbc.sql("""
-                        INSERT INTO lot (property_id, lot_number)
-                        VALUES (:propertyId, '1')
-                        RETURNING uuid
-                        """)
-                .param("propertyId", propertyId)
-                .query(UUID.class)
-                .single();
-    }
-
-    private UUID setupFullChain() {
-        UUID propertyId = insertTestProperty();
-        return insertTestLot(propertyId);
-    }
 
     private UUID createTestTenancy(String token, UUID lotId) throws Exception {
         MvcResult result = mockMvc.perform(
@@ -101,8 +69,7 @@ public class TenancyControllerIT extends IntegrationTest {
     // REPOSITORY TESTS
     @Test
     void findATenancyById() {
-        UUID lotId = setupFullChain();
-        TenancyRow saved = tenancyRepository.save(buildRow(lotId));
+        TenancyRow saved = testData.insertChainToTenancy();
 
         Optional<TenancyRow> found = tenancyRepository.findById(saved.uuid());
 
@@ -112,8 +79,7 @@ public class TenancyControllerIT extends IntegrationTest {
 
     @Test
     void updatedAtChangesOnUpdate() {
-        UUID lotId = setupFullChain();
-        TenancyRow saved = tenancyRepository.save(buildRow(lotId));
+        TenancyRow saved = testData.insertChainToTenancy();
 
         OffsetDateTime before = saved.updatedAt();
 
@@ -124,8 +90,7 @@ public class TenancyControllerIT extends IntegrationTest {
 
     @Test
     void closingTenancy() {
-        UUID lotId = setupFullChain();
-        TenancyRow saved = tenancyRepository.save(buildRow(lotId));
+        TenancyRow saved = testData.insertChainToTenancy();
 
         LocalDate endDate = LocalDate.now();
         TenancyRow closed = tenancyRepository.close(saved.uuid(), endDate);
@@ -136,8 +101,7 @@ public class TenancyControllerIT extends IntegrationTest {
 
     @Test
     void softDeleteRemovesFromTable() {
-        UUID lotId = setupFullChain();
-        TenancyRow saved = tenancyRepository.save(buildRow(lotId));
+        TenancyRow saved = testData.insertChainToTenancy();
 
         tenancyRepository.softDelete(saved.uuid());
 
@@ -180,7 +144,7 @@ public class TenancyControllerIT extends IntegrationTest {
     @Test
     void getActiveTenanciesByLot_shouldReturnOnlyActiveTenancies() throws Exception {
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
-        UUID lotId = setupFullChain();
+        UUID lotId = testData.insertLot(testData.insertProperty("TP").uuid(), "1").uuid();
 
         // Create a closed tenancy
         UUID closedTenancy = createTestTenancy(token, lotId);
@@ -204,7 +168,7 @@ public class TenancyControllerIT extends IntegrationTest {
     @Test
     void patchTenancy_shouldReturn400_whenInvalidDateProvided() throws Exception {
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
-        UUID lotId = setupFullChain();
+        UUID lotId = testData.insertLot(testData.insertProperty("TP").uuid(), "1").uuid();
 
         UUID tenancyId = createTestTenancy(token, lotId);
 

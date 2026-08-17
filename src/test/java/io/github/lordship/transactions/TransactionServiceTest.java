@@ -4,7 +4,7 @@ import io.github.lordship.accounts.Account;
 import io.github.lordship.accounts.AccountService;
 import io.github.lordship.audit.AuditService;
 import io.github.lordship.lots.Lot;
-import io.github.lordship.lots.LotCreationRequest;
+import io.github.lordship.lots.internal.LotCreationRequest;
 import io.github.lordship.lots.LotService;
 import io.github.lordship.properties.Property;
 import io.github.lordship.properties.PropertyService;
