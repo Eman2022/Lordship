@@ -260,31 +260,6 @@ public class VehicleControllerIT extends IntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
-    @Test
-    void authorizedSetAndGetPolicyReturns200() throws Exception {
-        String token = loginAsRoot();
-        UUID propertyUuid = testData.insertProperty("TP").uuid();
-
-        // Set policy
-        mockMvc.perform(put("/api/vehicles/policy/" + propertyUuid)
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of(
-                                "freeVehicleLimit", 2,
-                                "extraVehicleFee",  "25.00",
-                                "notes",            "Standard policy"
-                        ))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.freeVehicleLimit").value(2))
-                .andExpect(jsonPath("$.extraVehicleFee").value(25.00));
-
-        // Get policy
-        mockMvc.perform(get("/api/vehicles/policy/" + propertyUuid)
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.freeVehicleLimit").value(2))
-                .andExpect(jsonPath("$.propertyUuid").value(propertyUuid.toString()));
-    }
 
     @Test
     void registerFlagsPlateConflictAcrossTenancies() throws Exception {

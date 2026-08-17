@@ -10,6 +10,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,38 +23,34 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Transactional
 public class VehicleRepositoryTest extends IntegrationTest {
+
     @Autowired
     VehicleRepository vehicleRepository;
 
-    @Autowired
-    JdbcClient jdbc;
-
-
-    private VehicleRow buildRow(UUID tenancyUuid) {
-        return new VehicleRow(tenancyUuid, "Toyota", "Camry", 2020, "ABC123", "WA", "Blue", null);
-    }
-
     @Test
-    void savePersistsRowAndReturnsGeneratedFields() {
+    void save_persistsRow_AndReturnsGeneratedFields() {
         // Arrange
-        UUID tenancyUuid = testData.insertChainToTenancy().uuid();
+        UUID tenancyId = testData.insertChainToTenancy().uuid();
 
         // Act
-        VehicleRow saved = vehicleRepository.save(buildRow(tenancyUuid));
+        VehicleRow saved = vehicleRepository.save(tenancyId, "ABC123");
 
         // Assert
         assertNotNull(saved.uuid());
         assertNotNull(saved.createdAt());
         assertNull(saved.deletedAt());
-        assertEquals("Toyota", saved.make());
-        assertEquals("Camry", saved.model());
+        Duration age = Duration.between(saved.createdAt(), OffsetDateTime.now(ZoneOffset.UTC)).abs();
+        System.out.println("createdAt = " + saved.createdAt());
+        System.out.println("now       = " + OffsetDateTime.now(ZoneOffset.UTC));
+        System.out.println("age       = " + age);
+        assertTrue(age.toSeconds() < 5, "expecting to be created within 5s");
         assertEquals("ABC123", saved.plateNumber());
     }
 
     @Test
     void findByIdReturnsSavedVehicle() {
-        UUID tenancyUuid = testData.insertChainToTenancy().uuid();
-        VehicleRow saved = vehicleRepository.save(buildRow(tenancyUuid));
+        UUID tenancyId = testData.insertChainToTenancy().uuid();
+        VehicleRow saved = vehicleRepository.save(tenancyId,  "ABC123");
 
         Optional<VehicleRow> found = vehicleRepository.findById(saved.uuid());
 
@@ -68,12 +67,12 @@ public class VehicleRepositoryTest extends IntegrationTest {
     @Test
     void findByTenancyReturnsVehiclesForTenant() {
         // Arrange
-        UUID tenancyUuid = testData.insertChainToTenancy().uuid();
-        vehicleRepository.save(buildRow(tenancyUuid));
-        vehicleRepository.save(new VehicleRow(tenancyUuid, "Honda", "Civic", 2019, "XYZ789", "WA", "Red", null));
+        UUID tenancyId = testData.insertChainToTenancy().uuid();
+        vehicleRepository.save(tenancyId,   "ABC123");
+        vehicleRepository.save(tenancyId,   "DEF456");
 
         // Act
-        List<VehicleRow> vehicles = vehicleRepository.findByTenancy(tenancyUuid);
+        List<VehicleRow> vehicles = vehicleRepository.findByTenancy(tenancyId);
 
         // Assert
         assertEquals(2, vehicles.size());
@@ -82,15 +81,16 @@ public class VehicleRepositoryTest extends IntegrationTest {
     @Test
     void countByTenancyReturnsCorrectCount() {
         // Arrange
-        UUID tenancyUuid = testData.insertChainToTenancy().uuid();
-        vehicleRepository.save(buildRow(tenancyUuid));
-        vehicleRepository.save(new VehicleRow(tenancyUuid, "Honda", "Civic", 2019, "XYZ789", "WA", "Red", null));
+        UUID tenancyId = testData.insertChainToTenancy().uuid();
+        vehicleRepository.save(tenancyId,    "ABC123");
+        vehicleRepository.save(tenancyId,    "DEF456");
 
-        int count = vehicleRepository.countByTenancy(tenancyUuid);
+        // Act
+        int count = vehicleRepository.countByTenancy(tenancyId);
 
+        // Asset
         assertEquals(2, count);
     }
-
 
     @Test
     void findConflictingPlateDetectsPlateUnderDifferentTenancy() {
@@ -100,7 +100,7 @@ public class VehicleRepositoryTest extends IntegrationTest {
         UUID tenancy1 = testData.insertTenancy(lot1Uuid).uuid();
         UUID tenancy2 = testData.insertTenancy(lot2Uuid).uuid();
 
-        vehicleRepository.save(buildRow(tenancy1));
+        vehicleRepository.save(tenancy1, "ABC123");
 
         // Same plate, same property, but different tenancy — should flag
         List<VehicleRow> conflicts = vehicleRepository.findUnregisteredByPlate("ABC123", tenancy2);
@@ -111,21 +111,21 @@ public class VehicleRepositoryTest extends IntegrationTest {
     @Test
     void findConflictingPlateDoesNotFlagSameTenancy() {
         // Arrange
-        UUID tenancyUuid = testData.insertChainToTenancy().uuid();
+        UUID tenancyId = testData.insertChainToTenancy().uuid();
 
         // Act
-        vehicleRepository.save(buildRow(tenancyUuid));
+        vehicleRepository.save(tenancyId, "ABC123");
 
         // Assert
         // Same plate, same tenancy — should not flag
-        List<VehicleRow> conflicts = vehicleRepository.findUnregisteredByPlate("ABC123", tenancyUuid);
+        List<VehicleRow> conflicts = vehicleRepository.findUnregisteredByPlate("ABC123", tenancyId);
         assertTrue(conflicts.isEmpty());
     }
 
     @Test
     void softDelete_removesVehicle_fromResults() {
-        UUID tenancyUuid = testData.insertChainToTenancy().uuid();
-        VehicleRow saved = vehicleRepository.save(buildRow(tenancyUuid));
+        UUID tenancyId = testData.insertChainToTenancy().uuid();
+        VehicleRow saved = vehicleRepository.save(tenancyId, "ABC123");
 
         vehicleRepository.softDelete(saved.uuid());
 

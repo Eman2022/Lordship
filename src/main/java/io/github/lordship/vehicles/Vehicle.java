@@ -1,6 +1,6 @@
 package io.github.lordship.vehicles;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record Vehicle(
@@ -13,6 +13,6 @@ public record Vehicle(
         String plateState,
         String color,
         String notes,
-        LocalDateTime createdAt,
-        LocalDateTime deletedAt
+        OffsetDateTime createdAt,
+        OffsetDateTime deletedAt
 ) {}
