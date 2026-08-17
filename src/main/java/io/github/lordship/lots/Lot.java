@@ -34,7 +34,7 @@ public record Lot(
   public Optional<BigDecimal> targetRentFor(AgreementType agreementType) {
     return permissibleAgreementTypes.stream()
             .filter(pat -> pat.agreementType() == agreementType)
-            .map(PermissibleAgreementType::targetRent)
+            .map(PermissibleAgreementType::targetRate)
             .findFirst();
   }
 }

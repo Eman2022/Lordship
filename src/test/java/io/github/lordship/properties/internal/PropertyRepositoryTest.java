@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,9 +33,11 @@ public class PropertyRepositoryTest {
     }
 
     @Test
-    void savePersistsRowAndReturnsGeneratedFields() {
-        PropertyRow saved = propertyRepository.save(buildRow());
+    void save_persistsRow_andReturnsGeneratedFields() {
+        // Arrange and Act
+        PropertyRow saved = propertyRepository.save("Test Mobile Park", "999 Test Ave", "TP");
 
+        // Assert
         assertNotNull(saved.uuid());
         assertNotNull(saved.createdAt());
         assertNull(saved.deletedAt());
@@ -46,73 +47,53 @@ public class PropertyRepositoryTest {
 
     @Test
     void findByPropertyCodeReturnsSavedProperty() {
-        PropertyRow saved = propertyRepository.save(buildRow());
+        // Arrange
+        PropertyRow saved = propertyRepository.save("Test Mobile Park", "999 Test Ave", "TP");
 
-        Optional<PropertyRow> found = propertyRepository.getPropertyOptional(saved.propertyCode());
+        // Act
+        Optional<PropertyRow> found = propertyRepository.findById(saved.uuid());
 
+        // Assert
         assertTrue(found.isPresent());
         assertEquals(saved.uuid(), found.get().uuid());
         assertEquals(saved.propertyCode(), found.get().propertyCode());
     }
 
     @Test
-    void findByPropertyCodeReturnsEmptyWhenNotFound() {
-        Optional<PropertyRow> found = propertyRepository.getPropertyOptional("NOPE99");
+    void findByCode_returnsEmpty_whenNotFound() {
+        Optional<PropertyRow> found = propertyRepository.findByCode("NOPE99");
 
         assertTrue(found.isEmpty());
     }
 
     @Test
-    void findAllReturnsAllSavedProperties() {
-        propertyRepository.save(buildRow());
-        propertyRepository.save(buildRow());
+    void findAll_returnsAllSavedProperties() {
+        // Arrange
+        propertyRepository.save("Test Mobile Park", "999 Test Ave", "TP");
+        propertyRepository.save("Test Mobile Park2", "1001 Test Ave", "TP2");
 
+        // Act
         List<PropertyRow> all = propertyRepository.findAll();
 
+        // Assert
         assertTrue(all.size() >= 2);
         assertTrue(all.stream().allMatch(p -> p.deletedAt() == null));
     }
+
+    @Test
+    void findById_returnsNull_onSoftDeletedProperties() {
+        // Arrange
+        PropertyRow saved = propertyRepository.save("Test Mobile Park", "999 Test Ave", "TP");
+        boolean deleteSuccess = propertyRepository.softDelete(saved.uuid());
+
+        // Act
+        PropertyRow found = propertyRepository.findById(saved.uuid()).orElse(null);
+
+        // Assert
+        assertTrue(deleteSuccess);
+        assertNull(found);
+    }
 }
-   // @Test
-   // void softDeletedPropertyDoesNotAppearInFindAll() {
-   //     PropertyRow saved = propertyRepository.save(buildRow());
-
-   //     propertyRepository.endAssignment(saved.propertyCode());
-
-   //     List<PropertyRow> all = propertyRepository.findAll();
-   //     assertTrue(all.stream().noneMatch(p -> p.propertyCode().equals(saved.propertyCode())));
-   // }
-
-   // @Test
-   // void softDeletedPropertyDoesNotAppearInFindByCode() {
-   //     PropertyRow saved = propertyRepository.save(buildRow());
-
-   //     propertyRepository.endAssignment(saved.propertyCode());
-
-   //     Optional<PropertyRow> found = propertyRepository.getPropertyOptional(saved.propertyCode());
-   //     assertTrue(found.isEmpty());
-   // }
-// }
-
-
-// @Test
-// void findAllDoesNotReturnSoftDeletedProperties() {
-
-
-    // NOTE: PropertyRepository currently has no soft-delete method.
-    // This test documents expected behavior for findAll()'s existing
-    // "WHERE deleted_at IS NULL" filter once a delete method exists.
-    // If/when you add a endAssignment(UUID) method to PropertyRepository,
-    // this test should be updated to actually exercise it rather than
-    // just asserting the filter clause is present in findAll().
-
-
-
-//    PropertyRow saved = propertyRepository.save(buildRow());
-
-//    List<PropertyRow> all = propertyRepository.findAll();
-
-//    assertTrue(all.stream().anyMatch(p -> p.uuid().equals(saved.uuid())));
 
 
 

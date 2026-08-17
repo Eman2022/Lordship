@@ -35,10 +35,10 @@ public class PersonRepositoryTest extends IntegrationTest {
     @Test
     void save_shouldPersistRow_andReturnGeneratedFields() {
         // Arrange
-        PersonRow row = buildRow();
+        String personName = "Don Mock";
 
         // Act
-        PersonRow saved = personRepository.save(row);
+        PersonRow saved = personRepository.save(personName);
 
         // Assert
         assertNotNull(saved.uuid());
@@ -47,38 +47,14 @@ public class PersonRepositoryTest extends IntegrationTest {
         assertEquals("Don Mock", saved.nameFull());
     }
 
-    @Test
-    void save_shouldPersistAllFields_whenAllProvided(){
-        // Arrange
-        PersonRow emergencyContactSaved =  personRepository.save(buildRow());
-        PersonRow fullRow = new PersonRow(
-                null, "Baby Mock",
-                LocalDate.of(1970, 7, 1), "599-211-2121", "BabyMock@lordship.com",
-                "69805 NF-9041, North Bend, WA 98045", emergencyContactSaved.uuid(),
-                "123-45-6789", null, null
-        );
-
-        // Act
-        PersonRow saved = personRepository.save(fullRow);
-
-        // Assert
-        assertNotNull(saved.uuid());
-        assertEquals("Baby Mock", saved.nameFull());
-        assertEquals(LocalDate.of(1970, 7, 1), saved.birthday());
-        assertEquals("599-211-2121", saved.personalPhone());
-        assertEquals("BabyMock@lordship.com", saved.personalEmail());
-        assertEquals("69805 NF-9041, North Bend, WA 98045", saved.mailingAddress());
-        assertEquals(emergencyContactSaved.uuid(), saved.emergencyContact());
-        assertEquals("123-45-6789", saved.social());
-    }
 
     @Test
     void save_shouldSetCreatedAt_toRoughlyNow(){
         // Arrange
-        PersonRow row = buildRow();
+        String nameFull = "Don Mock";
 
         // Act
-        PersonRow saved = personRepository.save(row);
+        PersonRow saved = personRepository.save(nameFull);
 
         // Assert   OffsetDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS),
         Duration age = Duration.between(saved.createdAt(), OffsetDateTime.now(ZoneOffset.UTC));
@@ -86,24 +62,22 @@ public class PersonRepositoryTest extends IntegrationTest {
     }
 
     @Test
-    void save_shouldThrow_whenEmergencyContactDoesNotExist(){
+    void patch_shouldThrow_whenEmergencyContactDoesNotExist(){
         // Arrange
-        PersonRow row = new PersonRow(null,"Don Mock",
-                null, null, null, null,
-                UUID.randomUUID(),
-                null, null, null);
+        String nameFull = "Don Mock";
+        PersonRow saved = personRepository.save(nameFull);
 
         // Act and Assert
         assertThrows(DataIntegrityViolationException.class,
-                () -> personRepository.save(row)
+                () -> personRepository.patch(saved.uuid(), Map.of("emergency_contact", UUID.randomUUID()))
         );
     }
 
     @Test
     void findById_shouldReturnRow_whenExists() {
         // Arrange
-        PersonRow row = buildRow();
-        PersonRow saved = personRepository.save(row);
+        String nameFull = "Don Mock";
+        PersonRow saved = personRepository.save(nameFull);
 
         // Act
         Optional<PersonRow> found = personRepository.findById(saved.uuid());
@@ -126,8 +100,8 @@ public class PersonRepositoryTest extends IntegrationTest {
     @Test
     void findById_shouldReturnEmpty_whenRowIsSoftDeleted() {
         // Arrange
-        PersonRow row = buildRow();
-        PersonRow saved = personRepository.save(row);
+        String nameFull = "Don Mock";
+        PersonRow saved = personRepository.save(nameFull);
         personRepository.softDelete(saved.uuid());
 
         // Act
@@ -140,9 +114,10 @@ public class PersonRepositoryTest extends IntegrationTest {
     @Test
     void findByEmail_shouldMatch_caseInsensitively() {
         // Arrange
+        String nameFull = "Don Mock";
+        PersonRow saved = personRepository.save(nameFull);
         String emailAddress = "DonMock@lordship.com";
-        PersonRow row = buildRowWithEmail(emailAddress);
-        personRepository.save(row);
+        personRepository.patch(saved.uuid(), Map.of("personal_email", emailAddress));
 
         // Act
         Optional<PersonRow> found = personRepository.findByEmail(emailAddress.toLowerCase());
@@ -154,8 +129,9 @@ public class PersonRepositoryTest extends IntegrationTest {
     @Test
     void findByEmail_shouldReturnEmpty_whenSoftDeleted() {
         // Arrange
-        PersonRow row = buildRowWithEmail("DonMock@lordship.com");
-        PersonRow saved = personRepository.save(row);
+        PersonRow saved = personRepository.save("Don Mock");
+        String emailAddress = "DonMock@lordship.com";
+        personRepository.patch(saved.uuid(), Map.of("personal_email", emailAddress));
         personRepository.softDelete(saved.uuid());
 
         // Act
@@ -168,10 +144,8 @@ public class PersonRepositoryTest extends IntegrationTest {
     @Test
     void patch_shouldUpdateField_andReturnUpdatedRow() {
         // Arrange
-        PersonRow row = buildRow();
-        PersonRow emergencyContactRow = buildRow();
-        PersonRow rowSaved = personRepository.save(row);
-        PersonRow emergencyContactRowSaved = personRepository.save(emergencyContactRow);
+        PersonRow rowSaved = personRepository.save("Don Mock");
+        PersonRow emergencyContactRowSaved = personRepository.save("Don Mock's Friend");
         Map<String, Object> changes = Map.of(
                 "name_full","Baby Mock",
                 "personal_email", "BabyMock@lordship.com",
@@ -200,9 +174,9 @@ public class PersonRepositoryTest extends IntegrationTest {
     @Test
     void patch_shouldReturnUnchangedRow_withEmptyChanges() {
         // Arrange
-        PersonRow emergencyContactRow = personRepository.save(buildRow());
-        PersonRow row = personRepository.save(buildRow());
-        PersonRow rowSaved = personRepository.patch(row.uuid(), Map.of("emergency_contact", emergencyContactRow.uuid())).get();
+        PersonRow emergencyContactRow = personRepository.save("Don Mock's Friend");
+        PersonRow row = personRepository.save("Don Mock");
+        PersonRow rowSaved = personRepository.patch(row.uuid(), Map.of("emergency_contact", emergencyContactRow.uuid())).orElse(null);
         Map<String, Object> changes = Map.of();
 
         // Act
@@ -224,7 +198,7 @@ public class PersonRepositoryTest extends IntegrationTest {
     @Test
     void patch_shouldThrow_whenColumnIsNotAllowed() {
         // Arrange
-        PersonRow row = personRepository.save(buildRow());
+        PersonRow row = personRepository.save("Don Mock");
 
         // Act & Assert
         assertThrows(InvalidDataAccessApiUsageException.class, () ->
@@ -240,7 +214,7 @@ public class PersonRepositoryTest extends IntegrationTest {
     @Test
     void patch_shouldReturnEmpty_whenRowIsSoftDeleted() {
         // Arrange
-        PersonRow row = personRepository.save(buildRow());
+        PersonRow row = personRepository.save("Don Mock");
         personRepository.softDelete(row.uuid());
 
         // Act

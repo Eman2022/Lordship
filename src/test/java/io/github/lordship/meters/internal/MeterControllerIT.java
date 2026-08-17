@@ -61,12 +61,7 @@ public class MeterControllerIT extends IntegrationTest {
     }
 
     private UUID insertTestProperty() {
-        PropertyRow propertyRow = jdbc.sql("""
-                INSERT INTO property (property_code, property_name, property_address)
-                VALUES ('TST01', 'Test Mobile Park', '999 Test Ave') RETURNING *
-                """).query(PropertyRow.class)
-                .single();
-        return propertyRow.uuid();
+        return testData.insertProperty("Test Mobile Park", "999 Test Ave", "TST01").uuid();
     }
 
     private UUID insertTestLot(UUID propertyId) {

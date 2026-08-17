@@ -32,21 +32,15 @@ public class PropertyService {
 
         String propertyCode = generatePropertyCode(propertyName, usedCodes);
 
-        PropertyRow row = new PropertyRow(
-                null,
-                propertyCode,
-                propertyName,
-                propertyAddress,
-                null, null, null, null);
 
-        PropertyRow saved = propertyRepository.save(row);
+        PropertyRow saved = propertyRepository.save(propertyName, propertyAddress, propertyCode);
         auditService.recordInsert("property", saved.uuid(), AuditMapper.toMap(saved));
         return saved.toProperty();
     }
 
 
     public Optional<Property> findByPropertyId(UUID propertyCode) {
-        return propertyRepository.getPropertyOptional(propertyCode).map(PropertyRow::toProperty);
+        return propertyRepository.findById(propertyCode).map(PropertyRow::toProperty);
     }
 
     public List<Property> findAll() {
@@ -78,7 +72,7 @@ public class PropertyService {
             changes.remove("propertyManager");
         }
 
-        PropertyRow before = propertyRepository.getPropertyOptional(uuid).orElse(null);
+        PropertyRow before = propertyRepository.findById(uuid).orElse(null);
         Optional<PropertyRow> result = propertyRepository.patch(uuid, changes);
         result.ifPresent(after -> {
             if (before != null) {
@@ -93,7 +87,7 @@ public class PropertyService {
 
     @Transactional
     public boolean deleteProperty(UUID uuid) {
-        PropertyRow before = propertyRepository.getPropertyOptional(uuid).orElse(null);
+        PropertyRow before = propertyRepository.findById(uuid).orElse(null);
         boolean deleted = propertyRepository.softDelete(uuid);
         if (deleted && before != null) {
             auditService.recordDelete("property", uuid, AuditMapper.toMap(before));

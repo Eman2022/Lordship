@@ -14,9 +14,9 @@ import java.util.UUID;
 @Repository
 public class LotRepository {
 
-    private static final Set<String> ALLOWED_COLUMNS = Set.of(
+    private static final Set<String> PATCHABLE_COLUMNS = Set.of(
             "lot_number", "lot_address", "description", "notes",
-            "sort_order", "is_rentable", "not_rentable_reason"
+            "is_rentable", "not_rentable_reason"
     );
 
     private final JdbcClient jdbc;
@@ -27,19 +27,20 @@ public class LotRepository {
         this.rowMapper = new LotRowMapper(objectMapper);
     }
 
-    public LotRow save(LotRow row) {
+    public LotRow save(UUID propertyId, String lotNumber) {
         return jdbc.sql("""
-            INSERT INTO lot (
-                property_id, lot_number, lot_address,
-                is_rentable, not_rentable_reason,
-                description, notes, sort_order
-            ) VALUES (
-                :propertyId, :lotNumber, :lotAddress,
-                :isRentable, :notRentableReason,
-                :description, :notes, :sortOrder
-            ) RETURNING *
-            """)
-                .paramSource(row)
+        INSERT INTO lot (property_id, lot_number, sort_order)
+        VALUES (
+            :propertyId,
+            :lotNumber,
+            (SELECT COALESCE(MAX(sort_order), 0) + 1
+               FROM lot
+              WHERE property_id = :propertyId)
+        )
+        RETURNING *
+        """)
+                .param("propertyId", propertyId)
+                .param("lotNumber", lotNumber)
                 .query(rowMapper)
                 .single();
     }
@@ -55,7 +56,7 @@ public class LotRepository {
         if (changes.isEmpty()) return findById(uuid);
 
         for (String col : changes.keySet()) {
-            if (!ALLOWED_COLUMNS.contains(col)) {
+            if (!PATCHABLE_COLUMNS.contains(col)) {
                 throw new IllegalArgumentException("Invalid column: " + col);
             }
         }

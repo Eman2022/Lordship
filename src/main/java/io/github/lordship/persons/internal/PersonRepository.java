@@ -22,21 +22,16 @@ public class PersonRepository {
         this.jdbc = jdbc;
     }
 
-    public PersonRow save(PersonRow row) {
+    // the default for lordship: the save func defines the minimum data required to insert a row
+    public PersonRow save(String nameFull) {
         return jdbc.sql("""
             INSERT INTO person (
-                name_full, birthday,
-                personal_phone, personal_email,
-                mailing_address, emergency_contact,
-                social
+                name_full
             ) VALUES (
-                :nameFull, :birthday,
-                :personalPhone, :personalEmail,
-                :mailingAddress, :emergencyContact,
-                :social
+                :nameFull
             ) RETURNING *
             """)
-                .paramSource(row)
+                .param("nameFull", nameFull)
                 .query(PersonRow.class)
                 .single();
     }

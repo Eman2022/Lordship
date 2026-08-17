@@ -49,13 +49,8 @@ public class TenancyService {
             throw new IllegalStateException("Lot cannot have more than two tenancies at a time");
         }
 
-        TenancyRow row = tenancyRepository.save(
-                TenancyRow.forInsert(
-                        request.lotId(),
-                        LocalDate.now(),
-                        null
-                )
-        );
+        TenancyRow row = tenancyRepository.save(request.lotId());
+
 
         auditService.recordInsert("tenancy", row.uuid(), AuditMapper.toMap(row));
 

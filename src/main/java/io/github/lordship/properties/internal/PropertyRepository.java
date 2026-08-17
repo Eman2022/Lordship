@@ -14,34 +14,34 @@ public class PropertyRepository {
         this.jdbc = jdbc;
     }
 
-    private static final Set<String> ALLOWED_COLUMNS = Set.of(
+    private static final Set<String> PATCHABLE_COLUMNS = Set.of(
             // fill in with the property table's patchable columns
             "property_name", "property_address", "property_code", "year_built"
     );
 
-    public PropertyRow save(PropertyRow row) {
+    public PropertyRow save(String propertyName, String propertyAddress, String propertyCode) {
         return jdbc.sql("""
                         INSERT INTO property (
-                            property_code, property_name, property_address,
-                            property_city, property_state, purchase_date, year_built
+                            property_code, property_name, property_address
                         ) VALUES (
-                            :propertyCode, :propertyName, :propertyAddress,
-                            :propertyCity, :propertyState, :purchaseDate, :yearBuilt
+                            :propertyCode, :propertyName, :propertyAddress
                         ) RETURNING *
                         """)
-                .paramSource(row)
+                .param("propertyCode", propertyCode)
+                .param("propertyName", propertyName)
+                .param("propertyAddress", propertyAddress)
                 .query(PropertyRow.class)
                 .single();
     }
 
-    public Optional<PropertyRow> getPropertyOptional(String propertyCode) {
+    public Optional<PropertyRow> findByCode(String propertyCode) {
         return jdbc.sql("SELECT * FROM property WHERE property_code = :propertyCode AND deleted_at IS NULL")
                 .param("propertyCode", propertyCode)
                 .query(PropertyRow.class)
                 .optional();
     }
 
-    public Optional<PropertyRow> getPropertyOptional(UUID propertyId) {
+    public Optional<PropertyRow> findById(UUID propertyId) {
         return jdbc.sql("SELECT * FROM property WHERE uuid = :propertyId AND deleted_at IS NULL")
                 .param("propertyId", propertyId)
                 .query(PropertyRow.class)
@@ -55,10 +55,10 @@ public class PropertyRepository {
     }
 
     public Optional<PropertyRow> patch(UUID uuid, Map<String, Object> changes) {
-        if (changes.isEmpty()) return getPropertyOptional(uuid);
+        if (changes.isEmpty()) return findById(uuid);
 
         for (String col : changes.keySet()) {
-            if (!ALLOWED_COLUMNS.contains(col)) {
+            if (!PATCHABLE_COLUMNS.contains(col)) {
                 throw new IllegalArgumentException("Invalid column: " + col);
             }
         }
