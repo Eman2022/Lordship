@@ -16,12 +16,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest
@@ -167,5 +169,26 @@ public class AccountServiceTest {
         assertTrue(found.isPresent());
         assertEquals(created.uuid(), found.get().uuid());
         assertEquals(tenancyId, found.get().tenancyId());
+    }
+
+    @Test
+    void patchAccount_recordsAuditWhenFieldsChange() {
+        UUID tenancyId = setupFullChain();
+        Account created = accountService.getAccountByTenancyId(tenancyId).orElseThrow();
+
+        accountService.patchAccount(created.uuid(), Map.of("notes", "Updated note"));
+
+        verify(auditService).recordUpdate(eq("account"), eq(created.uuid()), any(), any());
+    }
+
+    @Test
+    void patchAccount_doesNotRecordAuditWhenNoChange() {
+        UUID tenancyId = setupFullChain();
+        Account created = accountService.getAccountByTenancyId(tenancyId).orElseThrow();
+
+        // account_status is already ACTIVE — patching with the same value produces no diff
+        accountService.patchAccount(created.uuid(), Map.of("account_status", "ACTIVE"));
+
+        verify(auditService, never()).recordUpdate(any(), any(), any(), any());
     }
 }
