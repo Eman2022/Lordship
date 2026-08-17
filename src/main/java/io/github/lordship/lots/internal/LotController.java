@@ -71,7 +71,6 @@ public class LotController {
         if (request.containsKey("lotAddress"))        changes.put("lot_address", request.get("lotAddress"));
         if (request.containsKey("description"))       changes.put("description", request.get("description"));
         if (request.containsKey("notes"))             changes.put("notes", request.get("notes"));
-        //if (request.containsKey("sortOrder"))         changes.put("sort_order", request.get("sortOrder"));
         if (request.containsKey("isRentable"))        changes.put("is_rentable", request.get("isRentable"));
         if (request.containsKey("notRentableReason")) changes.put("not_rentable_reason", request.get("notRentableReason"));
 
