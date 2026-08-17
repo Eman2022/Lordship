@@ -15,8 +15,8 @@ public class PropertyRepository {
     }
 
     private static final Set<String> PATCHABLE_COLUMNS = Set.of(
-            // fill in with the property table's patchable columns
-            "property_name", "property_address", "property_code", "year_built"
+            "property_code", "property_name", "property_address", "property_city",
+            "property_state", "purchase_date", "year_built", "property_manager"
     );
 
     public PropertyRow save(String propertyName, String propertyAddress, String propertyCode) {

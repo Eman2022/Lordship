@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 @RestController
@@ -55,9 +57,23 @@ public class PropertyController {
         if (request.containsKey("propertyAddress")) changes.put("property_address", request.get("propertyAddress"));
         if (request.containsKey("propertyCity"))    changes.put("property_city", request.get("propertyCity"));
         if (request.containsKey("propertyState"))   changes.put("property_state", request.get("propertyState"));
-        if (request.containsKey("purchaseDate"))    changes.put("purchaseDate", request.get("purchaseDate"));
+
         if (request.containsKey("yearBuilt"))       changes.put("year_built", request.get("yearBuilt"));
-        if (request.containsKey("propertyManager")) changes.put("propertyManager", request.get("propertyManager"));
+        if (request.containsKey("propertyManager")) changes.put("property_manager", request.get("propertyManager"));
+
+        if (request.containsKey("purchaseDate")) {
+            Object rawDate = request.get("purchaseDate");
+            if (rawDate instanceof String dateStr && !dateStr.isBlank()) {
+                try {
+                    changes.put("purchase_date", LocalDate.parse(dateStr));
+                } catch (DateTimeParseException e) {
+                    return ResponseEntity.badRequest().build(); // Gracefully handle malformed dates
+                }
+            } else {
+                // Allows explicitly clearing the date in the DB if null is passed
+                changes.put("purchase_date", null);
+            }
+        }
 
         return propertyService.patchProperty(uuid, changes)
                 .map(ResponseEntity::ok)
