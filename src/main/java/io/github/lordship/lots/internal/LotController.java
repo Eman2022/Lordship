@@ -3,6 +3,8 @@ package io.github.lordship.lots.internal;
 import io.github.lordship.lots.Lot;
 import io.github.lordship.lots.LotService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +29,14 @@ public class LotController {
 
     private final LotService lotService;
 
+    public record LotCreationRequest(
+            @NotNull
+            UUID propertyId,
+
+            @NotBlank
+            String lotNumber
+    ) { }
+
     public LotController(LotService lotService) {
         this.lotService = lotService;
     }
@@ -34,7 +44,7 @@ public class LotController {
     @PreAuthorize("hasAuthority('lots:create')")
     @PostMapping
     public ResponseEntity<LotResponse> createLot(@Valid @RequestBody LotCreationRequest request) {
-        Lot lot = lotService.createLot(request);
+        Lot lot = lotService.createLot(request.propertyId, request.lotNumber);
         return ResponseEntity.status(HttpStatus.CREATED).body(LotResponse.from(lot));
     }
 

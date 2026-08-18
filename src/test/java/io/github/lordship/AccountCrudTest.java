@@ -6,20 +6,10 @@ import io.github.lordship.accounts.AccountStatus;
 import io.github.lordship.accounts.internal.AccountCreationRequest;
 import io.github.lordship.accounts.internal.AccountUpdateRequest;
 import io.github.lordship.audit.AuditService;
-import io.github.lordship.lots.Lot;
-import io.github.lordship.lots.internal.LotCreationRequest;
-import io.github.lordship.lots.LotService;
-import io.github.lordship.properties.Property;
-import io.github.lordship.properties.PropertyService;
-import io.github.lordship.tenancy.TenancyService;
-import io.github.lordship.tenancy.internal.TenancyCreateRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -31,11 +21,9 @@ import java.util.UUID;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
+
 @Transactional
-public class AccountCrudTest {
+public class AccountCrudTest extends IntegrationTest {
 
     @Value("${lordship.root.email}")
     private String rootEmail;
@@ -48,15 +36,6 @@ public class AccountCrudTest {
 
     @Autowired
     ObjectMapper objectMapper;
-
-    @Autowired
-    PropertyService propertyService;
-
-    @Autowired
-    LotService lotService;
-
-    @Autowired
-    TenancyService tenancyService;
 
     @Autowired
     AccountService accountService;
@@ -81,11 +60,6 @@ public class AccountCrudTest {
         return objectMapper.readTree(body).get("token").asString();
     }
 
-    private UUID setupFullChain() {
-        Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
-        Lot lot = lotService.createLot(new LotCreationRequest(property.uuid(), "1"));
-        return tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid();
-    }
 
     private UUID getAutoCreatedAccountId(UUID tenancyId) {
         return accountService.getAccountByTenancyId(tenancyId).orElseThrow().uuid();
@@ -140,7 +114,7 @@ public class AccountCrudTest {
     @Test
     void authorizedGetAutoCreatedAccountReturns200() throws Exception {
         String token = loginAsRoot();
-        UUID tenancyId = setupFullChain();
+        UUID tenancyId = testData.insertChainToTenancy().uuid();
         UUID accountId = getAutoCreatedAccountId(tenancyId);
 
         mockMvc.perform(get("/accounts/" + accountId)
@@ -156,7 +130,7 @@ public class AccountCrudTest {
     @Test
     void authorizedGetByIdReturns200() throws Exception {
         String token = loginAsRoot();
-        UUID tenancyId = setupFullChain();
+        UUID tenancyId = testData.insertChainToTenancy().uuid();
         String accountId = getAutoCreatedAccountId(tenancyId).toString();
 
         mockMvc.perform(get("/accounts/" + accountId)
@@ -169,7 +143,7 @@ public class AccountCrudTest {
     @Test
     void authorizedUpdateReturns200() throws Exception {
         String token = loginAsRoot();
-        UUID tenancyId = setupFullChain();
+        UUID tenancyId = testData.insertChainToTenancy().uuid();
         String accountId = getAutoCreatedAccountId(tenancyId).toString();
 
         AccountUpdateRequest updateRequest = new AccountUpdateRequest(
@@ -192,7 +166,7 @@ public class AccountCrudTest {
     @Test
     void authorizedDeleteReturns204() throws Exception {
         String token = loginAsRoot();
-        UUID tenancyId = setupFullChain();
+        UUID tenancyId = testData.insertChainToTenancy().uuid();
         String accountId = getAutoCreatedAccountId(tenancyId).toString();
 
         // soft delete
