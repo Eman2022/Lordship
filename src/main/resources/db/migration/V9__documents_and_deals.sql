@@ -94,13 +94,14 @@ CREATE TABLE tenancy_charge_term (
 
                                      agreement_type    agreement_type NOT NULL, -- do not allow editing from patch requests
 
-                                     rent_amount       NUMERIC(12,2) NOT NULL CHECK (rent_amount >= 0),
+                                     rate              NUMERIC(12,2) NOT NULL CHECK (rate >= 0), -- usually refers to rent
                                      car_fee           NUMERIC(12,2) NOT NULL CHECK (car_fee >= 0),
                                      allowed_cars      INT           NOT NULL CHECK (allowed_cars >= 0),
+                                     cars_max          INT           NOT NULL CHECK (cars_max >= 0),
                                      pet_fee           NUMERIC(12,2) NOT NULL CHECK (pet_fee >= 0),
                                      allowed_pets      INT           NOT NULL CHECK (allowed_pets >= 0),
 
-                                     rent_due_day      INT NOT NULL CHECK (rent_due_day BETWEEN 1 AND 28),
+                                     payment_due_day   INT NOT NULL CHECK (payment_due_day BETWEEN 1 AND 28),
                                      grace_period_days INT NOT NULL CHECK (grace_period_days >= 0),
 
                                      rule_violation_fee_method TEXT NOT NULL

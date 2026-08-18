@@ -1,6 +1,7 @@
-package io.github.lordship.chargeterms;
+package io.github.lordship.tenancyterms;
 
-public enum ChargeTermSource {
+
+public enum TenancyTermSource {
     LEASE, INCREASE_NOTICE, RULES_ADDENDUM, CORRECTION, MIGRATION;
 
     public boolean requiresInstrument() {

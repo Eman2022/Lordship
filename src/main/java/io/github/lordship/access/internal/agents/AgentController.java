@@ -1,21 +1,13 @@
-package io.github.lordship.access.internal;
+package io.github.lordship.access.internal.agents;
 
 import io.github.lordship.access.*;
-import io.github.lordship.identity.AgentPrincipal;
-import io.github.lordship.persons.Person;
-import io.github.lordship.persons.PersonService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController

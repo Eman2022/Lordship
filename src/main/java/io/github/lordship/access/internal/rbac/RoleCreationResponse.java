@@ -1,4 +1,4 @@
-package io.github.lordship.access.internal;
+package io.github.lordship.access.internal.rbac;
 
 import io.github.lordship.access.Role;
 

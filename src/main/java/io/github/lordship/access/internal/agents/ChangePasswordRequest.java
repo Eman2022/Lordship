@@ -1,4 +1,4 @@
-package io.github.lordship.access.internal;
+package io.github.lordship.access.internal.agents;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

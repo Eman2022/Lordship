@@ -116,3 +116,6 @@ ALTER TABLE property
     ADD CONSTRAINT fk_property_manager FOREIGN KEY (property_manager) REFERENCES agent(uuid);
 ALTER TABLE property_fee_cap
     ADD CONSTRAINT fk_agent_editor FOREIGN KEY (created_by) REFERENCES agent(uuid);
+
+ALTER TABLE standard_terms
+    ADD CONSTRAINT fk_agent_edits_terms FOREIGN KEY (created_by) REFERENCES agent(uuid);

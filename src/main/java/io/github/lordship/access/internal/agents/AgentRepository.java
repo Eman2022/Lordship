@@ -1,4 +1,4 @@
-package io.github.lordship.access.internal;
+package io.github.lordship.access.internal.agents;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;

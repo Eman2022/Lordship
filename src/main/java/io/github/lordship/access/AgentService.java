@@ -3,6 +3,8 @@ package io.github.lordship.access;
 
 import eu.bitwalker.useragentutils.UserAgent;
 import io.github.lordship.access.internal.*;
+import io.github.lordship.access.internal.agents.AgentRepository;
+import io.github.lordship.access.internal.agents.AgentRow;
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
 import io.github.lordship.persons.Person;

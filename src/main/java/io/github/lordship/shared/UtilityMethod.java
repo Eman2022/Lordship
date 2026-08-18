@@ -1,4 +1,4 @@
-package io.github.lordship.chargeterms;
+package io.github.lordship.shared;
 
 public enum UtilityMethod {
     NONE, FLAT, RUBS, SUBMETERED;

@@ -1,4 +1,4 @@
-package io.github.lordship.access.internal;
+package io.github.lordship.access.internal.rbac;
 
 import java.util.UUID;
 

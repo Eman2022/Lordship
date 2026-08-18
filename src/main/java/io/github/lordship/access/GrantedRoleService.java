@@ -1,9 +1,9 @@
 package io.github.lordship.access;
 
-import io.github.lordship.access.internal.GrantedRoleRepository;
-import io.github.lordship.access.internal.GrantedRoleRow;
-import io.github.lordship.access.internal.RoleRepository;
-import io.github.lordship.access.internal.RoleRow;
+import io.github.lordship.access.internal.rbac.GrantedRoleRepository;
+import io.github.lordship.access.internal.rbac.GrantedRoleRow;
+import io.github.lordship.access.internal.rbac.RoleRepository;
+import io.github.lordship.access.internal.rbac.RoleRow;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

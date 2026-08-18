@@ -1,8 +1,8 @@
 package io.github.lordship.propertyassignments.internal;
 
 import io.github.lordship.IntegrationTest;
-import io.github.lordship.access.internal.AgentRepository;
-import io.github.lordship.access.internal.AgentRow;
+import io.github.lordship.access.internal.agents.AgentRepository;
+import io.github.lordship.access.internal.agents.AgentRow;
 
 import io.github.lordship.persons.internal.PersonRepository;
 import io.github.lordship.persons.internal.PersonRow;
