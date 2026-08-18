@@ -15,10 +15,11 @@ import java.util.UUID;
 public class StandardTermsRepository {
 
     // property and agreement_type not included - they should not be changed
-    private static final Set<String> ALLOWED_COLUMNS = Set.of(
+    private static final Set<String> PATCHABLE_COLUMNS = Set.of(
             "name", "target_rate",
-            "car_fee", "allowed_cars", "pet_fee", "allowed_pets",
-            "rent_due_day", "grace_period_days",
+            "car_fee", "allowed_cars", "cars_max",
+            "pet_fee", "allowed_pets",
+            "payment_due_day", "grace_period_days",
             "rule_violation_fee_method", "rule_violation_fee_amount",
             "nsf_fee_method", "nsf_fee_amount",
             "late_fee_method", "late_fee_amount",
@@ -55,7 +56,7 @@ public class StandardTermsRepository {
                 INSERT INTO standard_terms (
                     property, name, agreement_type, target_rate,
                     car_fee, allowed_cars, pet_fee, allowed_pets,
-                    rent_due_day, grace_period_days,
+                    payment_due_day, grace_period_days,
                     rule_violation_fee_method, rule_violation_fee_amount,
                     nsf_fee_method, nsf_fee_amount,
                     late_fee_method, late_fee_amount,
@@ -67,7 +68,7 @@ public class StandardTermsRepository {
                 ) VALUES (
                     :property, :name, :agreementType::agreement_type, :targetRate,
                     :carFee, :allowedCars, :petFee, :allowedPets,
-                    :rentDueDay, :gracePeriodDays,
+                    :paymentDueDay, :gracePeriodDays,
                     :ruleViolationFeeMethod, :ruleViolationFeeAmount,
                     :nsfFeeMethod, :nsfFeeAmount,
                     :lateFeeMethod, :lateFeeAmount,
@@ -86,7 +87,7 @@ public class StandardTermsRepository {
                 .param("allowedCars", row.allowedCars())
                 .param("petFee", row.petFee())
                 .param("allowedPets", row.allowedPets())
-                .param("rentDueDay", row.rentDueDay())
+                .param("paymentDueDay", row.paymentDueDay())
                 .param("gracePeriodDays", row.gracePeriodDays())
                 .param("ruleViolationFeeMethod", nameOf(row.ruleViolationFeeMethod()))
                 .param("ruleViolationFeeAmount", row.ruleViolationFeeAmount())
@@ -164,23 +165,22 @@ public class StandardTermsRepository {
                 .optional();
     }
 
-    public Optional<StandardTermsRow> patch(UUID uuid, Map<String, Object> changes, UUID updatedBy) {
+    public Optional<StandardTermsRow> patch(UUID uuid, Map<String, Object> changes) {
         if (changes.isEmpty()) return findById(uuid);
 
         for (String col : changes.keySet()) {
-            if (!ALLOWED_COLUMNS.contains(col)) {
+            if (!PATCHABLE_COLUMNS.contains(col)) {
                 throw new IllegalArgumentException("Invalid column: " + col);
             }
         }
 
         StringBuilder sql = new StringBuilder("UPDATE standard_terms SET ");
         changes.forEach((col, val) -> sql.append(col).append(" = :").append(col).append(", "));
-        sql.append("updated_at = now(), updated_by = :updatedBy");
+        sql.append("updated_at = now()");
         sql.append(" WHERE uuid = :uuid AND deleted_at IS NULL RETURNING *");
 
         Map<String, Object> params = new HashMap<>(changes);
         params.put("uuid", uuid);
-        params.put("updatedBy", updatedBy);
 
         return jdbc.sql(sql.toString())
                 .params(params)

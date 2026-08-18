@@ -26,9 +26,10 @@ public class StandardTermsController {
             Map.entry("targetRate", "target_rate"),
             Map.entry("carFee", "car_fee"),
             Map.entry("allowedCars", "allowed_cars"),
+            Map.entry("carsMax", "cars_max"),
             Map.entry("petFee", "pet_fee"),
             Map.entry("allowedPets", "allowed_pets"),
-            Map.entry("rentDueDay", "rent_due_day"),
+            Map.entry("paymentDueDay", "payment_due_day"),
             Map.entry("gracePeriodDays", "grace_period_days"),
             Map.entry("ruleViolationFeeMethod", "rule_violation_fee_method"),
             Map.entry("ruleViolationFeeAmount", "rule_violation_fee_amount"),
@@ -56,7 +57,7 @@ public class StandardTermsController {
             @NotBlank String name,
             @NotNull AgreementType agreementType) {}
 
-    public record CopyTemplateRequest(@NotNull UUID property) {}
+    public record CopyTemplateRequest(@NotNull UUID propertyId ) {}
 
     // The deal types this property may offer. Pass agreementType to narrow to one.
     @PreAuthorize("hasAuthority('standard_terms:view')")
@@ -101,14 +102,14 @@ public class StandardTermsController {
         return ResponseEntity.status(HttpStatus.CREATED).body(StandardTermsResponse.from(created));
     }
 
-    // Copying a template in is what authorises a property to offer that agreement type.
+    // Copying a template in is what authorizes a property to offer that agreement type.
     @PreAuthorize("hasAuthority('standard_terms:manage_global')")
-    @PostMapping("/{templateUuid}/copy")
+    @PostMapping("/{templateId}/copy")
     public ResponseEntity<StandardTermsResponse> copyTemplateToProperty(
-            @PathVariable UUID templateUuid,
+            @PathVariable UUID templateId,
             @Valid @RequestBody CopyTemplateRequest request) {
 
-        return standardTermsService.copyTemplateToProperty(templateUuid, request.property())
+        return standardTermsService.copyTemplateToProperty(templateId, request.propertyId())
                 .map(StandardTermsResponse::from)
                 .map(created -> ResponseEntity.status(HttpStatus.CREATED).body(created))
                 .orElse(ResponseEntity.notFound().build());

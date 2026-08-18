@@ -39,10 +39,11 @@ CREATE TABLE standard_terms ( -- note when the property is NULL this is a global
 
                   car_fee           NUMERIC(12,2) NOT NULL DEFAULT 65.0 CHECK (car_fee >= 0),
                   allowed_cars      INT           NOT NULL DEFAULT 2    CHECK (allowed_cars >= 0),
+                  cars_max          INT           NOT NULL DEFAULT 4    CHECK (cars_max >= allowed_cars),
                   pet_fee           NUMERIC(12,2) NOT NULL DEFAULT 45.0 CHECK (pet_fee >= 0),
                   allowed_pets      INT           NOT NULL DEFAULT 2    CHECK (allowed_pets >= 0),
 
-                  rent_due_day      INT           NOT NULL DEFAULT 1    CHECK (rent_due_day BETWEEN 1 AND 28),
+                  payment_due_day   INT           NOT NULL DEFAULT 1    CHECK (payment_due_day BETWEEN 1 AND 28),
                   grace_period_days INT           NOT NULL DEFAULT 7    CHECK (grace_period_days >= 0),
 
                   rule_violation_fee_method TEXT NOT NULL DEFAULT 'FLAT'
@@ -80,7 +81,6 @@ CREATE TABLE standard_terms ( -- note when the property is NULL this is a global
                       CASE WHEN late_fee_method = 'FLAT' THEN late_fee_amount > 0
                            ELSE late_fee_amount = 0 END
                       ),
-
                   CONSTRAINT defaults_water_amount_matches_method CHECK (
                       CASE WHEN water_method = 'FLAT' THEN water_flat_amount > 0
                            ELSE water_flat_amount = 0 END
@@ -157,7 +157,7 @@ CREATE UNIQUE INDEX property_fee_waiver_uq
     WHERE deleted_at IS NULL;
 
 
-INSERT INTO standard_terms (property, name, agreement_type)
-VALUES (NULL, 'Standard Manufactured Home Lot Lease', 'LAND'),
-       (NULL, 'Standard Residential Lease',           'RESIDENTIAL'),
-       (NULL, 'Standard Storage Agreement',           'STORAGE');
+INSERT INTO standard_terms (property, name, agreement_type, target_rate, car_fee, allowed_cars, cars_max, allowed_pets, pet_fee, rule_violation_fee_method, rule_violation_fee_amount, nsf_fee_method, nsf_fee_amount)
+VALUES (NULL, 'Standard Manufactured Home Lot Lease', 'LAND', 700, 45, 2, 4, 2, 0, 'FLAT',65, 'FLAT', 35),
+       (NULL, 'Standard Residential Lease',           'RESIDENTIAL', 1000, 45, 2, 4, 2, 45, 'FLAT', 65, 'FLAT', 35),
+       (NULL, 'Standard Storage Agreement',           'STORAGE', 200, 0, 0, 0,0, 0, 'NONE', 0, 'FLAT', 25);

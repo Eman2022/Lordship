@@ -17,12 +17,13 @@ public record StandardTermsRow(
         BigDecimal targetRate,
 
         BigDecimal carFee,
-        Integer allowedCars,
+        Integer allowedCars, // cars allowed before being charged fees
+        Integer carsMax, // max number of cars permissible (even with fees)
 
         BigDecimal petFee,
         Integer allowedPets,
 
-        Integer rentDueDay,
+        Integer paymentDueDay,
         Integer gracePeriodDays,
 
         FeeMethod ruleViolationFeeMethod,
@@ -49,14 +50,13 @@ public record StandardTermsRow(
         String note,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
-        UUID updatedBy,
         OffsetDateTime deletedAt
 ) {
     public StandardTerms toStandardTerms() {
         return new StandardTerms(
                 uuid, property, name, agreementType, targetRate,
-                carFee, allowedCars, petFee, allowedPets,
-                rentDueDay, gracePeriodDays,
+                carFee, allowedCars, carsMax, petFee, allowedPets,
+                paymentDueDay, gracePeriodDays,
                 ruleViolationFeeMethod, ruleViolationFeeAmount,
                 nsfFeeMethod, nsfFeeAmount,
                 lateFeeMethod, lateFeeAmount,
@@ -64,7 +64,7 @@ public record StandardTermsRow(
                 powerMethod, powerFlatAmount,
                 sewerMethod, sewerFlatAmount,
                 trashMethod, trashFlatAmount,
-                note, createdAt, updatedAt, updatedBy, deletedAt
+                note, createdAt, updatedAt, deletedAt
         );
     }
 
@@ -72,18 +72,18 @@ public record StandardTermsRow(
     public StandardTermsRow(UUID property, String name, AgreementType agreementType) {
         this(null, property, name, agreementType, null,
                 null, null, null, null,
-                null, null,
+                null, null, null,
                 null, null, null, null, null, null,
                 null, null, null, null, null, null, null, null,
-                null, null, null, null, null);
+                null, null, null, null);
     }
 
     // Copies a global template into a property, keeping the terms and dropping identity.
     public StandardTermsRow copyTo(UUID targetProperty) {
         return new StandardTermsRow(
                 null, targetProperty, name, agreementType, targetRate,
-                carFee, allowedCars, petFee, allowedPets,
-                rentDueDay, gracePeriodDays,
+                carFee, allowedCars, carsMax, petFee, allowedPets,
+                paymentDueDay, gracePeriodDays,
                 ruleViolationFeeMethod, ruleViolationFeeAmount,
                 nsfFeeMethod, nsfFeeAmount,
                 lateFeeMethod, lateFeeAmount,
@@ -91,7 +91,7 @@ public record StandardTermsRow(
                 powerMethod, powerFlatAmount,
                 sewerMethod, sewerFlatAmount,
                 trashMethod, trashFlatAmount,
-                note, null, null, null, null
+                note, null, null, null
         );
     }
 }

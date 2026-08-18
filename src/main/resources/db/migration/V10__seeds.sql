@@ -106,10 +106,10 @@ INSERT INTO permission (uuid, permission_name) VALUES
 
     -- standard term
     (uuidv7(), 'standard_terms:manage_global'),
-    (uuidv7(), 'standard_term:view'),
-    (uuidv7(), 'standard_term:edit'),
-    (uuidv7(), 'standard_term:create'),
-    (uuidv7(), 'standard_term:delete'),
+    (uuidv7(), 'standard_terms:view'),
+    (uuidv7(), 'standard_terms:edit'),
+    (uuidv7(), 'standard_terms:create'),
+    (uuidv7(), 'standard_terms:delete'),
 
     -- charge term
     (uuidv7(), 'tenancy_term:create_migrations'),

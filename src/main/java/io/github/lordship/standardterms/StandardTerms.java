@@ -17,11 +17,13 @@ public record StandardTerms(
         BigDecimal targetRate,
 
         BigDecimal carFee,
-        int allowedCars,
+        int allowedCars, // cars allowed before being charged fees
+        int carsMax, // max number of cars permissible (even with fees)
+
         BigDecimal petFee,
         int allowedPets,
 
-        int rentDueDay,
+        int paymentDueDay,
         int gracePeriodDays,
 
         FeeMethod ruleViolationFeeMethod,
@@ -48,7 +50,6 @@ public record StandardTerms(
         String note,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
-        UUID updatedBy,
         OffsetDateTime deletedAt
 ) {
     public boolean isGlobalTemplate() {

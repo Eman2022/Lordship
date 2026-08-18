@@ -27,7 +27,7 @@ public class StandardTermsService {
     private static final Set<String> TRASH_METHODS = Set.of("NONE", "FLAT", "RUBS");
 
     // if only these things change - DO NOT do an audit log
-    private static final Set<String> HOUSEKEEPING_KEYS = Set.of("updatedAt", "updatedBy");
+    private static final Set<String> HOUSEKEEPING_KEYS = Set.of("updatedAt");
 
     private record MethodAmountPair(
             String methodColumn,
@@ -130,15 +130,18 @@ public class StandardTermsService {
         reconcileMethodAmountPairs(before, changes);
 
         Optional<StandardTermsRow> afterOpt =
-                standardTermsRepository.patch(uuid, changes, auditContext.getActingUserId());
+                standardTermsRepository.patch(uuid, changes);
+
         if (afterOpt.isEmpty()) {
             return Optional.empty();
         }
+
         StandardTermsRow after = afterOpt.get();
 
         AuditMapper.Diff diff = AuditMapper.diff(before, after);
         Map<String, Object> changedBefore = withoutHousekeeping(diff.before());
         Map<String, Object> changedAfter = withoutHousekeeping(diff.after());
+
         if (!changedBefore.isEmpty()) {
             auditService.recordUpdate("standard_terms", uuid, changedBefore, changedAfter);
         }

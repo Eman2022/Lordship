@@ -19,11 +19,12 @@ public record StandardTermsResponse(
 
         BigDecimal carFee,
         int allowedCars,
+        int carsMax,
 
         BigDecimal petFee,
         int allowedPets,
 
-        int rentDueDay,
+        int paymentDueDay,
         int gracePeriodDays,
 
         FeeMethod ruleViolationFeeMethod,
@@ -49,14 +50,13 @@ public record StandardTermsResponse(
 
         String note,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt,
-        UUID updatedBy
+        OffsetDateTime updatedAt
 ) {
     public static StandardTermsResponse from(StandardTerms terms) {
         return new StandardTermsResponse(
                 terms.uuid(), terms.property(), terms.name(), terms.agreementType(), terms.targetRate(),
-                terms.carFee(), terms.allowedCars(), terms.petFee(), terms.allowedPets(),
-                terms.rentDueDay(), terms.gracePeriodDays(),
+                terms.carFee(), terms.allowedCars(), terms.carsMax(), terms.petFee(), terms.allowedPets(),
+                terms.paymentDueDay(), terms.gracePeriodDays(),
                 terms.ruleViolationFeeMethod(), terms.ruleViolationFeeAmount(),
                 terms.nsfFeeMethod(), terms.nsfFeeAmount(),
                 terms.lateFeeMethod(), terms.lateFeeAmount(),
@@ -64,7 +64,7 @@ public record StandardTermsResponse(
                 terms.powerMethod(), terms.powerFlatAmount(),
                 terms.sewerMethod(), terms.sewerFlatAmount(),
                 terms.trashMethod(), terms.trashFlatAmount(),
-                terms.note(), terms.createdAt(), terms.updatedAt(), terms.updatedBy()
+                terms.note(), terms.createdAt(), terms.updatedAt()
         );
     }
 }
