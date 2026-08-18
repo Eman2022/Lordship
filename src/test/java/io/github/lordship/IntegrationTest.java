@@ -12,6 +12,8 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 @Import(TestDataSupport.class)
 public abstract class IntegrationTest {
+
     @Autowired
     protected TestDataSupport testData;
+
 }

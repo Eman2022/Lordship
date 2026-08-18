@@ -68,10 +68,8 @@ public class LotServiceTest {
         LotRow savedRow = stubRow(propertyId);
         when(lotRepository.save(propertyId, "12")).thenReturn(savedRow);
 
-        LotCreationRequest request = new LotCreationRequest(propertyId, "12");
-
         // Act
-        Lot result = lotService.createLot(request);
+        Lot result = lotService.createLot(propertyId, "12");
 
         // Assert: only the two minimum columns reach the insert
         verify(lotRepository).save(propertyId, "12");
