@@ -25,6 +25,9 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -84,6 +87,8 @@ public class TransactionServiceTest {
         assertEquals("Rent charge", tx.description());
         assertEquals(billingPeriod, tx.billingPeriod());
         assertNull(tx.deletedAt());
+
+        verify(auditService).recordInsert(eq("transaction"), eq(tx.uuid()), any());
     }
 
     @Test
@@ -142,6 +147,8 @@ public class TransactionServiceTest {
         assertThrows(NoSuchElementException.class, () ->
                 transactionService.findById(tx.uuid())
         );
+
+        verify(auditService).recordDelete(eq("transaction"), eq(tx.uuid()), any());
     }
 
     @Test

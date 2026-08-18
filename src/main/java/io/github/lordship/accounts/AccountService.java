@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -77,6 +78,28 @@ public class AccountService {
             }
         });
         return result.map(AccountRow::toAccount);
+    }
+
+    @Transactional
+    public Optional<Account> patchAccount(UUID uuid, Map<String, Object> changes) {
+        Optional<AccountRow> beforeOpt = accountRepository.findById(uuid);
+        if (beforeOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        AccountRow before = beforeOpt.get();
+
+        Optional<AccountRow> afterOpt = accountRepository.patch(uuid, changes);
+        if (afterOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        AccountRow after = afterOpt.get();
+
+        AuditMapper.Diff diff = AuditMapper.diff(before, after);
+        if (!diff.before().isEmpty()) {
+            log.info("Account patched uuid={}: changed fields={}", uuid, diff.before().keySet());
+            auditService.recordUpdate("account", uuid, diff.before(), diff.after());
+        }
+        return Optional.of(after.toAccount());
     }
 
     @Transactional
