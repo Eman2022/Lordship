@@ -189,6 +189,6 @@ public class AccountServiceTest {
         // account_status is already ACTIVE — patching with the same value produces no diff
         accountService.patchAccount(created.uuid(), Map.of("account_status", "ACTIVE"));
 
-        verify(auditService, never()).recordUpdate(any(), any(), any(), any());
+        verify(auditService, never()).recordUpdate(eq("account"), eq(created.uuid()), any(), any());
     }
 }
