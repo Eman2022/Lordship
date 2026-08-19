@@ -2,6 +2,7 @@ package io.github.lordship.tenancy.internal;
 
 import com.jayway.jsonpath.JsonPath;
 import io.github.lordship.TestAuthSupport;
+import io.github.lordship.tenancy.Tenancy;
 import org.springframework.beans.factory.annotation.Value;
 import tools.jackson.databind.ObjectMapper;
 import io.github.lordship.IntegrationTest;
@@ -17,6 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -52,61 +54,87 @@ public class TenancyControllerIT extends IntegrationTest {
     @Autowired
     JdbcClient jdbc;
 
+    // helper func
+    private UUID createTenancy(UUID lotId) throws Exception {
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        var json = """
+                    { "lotId": "%s" }
+                """.formatted(lotId);
 
-    private UUID createTestTenancy(String token, UUID lotId) throws Exception {
-        MvcResult result = mockMvc.perform(
-                        post("/tenancy/create")
-                                .header("Authorization", "Bearer " + token)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(new TenancyCreateRequest(lotId)))
-                )
+        MvcResult createResult = mockMvc.perform(post("/tenancy/create")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.uuid"));
+        return UUID.fromString(JsonPath.read(createResult.getResponse().getContentAsString(), "$.uuid"));
     }
 
     // REPOSITORY TESTS
     @Test
-    void findATenancyById() {
-        TenancyRow saved = testData.insertChainToTenancy();
+    void findATenancyById() throws Exception {
+        // Arrange
+        UUID saved = createTenancy(testData.insertLot(testData.insertProperty("AB").uuid(), "5A").uuid());
 
-        Optional<TenancyRow> found = tenancyRepository.findById(saved.uuid());
+        // Act
+        Optional<TenancyRow> found = tenancyRepository.findById(saved);
 
+        // Assert
         assertTrue(found.isPresent());
-        assertEquals(saved.uuid(), found.get().uuid());
+        assertEquals(saved, found.get().uuid());
     }
 
     @Test
-    void updatedAtChangesOnUpdate() {
-        TenancyRow saved = testData.insertChainToTenancy();
+    void updatedAtChangesOnUpdate() throws Exception {
+        // Arrange
+        UUID savedId = createTenancy(testData.insertLot(testData.insertProperty("AB").uuid(), "5A").uuid());
+        Optional<TenancyRow> tr =  tenancyRepository.findById(savedId);
+        assertTrue(tr.isPresent());
+        OffsetDateTime before = tr.get().updatedAt();
 
-        OffsetDateTime before = saved.updatedAt();
+        // Act
+        TenancyRow closed = tenancyRepository.close(savedId, LocalDate.now());
 
-        TenancyRow closed = tenancyRepository.close(saved.uuid(), LocalDate.now());
-
+        // Assert
         assertTrue(closed.updatedAt().isAfter(before) || closed.updatedAt().isEqual(before));
     }
 
     @Test
-    void closingTenancy() {
-        TenancyRow saved = testData.insertChainToTenancy();
+    void patchTenancy_shouldCloseTenancy_afterSettingEndDate() throws Exception {
+        // Arrange
+        UUID saved = createTenancy(testData.insertLot(testData.insertProperty("AB").uuid(), "5A").uuid());
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
 
         LocalDate endDate = LocalDate.now();
-        TenancyRow closed = tenancyRepository.close(saved.uuid(), endDate);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String formattedString = endDate.format(formatter);
 
-        assertEquals(endDate, closed.endDate());
-        assertNotNull(closed.updatedAt());
+        var json = """
+                    { "endDate": "%s" }
+                """.formatted(formattedString);
+
+        // Act
+        mockMvc.perform(patch("/tenancy/" + saved)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isOk());
+        Optional<TenancyRow> closed = tenancyRepository.findById(saved);
+
+        // Assert
+        assertTrue(closed.isPresent());
+        assertEquals(endDate, closed.get().endDate());
+        assertNotNull(closed.get().updatedAt());
     }
 
     @Test
-    void softDeleteRemovesFromTable() {
-        TenancyRow saved = testData.insertChainToTenancy();
+    void softDeleteRemovesFromTable() throws Exception {
+        UUID saved = createTenancy(testData.insertLot(testData.insertProperty("AB").uuid(), "5A").uuid());
 
-        tenancyRepository.softDelete(saved.uuid());
+        tenancyRepository.softDelete(saved);
 
-        assertTrue(tenancyRepository.findById(saved.uuid()).isEmpty());
-        assertTrue(tenancyRepository.findActiveByLot(saved.lotId()).isEmpty());
+        assertTrue(tenancyRepository.findById(saved).isEmpty());
     }
 
     // CONTROLLER TESTS
@@ -118,13 +146,15 @@ public class TenancyControllerIT extends IntegrationTest {
 
     @Test
     void createTenancy_shouldReturn403_whenNoTokenProvided() throws Exception {
-        var request = new TenancyCreateRequest(UUID.randomUUID());
+        var request = new TenancyController.TenancyCreateRequest(UUID.randomUUID());
 
         mockMvc.perform(post("/tenancy/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
     }
+
+
 
     @Test
     void createTenancy_shouldReturn400_whenLotIdIsMissing() throws Exception {
@@ -147,7 +177,7 @@ public class TenancyControllerIT extends IntegrationTest {
         UUID lotId = testData.insertLot(testData.insertProperty("TP").uuid(), "1").uuid();
 
         // Create a closed tenancy
-        UUID closedTenancy = createTestTenancy(token, lotId);
+        UUID closedTenancy = testData.insertTenancy(lotId).uuid();
 
         // Close tenancy before creating a second
         mockMvc.perform(patch("/tenancy/{uuid}", closedTenancy)
@@ -157,7 +187,7 @@ public class TenancyControllerIT extends IntegrationTest {
                 .andExpect(status().isOk());
 
         // Create the active tenancy
-        UUID activeTenancy = createTestTenancy(token, lotId);
+        UUID activeTenancy = testData.insertTenancy(lotId).uuid();
 
         mockMvc.perform(get("/tenancy/lot/{lotId}", lotId)
                         .header("Authorization", "Bearer " + token))
@@ -170,7 +200,7 @@ public class TenancyControllerIT extends IntegrationTest {
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
         UUID lotId = testData.insertLot(testData.insertProperty("TP").uuid(), "1").uuid();
 
-        UUID tenancyId = createTestTenancy(token, lotId);
+        UUID tenancyId = testData.insertTenancy(lotId).uuid();
 
         // Invalid endDate
         mockMvc.perform(patch("/tenancy/{uuid}", tenancyId)

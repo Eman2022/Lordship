@@ -3,7 +3,6 @@ package io.github.lordship.tenancy;
 import io.github.lordship.accounts.AccountService;
 import io.github.lordship.audit.AuditService;
 import io.github.lordship.tenancy.internal.TenancyRepository;
-import io.github.lordship.tenancy.internal.TenancyCreateRequest;
 import io.github.lordship.tenancy.internal.TenancyRow;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +37,6 @@ public class TenancyServiceTests {
 
         tenancyService = new TenancyService(
                 tenancyRepository,
-                null,          // encryptionService unused
                 auditService,
                 accountService
         );
@@ -69,12 +67,10 @@ public class TenancyServiceTests {
     void create_allowsFirstTenancy() {
         when(tenancyRepository.findActiveByLot(lotId)).thenReturn(List.of());
 
-        TenancyCreateRequest req = new TenancyCreateRequest(lotId);
-
         TenancyRow saved = row(uuid1, LocalDate.now(), null);
         when(tenancyRepository.save(any())).thenReturn(saved);
 
-        Tenancy result = tenancyService.create(req);
+        Tenancy result = tenancyService.create(lotId);
 
         assertEquals(uuid1, result.uuid());
         verify(auditService).recordInsert(eq("tenancy"), eq(uuid1), any());
@@ -85,12 +81,10 @@ public class TenancyServiceTests {
         TenancyRow existing = row(uuid1, LocalDate.now().minusDays(10), null);
         when(tenancyRepository.findActiveByLot(lotId)).thenReturn(List.of(existing));
 
-        TenancyCreateRequest req = new TenancyCreateRequest(lotId);
-
         TenancyRow saved = row(uuid2, LocalDate.now(), null);
         when(tenancyRepository.save(any())).thenReturn(saved);
 
-        Tenancy result = tenancyService.create(req);
+        Tenancy result = tenancyService.create(lotId);
 
         assertEquals(uuid2, result.uuid());
         verify(auditService).recordInsert(eq("tenancy"), eq(uuid2), any());
@@ -103,9 +97,7 @@ public class TenancyServiceTests {
 
         when(tenancyRepository.findActiveByLot(lotId)).thenReturn(List.of(t1, t2));
 
-        TenancyCreateRequest req = new TenancyCreateRequest(lotId);
-
-        assertThrows(IllegalStateException.class, () -> tenancyService.create(req));
+        assertThrows(IllegalStateException.class, () -> tenancyService.create(lotId));
         verify(tenancyRepository, never()).save(any());
     }
 
