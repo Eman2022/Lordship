@@ -30,18 +30,20 @@ CREATE TABLE property (
 );
 
 
-CREATE TABLE charge_term_defaults (
+CREATE TABLE standard_terms ( -- note when the property is NULL this is a global default accessible to admins to copy towards properties
                   uuid     UUID PRIMARY KEY DEFAULT uuidv7(),
                   property UUID REFERENCES property(uuid), -- if NULL, only an admin can copy this to a property
                   name     TEXT NOT NULL CHECK (length(trim(name)) > 0),
                   agreement_type agreement_type NOT NULL, -- do not patch
+                  target_rate NUMERIC(12,2) NOT NULL DEFAULT 0.0 CHECK (target_rate >= 0),
 
                   car_fee           NUMERIC(12,2) NOT NULL DEFAULT 65.0 CHECK (car_fee >= 0),
                   allowed_cars      INT           NOT NULL DEFAULT 2    CHECK (allowed_cars >= 0),
+                  cars_max          INT           NOT NULL DEFAULT 4    CHECK (cars_max >= allowed_cars),
                   pet_fee           NUMERIC(12,2) NOT NULL DEFAULT 45.0 CHECK (pet_fee >= 0),
                   allowed_pets      INT           NOT NULL DEFAULT 2    CHECK (allowed_pets >= 0),
 
-                  rent_due_day      INT           NOT NULL DEFAULT 1    CHECK (rent_due_day BETWEEN 1 AND 28),
+                  payment_due_day   INT           NOT NULL DEFAULT 1    CHECK (payment_due_day BETWEEN 1 AND 28),
                   grace_period_days INT           NOT NULL DEFAULT 7    CHECK (grace_period_days >= 0),
 
                   rule_violation_fee_method TEXT NOT NULL DEFAULT 'FLAT'
@@ -71,15 +73,14 @@ CREATE TABLE charge_term_defaults (
 
                   note       TEXT,
                   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                  updated_by UUID,  -- FK added in V3 after agent table exists
+                  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), -- note: most other tables do not get this row
+                  created_by UUID,  -- FK added in V3 after agent table exists
                   deleted_at TIMESTAMPTZ,
 
                   CONSTRAINT defaults_term_late_fee_amount_matches_method CHECK (
                       CASE WHEN late_fee_method = 'FLAT' THEN late_fee_amount > 0
                            ELSE late_fee_amount = 0 END
                       ),
-
                   CONSTRAINT defaults_water_amount_matches_method CHECK (
                       CASE WHEN water_method = 'FLAT' THEN water_flat_amount > 0
                            ELSE water_flat_amount = 0 END
@@ -109,13 +110,6 @@ CREATE TABLE charge_term_defaults (
 );
 
 
-CREATE INDEX charge_term_defaults_property_idx
-    ON charge_term_defaults (property)
-    WHERE deleted_at IS NULL;
-
-CREATE UNIQUE INDEX charge_term_defaults_name_uq
-    ON charge_term_defaults (property, lower(name)) NULLS NOT DISTINCT
-    WHERE deleted_at IS NULL;
 
 
 CREATE TABLE property_fee_cap (
@@ -163,7 +157,7 @@ CREATE UNIQUE INDEX property_fee_waiver_uq
     WHERE deleted_at IS NULL;
 
 
-INSERT INTO charge_term_defaults (property, name, agreement_type)
-VALUES (NULL, 'Standard Manufactured Home Lot Lease', 'LAND'),
-       (NULL, 'Standard Residential Lease',           'RESIDENTIAL'),
-       (NULL, 'Standard Storage Agreement',           'STORAGE');
+INSERT INTO standard_terms (property, name, agreement_type, target_rate, car_fee, allowed_cars, cars_max, allowed_pets, pet_fee, rule_violation_fee_method, rule_violation_fee_amount, nsf_fee_method, nsf_fee_amount)
+VALUES (NULL, 'Standard Manufactured Home Lot Lease', 'LAND', 700, 45, 2, 4, 2, 0, 'FLAT',65, 'FLAT', 35),
+       (NULL, 'Standard Residential Lease',           'RESIDENTIAL', 1000, 45, 2, 4, 2, 45, 'FLAT', 65, 'FLAT', 35),
+       (NULL, 'Standard Storage Agreement',           'STORAGE', 200, 0, 0, 0,0, 0, 'NONE', 0, 'FLAT', 25);

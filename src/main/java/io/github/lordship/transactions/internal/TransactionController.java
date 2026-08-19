@@ -24,16 +24,22 @@ public class TransactionController {
     @PreAuthorize("hasAuthority('transactions:edit')")
     @PostMapping("/post")
     public ResponseEntity<TransactionResponse> postTransaction(@Valid @RequestBody TransactionCreationRequest request) {
-        TransactionResponse response = TransactionResponse.from(
-                transactionService.postTransaction(
-                        request.accountId(),
-                        request.type(),
-                        request.amount(),
-                        request.description(),
-                        request.billingPeriod()
-                )
-        );
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        try {
+            TransactionResponse response = TransactionResponse.from(
+                    transactionService.postTransaction(
+                            request.accountId(),
+                            request.type(),
+                            request.amount(),
+                            request.description(),
+                            request.billingPeriod()
+                    )
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PreAuthorize("hasAuthority('transactions:view')")

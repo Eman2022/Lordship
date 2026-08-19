@@ -2,7 +2,6 @@ package io.github.lordship.accounts;
 
 import io.github.lordship.audit.AuditService;
 import io.github.lordship.lots.Lot;
-import io.github.lordship.lots.internal.LotCreationRequest;
 import io.github.lordship.lots.LotService;
 import io.github.lordship.properties.Property;
 import io.github.lordship.properties.PropertyService;
@@ -16,10 +15,15 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -47,7 +51,7 @@ public class AccountServiceTest {
 
     private UUID setupFullChain() {
         Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
-        Lot lot = lotService.createLot(new LotCreationRequest(property.uuid(), "1"));
+        Lot lot = lotService.createLot(property.uuid(), "1");
         return tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid();
     }
 
@@ -67,6 +71,8 @@ public class AccountServiceTest {
         assertEquals(0, BigDecimal.ZERO.compareTo(account.balanceCached()));
         assertFalse(account.autopayEnabled());
         assertNull(account.notes());
+
+        verify(auditService).recordInsert(eq("account"), eq(account.uuid()), any());
     }
 
     @Test
@@ -110,6 +116,8 @@ public class AccountServiceTest {
         assertEquals(AccountStatus.DELINQUENT, updated.get().accountStatus());
         assertTrue(updated.get().autopayEnabled());
         assertEquals("Late on payment", updated.get().notes());
+
+        verify(auditService).recordUpdate(eq("account"), eq(created.uuid()), any(), any());
     }
 
     @Test
@@ -146,6 +154,8 @@ public class AccountServiceTest {
 
         Optional<Account> found = accountService.getAccount(created.uuid());
         assertTrue(found.isEmpty());
+
+        verify(auditService).recordDelete(eq("account"), eq(created.uuid()), any());
     }
 
     @Test
@@ -158,5 +168,26 @@ public class AccountServiceTest {
         assertTrue(found.isPresent());
         assertEquals(created.uuid(), found.get().uuid());
         assertEquals(tenancyId, found.get().tenancyId());
+    }
+
+    @Test
+    void patchAccount_recordsAuditWhenFieldsChange() {
+        UUID tenancyId = setupFullChain();
+        Account created = accountService.getAccountByTenancyId(tenancyId).orElseThrow();
+
+        accountService.patchAccount(created.uuid(), Map.of("notes", "Updated note"));
+
+        verify(auditService).recordUpdate(eq("account"), eq(created.uuid()), any(), any());
+    }
+
+    @Test
+    void patchAccount_doesNotRecordAuditWhenNoChange() {
+        UUID tenancyId = setupFullChain();
+        Account created = accountService.getAccountByTenancyId(tenancyId).orElseThrow();
+
+        // account_status is already ACTIVE — patching with the same value produces no diff
+        accountService.patchAccount(created.uuid(), Map.of("account_status", "ACTIVE"));
+
+        verify(auditService, never()).recordUpdate(eq("account"), eq(created.uuid()), any(), any());
     }
 }

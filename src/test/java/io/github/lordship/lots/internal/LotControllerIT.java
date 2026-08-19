@@ -39,12 +39,17 @@ public class LotControllerIT extends IntegrationTest {
     @Test
     void createLot_shouldReturn403_whenUnauthorized() throws Exception {
         // Arrange
-        LotCreationRequest request = new LotCreationRequest(UUID.randomUUID(), "12");
+        String requestBody = """
+                {
+                    "propertyId" : "%s",
+                    "lotNumber" : "12"
+                }
+                """.formatted(UUID.randomUUID().toString());
 
         // Act
         mockMvc.perform(post("/api/lots")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(requestBody))
                 // Assert
                 .andExpect(status().isForbidden());
     }
@@ -55,13 +60,18 @@ public class LotControllerIT extends IntegrationTest {
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
         UUID propertyId = testData.insertProperty("L001").uuid();
 
-        LotCreationRequest request = new LotCreationRequest(propertyId, "12");
+        String requestBody = """
+                {
+                    "propertyId" : "%s",
+                    "lotNumber" : "12"
+                }
+                """.formatted(propertyId.toString());
 
         // Act
         mockMvc.perform(post("/api/lots")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(requestBody))
                 // Assert: only what was supplied (plus DB defaults) comes back -- everything
                 // else is left for a follow-up PATCH, per the create-minimal design.
                 .andExpect(status().isCreated())

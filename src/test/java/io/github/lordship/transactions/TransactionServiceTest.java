@@ -4,7 +4,6 @@ import io.github.lordship.accounts.Account;
 import io.github.lordship.accounts.AccountService;
 import io.github.lordship.audit.AuditService;
 import io.github.lordship.lots.Lot;
-import io.github.lordship.lots.internal.LotCreationRequest;
 import io.github.lordship.lots.LotService;
 import io.github.lordship.properties.Property;
 import io.github.lordship.properties.PropertyService;
@@ -25,6 +24,9 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -55,7 +57,7 @@ public class TransactionServiceTest {
 
     private Account createTestAccount() {
         Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
-        Lot lot = lotService.createLot(new LotCreationRequest(property.uuid(), "1"));
+        Lot lot = lotService.createLot(property.uuid(), "1");
         UUID tenancyId = tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid();
         return accountService.getAccountByTenancyId(tenancyId).orElseThrow();
     }
@@ -84,6 +86,8 @@ public class TransactionServiceTest {
         assertEquals("Rent charge", tx.description());
         assertEquals(billingPeriod, tx.billingPeriod());
         assertNull(tx.deletedAt());
+
+        verify(auditService).recordInsert(eq("transaction"), eq(tx.uuid()), any());
     }
 
     @Test
@@ -142,6 +146,8 @@ public class TransactionServiceTest {
         assertThrows(NoSuchElementException.class, () ->
                 transactionService.findById(tx.uuid())
         );
+
+        verify(auditService).recordDelete(eq("transaction"), eq(tx.uuid()), any());
     }
 
     @Test

@@ -2,14 +2,12 @@ package io.github.lordship.vehicles;
 
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
-import io.github.lordship.vehicles.internal.VehicleCreateRequest;
+import io.github.lordship.vehicles.internal.VehicleCreationResult;
 import io.github.lordship.vehicles.internal.VehicleRepository;
 import io.github.lordship.vehicles.internal.VehicleRow;
-import io.github.lordship.vehicles.internal.VehiclePolicyRow;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,37 +24,18 @@ public class VehicleService {
     }
 
     @Transactional
-    public VehicleRegistrationResult registerVehicle(VehicleCreateRequest request) {
+    public VehicleCreationResult registerVehicle(UUID tenancyId, String plateNumber) {
         // Check for duplicate plate on same property under a different tenant (flag)
         List<Vehicle> conflicts = vehicleRepository
-                .findUnregisteredByPlate(request.plateNumber(), request.tenancyUuid())
+                .findUnregisteredByPlate(plateNumber, tenancyId)
                 .stream().map(VehicleRow::toVehicle).toList();
 
-        // Count existing vehicles for this tenant
-        int existingCount = vehicleRepository.countByTenancy(request.tenancyUuid());
-
-        // Get property policy
-        Optional<VehiclePolicy> policy = vehicleRepository
-                .findPropertyUuidByTenancy(request.tenancyUuid())
-                .flatMap(vehicleRepository::findPolicyByProperty)
-                .map(VehiclePolicyRow::toPolicy);
-
-        BigDecimal fee = BigDecimal.ZERO;
-        if (policy.isPresent() && existingCount >= policy.get().freeVehicleLimit()) {
-            fee = policy.get().extraVehicleFee();
-        }
-
-        VehicleRow row = new VehicleRow(
-                request.tenancyUuid(),
-                request.plateNumber()
-        );
-
-        VehicleRow savedRow = vehicleRepository.save(row);
+        VehicleRow savedRow = vehicleRepository.save(tenancyId, plateNumber);
         auditService.recordInsert("vehicle", savedRow.uuid(), AuditMapper.toMap(savedRow));
 
         Vehicle saved = savedRow.toVehicle();
 
-        return new VehicleRegistrationResult(saved, fee, !conflicts.isEmpty(), conflicts);
+        return new VehicleCreationResult(saved, !conflicts.isEmpty(), conflicts);
     }
 
     public List<Vehicle> findByTenancy(UUID tenancyUuid) {
@@ -106,26 +85,4 @@ public class VehicleService {
         }).orElse(false);
     }
 
-    @Transactional
-    public VehiclePolicy setPolicy(UUID propertyUuid, int freeLimit, BigDecimal fee, String notes) {
-        Optional<VehiclePolicyRow> before = vehicleRepository.findPolicyByProperty(propertyUuid);
-
-        VehiclePolicyRow row = new VehiclePolicyRow(null, propertyUuid, freeLimit, fee, notes, null, null);
-        VehiclePolicyRow after = vehicleRepository.savePolicy(row);
-
-        if (before.isPresent()) {
-            var diff = AuditMapper.diff(before.get(), after);
-            if (!diff.before().isEmpty()) {
-                auditService.recordUpdate("vehicle_policy", after.uuid(), diff.before(), diff.after());
-            }
-        } else {
-            auditService.recordInsert("vehicle_policy", after.uuid(), AuditMapper.toMap(after));
-        }
-
-        return after.toPolicy();
-    }
-
-    public Optional<VehiclePolicy> getPolicy(UUID propertyUuid) {
-        return vehicleRepository.findPolicyByProperty(propertyUuid).map(VehiclePolicyRow::toPolicy);
-    }
 }

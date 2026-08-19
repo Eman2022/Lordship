@@ -28,8 +28,8 @@ public class LotService {
     }
 
     @Transactional
-    public Lot createLot(LotCreationRequest request) {
-        LotRow saved = lotRepository.save(request.propertyId(), request.lotNumber());
+    public Lot createLot(UUID propertyId, String lotNumber) {
+        LotRow saved = lotRepository.save(propertyId, lotNumber);
         auditService.recordInsert("lot", saved.uuid(), AuditMapper.toMap(saved));
         return saved.toLot(List.of());
     }

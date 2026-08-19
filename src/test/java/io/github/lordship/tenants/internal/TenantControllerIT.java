@@ -2,7 +2,6 @@ package io.github.lordship.tenants.internal;
 
 import io.github.lordship.TestAuthSupport;
 import io.github.lordship.lots.Lot;
-import io.github.lordship.lots.internal.LotCreationRequest;
 import io.github.lordship.lots.LotService;
 import io.github.lordship.persons.Person;
 import io.github.lordship.persons.PersonService;
@@ -52,16 +51,9 @@ public class TenantControllerIT extends IntegrationTest {
     @Autowired
     PersonService personService;
 
-    @Autowired
-    TenantRepository tenantRepository;
-
-    @Autowired
-    JdbcClient jdbc;
-
-
     private UUID setupFullChain() {
         Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
-        Lot lot = lotService.createLot(new LotCreationRequest(property.uuid(), "1"));
+        Lot lot = lotService.createLot(property.uuid(), "1");
         return tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid();
     }
 

@@ -3,6 +3,8 @@ package io.github.lordship.lots.internal;
 import io.github.lordship.lots.Lot;
 import io.github.lordship.lots.LotService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +29,14 @@ public class LotController {
 
     private final LotService lotService;
 
+    public record LotCreationRequest(
+            @NotNull
+            UUID propertyId,
+
+            @NotBlank
+            String lotNumber
+    ) { }
+
     public LotController(LotService lotService) {
         this.lotService = lotService;
     }
@@ -34,7 +44,7 @@ public class LotController {
     @PreAuthorize("hasAuthority('lots:create')")
     @PostMapping
     public ResponseEntity<LotResponse> createLot(@Valid @RequestBody LotCreationRequest request) {
-        Lot lot = lotService.createLot(request);
+        Lot lot = lotService.createLot(request.propertyId, request.lotNumber);
         return ResponseEntity.status(HttpStatus.CREATED).body(LotResponse.from(lot));
     }
 
@@ -71,7 +81,6 @@ public class LotController {
         if (request.containsKey("lotAddress"))        changes.put("lot_address", request.get("lotAddress"));
         if (request.containsKey("description"))       changes.put("description", request.get("description"));
         if (request.containsKey("notes"))             changes.put("notes", request.get("notes"));
-        //if (request.containsKey("sortOrder"))         changes.put("sort_order", request.get("sortOrder"));
         if (request.containsKey("isRentable"))        changes.put("is_rentable", request.get("isRentable"));
         if (request.containsKey("notRentableReason")) changes.put("not_rentable_reason", request.get("notRentableReason"));
 

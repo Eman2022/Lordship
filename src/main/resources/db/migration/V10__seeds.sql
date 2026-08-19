@@ -104,12 +104,20 @@ INSERT INTO permission (uuid, permission_name) VALUES
     (uuidv7(), 'meterbills:create'),
     (uuidv7(), 'meterbills:delete'),
 
+    -- standard term
+    (uuidv7(), 'standard_terms:manage_global'),
+    (uuidv7(), 'standard_terms:view'),
+    (uuidv7(), 'standard_terms:edit'),
+    (uuidv7(), 'standard_terms:create'),
+    (uuidv7(), 'standard_terms:delete'),
+
     -- charge term
-    (uuidv7(), 'charge_term:create_migrations'),
-    (uuidv7(), 'charge_term:view'),
-    (uuidv7(), 'charge_term:edit'),
-    (uuidv7(), 'charge_term:create'),
-    (uuidv7(), 'charge_term:delete')
+    (uuidv7(), 'tenancy_term:create_migrations'),
+    (uuidv7(), 'tenancy_term:view'),
+    (uuidv7(), 'tenancy_term:edit'),
+    (uuidv7(), 'tenancy_term:create'),
+    (uuidv7(), 'tenancy_term:delete')
+
 ;
 
 -- ── Roles ─────────────────────────────────────────────────────────────────────
@@ -164,10 +172,11 @@ AND p.permission_name IN (
     'tenants:create',
     'tenants:view',
     'tenants:edit',
-    'charge_term:view',
-    'charge_term:edit',
-    'charge_term:create',
-    'charge_term:delete',
+    'standard_term:view',
+    'tenancy_term:view',
+    'tenancy_term:edit',
+    'tenancy_term:create',
+    'tenancy_term:delete',
     'vehicles:view',
     'vehicles:edit',
     'vehicles:create',
@@ -204,7 +213,7 @@ AND p.permission_name IN (
     'tenants:view',
     'tenants:create',
     'tenants:edit',
-    'charge_term:view',
+    'tenancy_term:view',
     'vehicles:view',
     'meters:view',
     'meters:edit', -- are we sure we want the property manager to be able to edit meter setups?

@@ -1,8 +1,6 @@
 package io.github.lordship.vehicles.internal;
 
 import io.github.lordship.vehicles.Vehicle;
-import io.github.lordship.vehicles.VehiclePolicy;
-import io.github.lordship.vehicles.VehicleRegistrationResult;
 import io.github.lordship.vehicles.VehicleService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -10,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,9 +24,9 @@ public class VehicleController {
 
     @PreAuthorize("hasAuthority('vehicles:create')")
     @PostMapping("/create")
-    public ResponseEntity<VehicleRegistrationResult> createVehicle(
+    public ResponseEntity<VehicleCreationResult> createVehicle(
             @Valid @RequestBody VehicleCreateRequest request) {
-        VehicleRegistrationResult result = vehicleService.registerVehicle(request);
+        VehicleCreationResult result = vehicleService.registerVehicle(request.tenancyUuid(), request.plateNumber());
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
@@ -79,27 +76,6 @@ public class VehicleController {
         return vehicleService.deleteVehicle(uuid) ?
                 ResponseEntity.noContent().build() :
                 ResponseEntity.notFound().build();
-    }
-
-    @PreAuthorize("hasAuthority('vehicles:edit')")
-    @PutMapping("/policy/{propertyCode}")
-    public ResponseEntity<VehiclePolicy> setPolicy(
-            @PathVariable UUID propertyCode,
-            @RequestBody Map<String, Object> request) {
-
-        int freeLimit = (int) request.getOrDefault("freeVehicleLimit", 2);
-        BigDecimal fee = new BigDecimal(request.getOrDefault("extraVehicleFee", "0.00").toString());
-        String notes = (String) request.getOrDefault("notes", null);
-
-        return ResponseEntity.ok(vehicleService.setPolicy(propertyCode, freeLimit, fee, notes));
-    }
-
-    @PreAuthorize("hasAuthority('vehicles:view')")
-    @GetMapping("/policy/{propertyCode}")
-    public ResponseEntity<VehiclePolicy> getPolicy(@PathVariable UUID propertyCode) {
-        return vehicleService.getPolicy(propertyCode)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
     }
 
 }

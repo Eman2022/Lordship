@@ -1,7 +1,7 @@
 package io.github.lordship.access;
 
-import io.github.lordship.access.internal.PermissionRepository;
-import io.github.lordship.access.internal.PermissionRow;
+import io.github.lordship.access.internal.rbac.PermissionRepository;
+import io.github.lordship.access.internal.rbac.PermissionRow;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;

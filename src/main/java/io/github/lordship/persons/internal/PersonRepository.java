@@ -10,7 +10,7 @@ import java.util.*;
 @Repository
 public class PersonRepository {
 
-    private static final Set<String> ALLOWED_COLUMNS = Set.of(
+    private static final Set<String> PATCHABLE_COLUMNS = Set.of(
             "name_full", "birthday", "personal_phone",
             "personal_email", "mailing_address",
             "emergency_contact", "social"
@@ -61,7 +61,7 @@ public class PersonRepository {
         if (changes.isEmpty()) return findById(uuid);
 
         for (String col : changes.keySet()) {
-            if (!ALLOWED_COLUMNS.contains(col)) {
+            if (!PATCHABLE_COLUMNS.contains(col)) {
                 throw new IllegalArgumentException("Invalid column: " + col);
             }
         }

@@ -45,7 +45,6 @@ CREATE TABLE tenant (
                         FOREIGN KEY (tenancy_id) REFERENCES tenancy(uuid)
 );
 
-
 -- ── Account ───────────────────────────────────────────────────────────────────
 
 CREATE TABLE account (

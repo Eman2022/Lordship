@@ -11,7 +11,9 @@ public sealed interface PropertyScope {
     default boolean isAll() { return this instanceof All; }
 
     default Set<UUID> idsOrEmpty() {
-        return this instanceof Restricted r ? r.propertyIds() : Set.of();
+        return this instanceof Restricted(var propertyIds)
+                ? propertyIds
+                : Set.of();
     }
 
     default boolean allows(UUID propertyId) {
