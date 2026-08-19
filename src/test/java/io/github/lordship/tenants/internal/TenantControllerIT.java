@@ -8,9 +8,7 @@ import io.github.lordship.persons.PersonService;
 import io.github.lordship.properties.Property;
 import io.github.lordship.properties.PropertyService;
 import io.github.lordship.tenancy.TenancyService;
-import io.github.lordship.tenancy.internal.TenancyCreateRequest;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.ObjectMapper;
 import io.github.lordship.IntegrationTest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +52,7 @@ public class TenantControllerIT extends IntegrationTest {
     private UUID setupFullChain() {
         Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
         Lot lot = lotService.createLot(property.uuid(), "1");
-        return tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid();
+        return tenancyService.create((lot.uuid())).uuid();
     }
 
     private UUID setupPerson() {

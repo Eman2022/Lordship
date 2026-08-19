@@ -6,7 +6,6 @@ import io.github.lordship.lots.LotService;
 import io.github.lordship.properties.Property;
 import io.github.lordship.properties.PropertyService;
 import io.github.lordship.tenancy.TenancyService;
-import io.github.lordship.tenancy.internal.TenancyCreateRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -52,7 +51,7 @@ public class AccountServiceTest {
     private UUID setupFullChain() {
         Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
         Lot lot = lotService.createLot(property.uuid(), "1");
-        return tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid();
+        return tenancyService.create(lot.uuid()).uuid();
     }
 
     // -------------------------------------------------------------------------

@@ -4,12 +4,9 @@ package io.github.lordship.tenancy;
 import io.github.lordship.accounts.AccountService;
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
-import io.github.lordship.shared.EncryptionService;
-import io.github.lordship.tenancy.internal.TenancyCreateRequest;
 import io.github.lordship.tenancy.internal.TenancyRepository;
 import io.github.lordship.tenancy.internal.TenancyRow;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.cglib.core.Local;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +19,6 @@ import java.util.*;
 @Service
 public class TenancyService {
     private final TenancyRepository tenancyRepository;
-    private final EncryptionService encryptionService;
     private final AuditService auditService;
     private final AccountService accountService;
 
@@ -30,33 +26,29 @@ public class TenancyService {
 
     public TenancyService(
             TenancyRepository tenancyRepository,
-            EncryptionService encryptionService,
             AuditService auditService,
             AccountService accountService
     ) {
         this.tenancyRepository = tenancyRepository;
-        this.encryptionService = encryptionService;
         this.auditService = auditService;
         this.accountService = accountService;
     }
 
     // Forces a maximum of two tenancies for a lot
     @Transactional
-    public Tenancy create(TenancyCreateRequest request) {
-        List<TenancyRow> active = tenancyRepository.findActiveByLot(request.lotId());
+    public Tenancy create(UUID lotId) {
+        List<TenancyRow> active = tenancyRepository.findActiveByLot(lotId);
 
         if (active.size() >= 2) {
             throw new IllegalStateException("Lot cannot have more than two tenancies at a time");
         }
 
-        TenancyRow row = tenancyRepository.save(request.lotId());
-
-
-        auditService.recordInsert("tenancy", row.uuid(), AuditMapper.toMap(row));
-
+        TenancyRow row = tenancyRepository.save(lotId);
         Tenancy tenancy = row.toTenancy();
         accountService.createAccount(tenancy.uuid(), null);
-        log.info("Account auto-created for tenancy uuid={}", tenancy.uuid());
+
+        // log
+        auditService.recordInsert("tenancy", row.uuid(), AuditMapper.toMap(row));
         return tenancy;
     }
 
