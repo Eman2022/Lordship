@@ -9,7 +9,6 @@ import io.github.lordship.properties.Property;
 import io.github.lordship.properties.PropertyService;
 import io.github.lordship.tenancy.Tenancy;
 import io.github.lordship.tenancy.TenancyService;
-import io.github.lordship.tenancy.internal.TenancyCreateRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -58,7 +57,7 @@ public class TransactionServiceTest {
     private Account createTestAccount() {
         Property property = propertyService.createProperty("Test Mobile Park", "999 Test Ave");
         Lot lot = lotService.createLot(property.uuid(), "1");
-        UUID tenancyId = tenancyService.create(new TenancyCreateRequest(lot.uuid())).uuid();
+        UUID tenancyId = tenancyService.create(lot.uuid()).uuid();
         return accountService.getAccountByTenancyId(tenancyId).orElseThrow();
     }
 

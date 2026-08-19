@@ -4,6 +4,7 @@ import io.github.lordship.IntegrationTest;
 import io.github.lordship.TestAuthSupport;
 import io.github.lordship.lots.internal.LotRow;
 import io.github.lordship.properties.internal.PropertyRow;
+import io.github.lordship.tenancy.Tenancy;
 import io.github.lordship.tenancy.internal.TenancyRow;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

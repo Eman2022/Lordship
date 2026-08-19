@@ -131,6 +131,7 @@ public class AccountCrudTest extends IntegrationTest {
     void authorizedGetByIdReturns200() throws Exception {
         String token = loginAsRoot();
         UUID tenancyId = testData.insertChainToTenancy().uuid();
+        System.out.println(tenancyId);
         String accountId = getAutoCreatedAccountId(tenancyId).toString();
 
         mockMvc.perform(get("/accounts/" + accountId)
@@ -144,6 +145,7 @@ public class AccountCrudTest extends IntegrationTest {
     void authorizedUpdateReturns200() throws Exception {
         String token = loginAsRoot();
         UUID tenancyId = testData.insertChainToTenancy().uuid();
+        System.out.println("TENANCY ID:  " + tenancyId);
         String accountId = getAutoCreatedAccountId(tenancyId).toString();
 
         AccountUpdateRequest updateRequest = new AccountUpdateRequest(

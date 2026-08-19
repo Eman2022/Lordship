@@ -3,6 +3,7 @@ package io.github.lordship.tenancy.internal;
 import io.github.lordship.tenancy.Tenancy;
 import io.github.lordship.tenancy.TenancyService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,10 +27,16 @@ public class TenancyController {
         this.tenancyService = tenancyService;
     }
 
+    public record TenancyCreateRequest(
+            @NotNull
+            UUID lotId
+    ) { }
+
+
     @PreAuthorize("hasAuthority('tenancy:create')")
     @PostMapping("/create")
     public ResponseEntity<TenancyResponse> createTenancy(@RequestBody @Valid TenancyCreateRequest tenancyCreateRequest) {
-        Tenancy tenancy = tenancyService.create(tenancyCreateRequest);
+        Tenancy tenancy = tenancyService.create(tenancyCreateRequest.lotId());
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(TenancyResponse.from(tenancy));
