@@ -10,11 +10,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TABLE tenancy ( -- needs added: lease anniversary
+CREATE TABLE tenancy (
                          uuid                  UUID PRIMARY KEY DEFAULT uuidv7(),
                          lot_id                UUID NOT NULL,
-                         start_date            DATE,
+                         start_date            DATE, -- possession, not the lease term
                          end_date              DATE,
+                         anniversary_on        DATE, -- sticky; established by the first lease or first payment
+                         anniversary_source    TEXT
+                             CHECK (anniversary_source IN ('FIRST_LEASE','FIRST_PAYMENT','WAIVER','AGREED','MIGRATED')),
                          no_personal_checks    BOOLEAN NOT NULL DEFAULT FALSE,
                          no_partial_payments   BOOLEAN NOT NULL DEFAULT FALSE,
                          accept_payments       BOOLEAN NOT NULL DEFAULT TRUE,
