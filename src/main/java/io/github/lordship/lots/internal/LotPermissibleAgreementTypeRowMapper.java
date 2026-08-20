@@ -14,7 +14,7 @@ public class LotPermissibleAgreementTypeRowMapper implements RowMapper<LotPermis
         return new LotPermissibleAgreementTypeRow(
                 (UUID) rs.getObject("lot_id"),
                 AgreementType.valueOf(rs.getString("agreement_type")),
-                rs.getBigDecimal("target_rent")
+                rs.getBigDecimal("target_rate")
         );
     }
 }

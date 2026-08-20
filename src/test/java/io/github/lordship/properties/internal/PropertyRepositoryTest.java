@@ -19,18 +19,6 @@ public class PropertyRepositoryTest {
     @Autowired
     PropertyRepository propertyRepository;
 
-    private PropertyRow buildRow() {
-        return new PropertyRow(
-                null,
-                "TMP",
-                "Test Mobile Park",
-                "999 Test Ave",
-                null,
-                null,
-                null,
-                null
-        );
-    }
 
     @Test
     void save_persistsRow_andReturnsGeneratedFields() {

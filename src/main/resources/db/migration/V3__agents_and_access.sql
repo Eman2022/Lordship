@@ -111,6 +111,22 @@ CREATE INDEX idx_assignment_property ON agent_property_assignment(property_id) W
 CREATE UNIQUE INDEX uq_active_assignment
     ON agent_property_assignment(agent_id, property_id) WHERE removed_at IS NULL;
 
+
+-- ── System principal ─────────────────────────────────────────────────────────
+-- Attribution target for machine-authored rows (seeds, billing runs, generated
+-- documents). Not a login: work_email and agent_password are both NULL, so the
+-- email lookup in the login path can never reach it.
+-- Fixed UUIDs so migrations can reference it as a literal.
+
+INSERT INTO person (uuid, name_full)
+VALUES ('00000000-0000-7000-8000-000000000001', 'System');
+
+INSERT INTO agent (uuid, person_id, work_phone, work_email, agent_password)
+VALUES ('00000000-0000-7000-8000-000000000002',
+        '00000000-0000-7000-8000-000000000001',
+        NULL, NULL, NULL);
+
+
 -- property_manager FK deferred from V1, now that agent exists
 ALTER TABLE property
     ADD CONSTRAINT fk_property_manager FOREIGN KEY (property_manager) REFERENCES agent(uuid);

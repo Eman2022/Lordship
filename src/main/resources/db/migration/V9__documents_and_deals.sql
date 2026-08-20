@@ -41,17 +41,19 @@ CREATE TABLE document_template (
 
 
 CREATE TABLE template_clause (
-                                 uuid       UUID PRIMARY KEY DEFAULT uuidv7(),
-                                 template   UUID NOT NULL REFERENCES document_template(uuid),
-                                 ordinal    NUMERIC(10,4) NOT NULL,
-                                 clause_key TEXT NOT NULL, -- stable identity across versions, e.g. RENT_AND_FEES
-                                 title      TEXT,
-                                 body       TEXT NOT NULL, -- tokens only, never a literal amount
-                                 required   BOOLEAN NOT NULL DEFAULT FALSE, -- a required clause cannot be excluded
-                                 note       TEXT,
-                                 created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                                 created_by UUID NOT NULL REFERENCES agent(uuid),
-                                 deleted_at TIMESTAMPTZ
+                                 uuid        UUID PRIMARY KEY DEFAULT uuidv7(),
+                                 template    UUID NOT NULL REFERENCES document_template(uuid),
+                                 section     TEXT, -- sub-document within the packet; the unit a property excludes
+                                 ordinal     NUMERIC(10,4) NOT NULL,
+                                 clause_key  TEXT, -- stable identity across versions, e.g. RENT_AND_FEES
+                                 title       TEXT,
+                                 body        TEXT, -- tokens only, never a literal amount
+                                 required    BOOLEAN NOT NULL DEFAULT FALSE, -- a required clause cannot be excluded
+                                 statute_ref TEXT, -- the citation this clause exists to satisfy
+                                 note        TEXT,
+                                 created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                 created_by  UUID NOT NULL REFERENCES agent(uuid),
+                                 deleted_at  TIMESTAMPTZ
 );
 
 

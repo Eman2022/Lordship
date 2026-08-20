@@ -1,5 +1,6 @@
 package io.github.lordship.standardterms;
 
+import io.github.lordship.audit.ActingAgent;
 import io.github.lordship.audit.AuditContext;
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
@@ -22,7 +23,7 @@ import java.util.function.Function;
 @Service
 public class StandardTermsService {
 
-    private static final Set<String> FEE_METHODS = Set.of("NONE", "FLAT");
+    private static final Set<String> FEE_METHODS = Set.of("NONE", "FLAT", "BANK_OR_FLAT", "PERCENT_OF_RENT");
     private static final Set<String> UTILITY_METHODS = Set.of("NONE", "FLAT", "RUBS", "SUBMETERED");
     private static final Set<String> TRASH_METHODS = Set.of("NONE", "FLAT", "RUBS");
 
@@ -93,7 +94,7 @@ public class StandardTermsService {
         requireGlobalNameIsFree(name);
 
         StandardTermsRow saved = standardTermsRepository.save(
-                new StandardTermsRow(null, name, agreementType));
+                new StandardTermsRow(null, name, agreementType, ActingAgent.resolve(auditContext)));
 
         auditService.recordInsert("standard_terms", saved.uuid(), AuditMapper.toMap(saved));
         return saved.toStandardTerms();
@@ -114,7 +115,7 @@ public class StandardTermsService {
         }
         requirePropertyScopeIsFree(property, template.agreementType());
 
-        StandardTermsRow saved = standardTermsRepository.saveCopy(template.copyTo(property));
+        StandardTermsRow saved = standardTermsRepository.saveCopy(template.copyTo(property, ActingAgent.resolve(auditContext)));
         auditService.recordInsert("standard_terms", saved.uuid(), AuditMapper.toMap(saved));
         return Optional.of(saved.toStandardTerms());
     }
@@ -198,7 +199,7 @@ public class StandardTermsService {
                 changes.put(pair.methodColumn(), method);
             }
 
-            if (!"FLAT".equals(method)) {
+            if (!"FLAT".equals(method) && !"BANK_OR_FLAT".equals(method) && !"PERCENT_OF_RENT".equals(method)) {
                 changes.put(pair.amountColumn(), BigDecimal.ZERO);
                 continue;
             }

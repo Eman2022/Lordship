@@ -9,9 +9,11 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+// Component order matches the column order in V1__enums_and_property.sql.
 public record StandardTermsRow(
         UUID uuid,
         UUID property,
+        UUID copiedFrom, // provenance only; may point at a retired template
         String name,
         AgreementType agreementType,
         BigDecimal targetRate,
@@ -50,11 +52,12 @@ public record StandardTermsRow(
         String note,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
+        UUID createdBy, // original author; never changes
         OffsetDateTime deletedAt
 ) {
     public StandardTerms toStandardTerms() {
         return new StandardTerms(
-                uuid, property, name, agreementType, targetRate,
+                uuid, property, copiedFrom, name, agreementType, targetRate,
                 carFee, allowedCars, carsMax, petFee, allowedPets,
                 paymentDueDay, gracePeriodDays,
                 ruleViolationFeeMethod, ruleViolationFeeAmount,
@@ -64,24 +67,38 @@ public record StandardTermsRow(
                 powerMethod, powerFlatAmount,
                 sewerMethod, sewerFlatAmount,
                 trashMethod, trashFlatAmount,
-                note, createdAt, updatedAt, deletedAt
+                note, createdAt, updatedAt, createdBy, deletedAt
         );
     }
 
     // Minimal insert -- every other column has a DB default.
-    public StandardTermsRow(UUID property, String name, AgreementType agreementType) {
-        this(null, property, name, agreementType, null,
-                null, null, null, null,
-                null, null, null,
-                null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null,
-                null, null, null, null);
+    // Nulls are grouped and labelled so a miscount is visible; positional
+    // mistakes here compile silently because every component is a reference type.
+    public StandardTermsRow(UUID property, String name, AgreementType agreementType, UUID createdBy) {
+        this(null, property, null, name, agreementType,
+                null,                          // targetRate
+                null, null, null,              // carFee, allowedCars, carsMax
+                null, null,                    // petFee, allowedPets
+                null, null,                    // paymentDueDay, gracePeriodDays
+                null, null,                    // ruleViolationFee method, amount
+                null, null,                    // nsfFee method, amount
+                null, null,                    // lateFee method, amount
+                null, null,                    // water method, amount
+                null, null,                    // power method, amount
+                null, null,                    // sewer method, amount
+                null, null,                    // trash method, amount
+                null,                          // note
+                null, null,                    // createdAt, updatedAt
+                createdBy,
+                null);                         // deletedAt
     }
 
-    // Copies a global template into a property, keeping the terms and dropping identity.
-    public StandardTermsRow copyTo(UUID targetProperty) {
+    // Copies a global template into a property, keeping the terms and dropping
+    // identity. copiedFrom records the source; the copying agent is the author
+    // of the copy, not whoever authored the template.
+    public StandardTermsRow copyTo(UUID targetProperty, UUID copiedBy) {
         return new StandardTermsRow(
-                null, targetProperty, name, agreementType, targetRate,
+                null, targetProperty, uuid, name, agreementType, targetRate,
                 carFee, allowedCars, carsMax, petFee, allowedPets,
                 paymentDueDay, gracePeriodDays,
                 ruleViolationFeeMethod, ruleViolationFeeAmount,
@@ -91,7 +108,7 @@ public record StandardTermsRow(
                 powerMethod, powerFlatAmount,
                 sewerMethod, sewerFlatAmount,
                 trashMethod, trashFlatAmount,
-                note, null, null, null
+                note, null, null, copiedBy, null
         );
     }
 }
