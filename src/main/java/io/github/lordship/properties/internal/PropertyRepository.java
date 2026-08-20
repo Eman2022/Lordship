@@ -16,7 +16,7 @@ public class PropertyRepository {
 
     private static final Set<String> PATCHABLE_COLUMNS = Set.of(
             "property_code", "property_name", "property_address", "property_city",
-            "property_state", "purchase_date", "year_built", "property_manager"
+            "property_state", "property_zip","purchase_date", "property_zoning" ,"year_built", "property_manager"
     );
 
     public PropertyRow save(String propertyName, String propertyAddress, String propertyCode) {

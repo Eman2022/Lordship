@@ -1,6 +1,5 @@
 package io.github.lordship.properties;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -12,7 +11,9 @@ public record Property(
         String propertyAddress,
         String propertyCity,
         String propertyState,
+        String propertyZip,
         LocalDate purchaseDate,
+        String propertyZoning,
         Integer yearBuilt,
         OffsetDateTime createdAt,
         OffsetDateTime deletedAt

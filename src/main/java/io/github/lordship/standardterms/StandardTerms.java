@@ -12,6 +12,7 @@ import java.util.UUID;
 public record StandardTerms(
         UUID uuid,
         UUID property,
+        UUID copiedFrom, // the global template this was copied from; null on a global template
         String name,
         AgreementType agreementType,
         BigDecimal targetRate,
@@ -50,6 +51,7 @@ public record StandardTerms(
         String note,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
+        UUID createdBy,
         OffsetDateTime deletedAt
 ) {
     public boolean isGlobalTemplate() {

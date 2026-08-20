@@ -32,7 +32,6 @@ public class PropertyService {
 
         String propertyCode = generatePropertyCode(propertyName, usedCodes);
 
-
         PropertyRow saved = propertyRepository.save(propertyName, propertyAddress, propertyCode);
         auditService.recordInsert("property", saved.uuid(), AuditMapper.toMap(saved));
         return saved.toProperty();

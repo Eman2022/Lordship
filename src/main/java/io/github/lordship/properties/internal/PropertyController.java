@@ -57,9 +57,11 @@ public class PropertyController {
         if (request.containsKey("propertyAddress")) changes.put("property_address", request.get("propertyAddress"));
         if (request.containsKey("propertyCity"))    changes.put("property_city", request.get("propertyCity"));
         if (request.containsKey("propertyState"))   changes.put("property_state", request.get("propertyState"));
-
+        if (request.containsKey("propertyZip"))     changes.put("property_zip", request.get("propertyZip"));
+        if (request.containsKey("propertyZoning"))  changes.put("property_zoning", request.get("propertyZoning"));
         if (request.containsKey("yearBuilt"))       changes.put("year_built", request.get("yearBuilt"));
         if (request.containsKey("propertyManager")) changes.put("property_manager", request.get("propertyManager"));
+
 
         if (request.containsKey("purchaseDate")) {
             Object rawDate = request.get("purchaseDate");

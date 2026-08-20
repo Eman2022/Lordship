@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.Map;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -192,8 +193,7 @@ public class PropertyControllerIT extends IntegrationTest {
                 .andExpect(jsonPath("$.uuid").value(propertyUuid));
     }
 
-    @Test
-    void patchProperty_shouldReturn200_andOnlyUpdateSentFields() throws Exception {
+    private String createTestProperty() throws Exception {
         String token = loginAsRoot();
 
         MvcResult createResult = mockMvc.perform(post("/properties/create")
@@ -208,8 +208,15 @@ public class PropertyControllerIT extends IntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        String propertyUuid = JsonPath.read(
+        return JsonPath.read(
                 createResult.getResponse().getContentAsString(), "$.uuid");
+    }
+
+    @Test
+    void patchProperty_shouldReturn200_andOnlyUpdateSentFields() throws Exception {
+        // Arrange
+        String token = loginAsRoot();
+        String propertyUuid = createTestProperty();
 
         // Only patch the name — address should stay untouched
         mockMvc.perform(patch("/properties/{uuid}", propertyUuid)
@@ -234,6 +241,33 @@ public class PropertyControllerIT extends IntegrationTest {
                                 { "propertyName": "Updated Park Name" }
                                 """))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void patchProperty_shouldReturn200_whenPatchingAllPatchableFields() throws Exception {
+        String token = loginAsRoot();
+        String propertyUuid = createTestProperty();
+
+
+
+        mockMvc.perform(patch("/properties/{uuid}", propertyUuid)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "propertyName": "Updated Park Name",
+                                    "propertyAddress": "989 Test Ave",
+                                    "propertyZip": "94123",
+                                    "propertyState" : "WA",
+                                    "propertyZoning" : "Residential"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.propertyName").value("Updated Park Name"))
+                .andExpect(jsonPath("$.propertyZip").value("94123"))
+                .andExpect(jsonPath("$.propertyState").value("WA"))
+                .andExpect(jsonPath("$.propertyZoning").value("Residential"))
+                .andExpect(jsonPath("$.propertyAddress").value("989 Test Ave"));
     }
 
     @Test
