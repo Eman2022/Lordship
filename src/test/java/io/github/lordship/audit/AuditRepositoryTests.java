@@ -1,5 +1,6 @@
 package io.github.lordship.audit;
 
+import io.github.lordship.IntegrationTest;
 import io.github.lordship.audit.internal.AuditLogRow;
 import io.github.lordship.shared.PageRequest;
 import io.github.lordship.shared.PageResult;
@@ -7,11 +8,7 @@ import io.github.lordship.shared.UserType;
 import io.github.lordship.audit.internal.AuditRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
@@ -19,10 +16,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@ActiveProfiles("test")
-@SpringBootTest
+
 @Transactional
-public class AuditRepositoryTests {
+public class AuditRepositoryTests extends IntegrationTest {
 
     @Autowired
     AuditRepository auditRepository;

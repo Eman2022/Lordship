@@ -48,10 +48,10 @@ CREATE TABLE property (
 );
 
 
-CREATE TABLE standard_terms ( -- note when the property is NULL this is a global default accessible to admins to copy towards properties
+CREATE TABLE terms_template ( -- note when the property is NULL this is a global default accessible to admins to copy towards properties
                             uuid     UUID PRIMARY KEY DEFAULT uuidv7(),
                             property UUID REFERENCES property(uuid), -- note only an admin can copy this to a property
-                            copied_from UUID REFERENCES standard_terms(uuid), -- provenance only; may point at a retired set
+                            copied_from UUID REFERENCES terms_template(uuid), -- provenance only; may point at a retired set
                             name     TEXT NOT NULL CHECK (length(trim(name)) > 0),
                             agreement_type agreement_type NOT NULL, -- do not patch
                             target_rate NUMERIC(12,2) NOT NULL DEFAULT 0.0 CHECK (target_rate >= 0), -- keep zero for global terms
@@ -97,7 +97,7 @@ CREATE TABLE standard_terms ( -- note when the property is NULL this is a global
                             deleted_at TIMESTAMPTZ,
 
                             CONSTRAINT defaults_term_late_fee_amount_matches_method CHECK (
-                                CASE WHEN late_fee_method = 'FLAT' THEN late_fee_amount > 0
+                                CASE WHEN late_fee_method IN ('FLAT', 'PERCENT_OF_RENT')  THEN late_fee_amount > 0
                                      ELSE late_fee_amount = 0 END
                                 ),
                             CONSTRAINT defaults_water_amount_matches_method CHECK (
@@ -117,7 +117,7 @@ CREATE TABLE standard_terms ( -- note when the property is NULL this is a global
                                      ELSE trash_flat_amount = 0 END
                                 ),
                             CONSTRAINT defaults_nsf_amount_matches_method CHECK (
-                                CASE WHEN nsf_fee_method IN ('FLAT')
+                                CASE WHEN nsf_fee_method IN ('FLAT','BANK_OR_FLAT')
                                          THEN nsf_fee_amount > 0
                                      ELSE nsf_fee_amount = 0 END
                                 ),

@@ -229,7 +229,7 @@ CREATE TABLE tenancy_charge_term (
 
                                      source_uuid       UUID,     -- the instrument that produced this deal
 
-                                     standard_terms    UUID REFERENCES standard_terms(uuid), -- which set seeded the values
+                                     terms_template    UUID REFERENCES terms_template(uuid), -- which template seeded the values
 
                                      batch             UUID,     -- groups one bulk run so it can be reviewed or abandoned together
 

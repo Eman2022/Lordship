@@ -3,7 +3,7 @@ package io.github.lordship.tenancyterms.internal;
 import io.github.lordship.shared.AgreementType;
 import io.github.lordship.shared.FeeMethod;
 import io.github.lordship.shared.UtilityMethod;
-import io.github.lordship.standardterms.StandardTerms;
+import io.github.lordship.termstemplate.TermsTemplate;
 import io.github.lordship.tenancyterms.TenancyTermSource;
 import io.github.lordship.tenancyterms.TenancyTermStatus;
 
@@ -71,7 +71,7 @@ public record TenancyChargeTermRow(
     //The initial term for a new tenancy: every fee and method copied from the property level standard term
     public static TenancyChargeTermRow fromStandardTerms(
             UUID tenancy,
-            StandardTerms terms,
+            TermsTemplate terms,
             BigDecimal rate,
             LocalDate validAt,
             TenancyTermSource source,

@@ -1,4 +1,4 @@
-package io.github.lordship.standardterms.internal;
+package io.github.lordship.termstemplate.internal;
 
 import io.github.lordship.shared.AgreementType;
 import io.github.lordship.shared.FeeMethod;
@@ -13,11 +13,11 @@ import java.util.UUID;
 
 
 @Component
-public class StandardTermsRowMapper implements RowMapper<StandardTermsRow> {
+public class TermsTemplateRowMapper implements RowMapper<TermsTemplateRow> {
 
     @Override
-    public StandardTermsRow mapRow(ResultSet rs, int rowNum) throws SQLException {
-        return new StandardTermsRow(
+    public TermsTemplateRow mapRow(ResultSet rs, int rowNum) throws SQLException {
+        return new TermsTemplateRow(
                 (UUID) rs.getObject("uuid"),
                 (UUID) rs.getObject("property"),
                 (UUID) rs.getObject("copied_from"),

@@ -1,17 +1,14 @@
-package io.github.lordship.standardterms.internal;
+package io.github.lordship.termstemplate.internal;
 
-import io.github.lordship.identity.AgentPrincipal;
-import io.github.lordship.identity.LordshipPrincipal;
 import io.github.lordship.shared.AgreementType;
-import io.github.lordship.standardterms.StandardTerms;
-import io.github.lordship.standardterms.StandardTermsService;
+import io.github.lordship.termstemplate.TermsTemplate;
+import io.github.lordship.termstemplate.TermsTemplateService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -20,10 +17,10 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/standard-terms")
-public class StandardTermsController {
+@RequestMapping("/api/terms-templates")
+public class TermsTemplateController {
 
-    // JSON field -> column. Twenty-three explicit ifs would be worse than the loop.
+    // JSON field -> column.
     private static final Map<String, String> PATCHABLE_COLUMNS = Map.ofEntries(
             Map.entry("name", "name"),
             Map.entry("targetRate", "target_rate"),
@@ -50,77 +47,77 @@ public class StandardTermsController {
             Map.entry("trashFlatAmount", "trash_flat_amount"),
             Map.entry("note", "note"));
 
-    private final StandardTermsService standardTermsService;
+    private final TermsTemplateService termsTemplateService;
 
-    public StandardTermsController(StandardTermsService standardTermsService) {
-        this.standardTermsService = standardTermsService;
+    public TermsTemplateController(TermsTemplateService termsTemplateService) {
+        this.termsTemplateService = termsTemplateService;
     }
 
     public record CreateGlobalTemplateRequest(
             @NotBlank String name,
             @NotNull AgreementType agreementType) {}
 
-    public record CopyTemplateRequest(@NotNull UUID propertyId ) {}
+    public record CopyTemplateRequest(@NotNull UUID propertyId) {}
 
     // The deal types this property may offer. Pass agreementType to narrow to one.
-    @PreAuthorize("hasAuthority('standard_terms:view')")
+    @PreAuthorize("hasAuthority('terms_template:view')")
     @GetMapping
-    public ResponseEntity<List<StandardTermsResponse>> listByProperty(
+    public ResponseEntity<List<TermsTemplateResponse>> listByProperty(
             @RequestParam("property") UUID property,
             @RequestParam(value = "agreementType", required = false) AgreementType agreementType) {
 
-        List<StandardTerms> found = (agreementType == null)
-                ? standardTermsService.findByProperty(property)
-                : standardTermsService.findForProperty(property, agreementType).stream().toList();
+        List<TermsTemplate> found = (agreementType == null)
+                ? termsTemplateService.findByProperty(property)
+                : termsTemplateService.findForProperty(property, agreementType).stream().toList();
 
-        return ResponseEntity.ok(found.stream().map(StandardTermsResponse::from).toList());
+        return ResponseEntity.ok(found.stream().map(TermsTemplateResponse::from).toList());
     }
 
     // Admin-only: the pool properties copy from.
-    @PreAuthorize("hasAuthority('standard_terms:manage_global')")
+    @PreAuthorize("hasAuthority('terms_template:manage_global')")
     @GetMapping("/global")
-    public ResponseEntity<List<StandardTermsResponse>> listGlobalTemplates() {
+    public ResponseEntity<List<TermsTemplateResponse>> listGlobalTemplates() {
         return ResponseEntity.ok(
-                standardTermsService.findGlobalTemplates().stream()
-                        .map(StandardTermsResponse::from)
+                termsTemplateService.findGlobalTemplates().stream()
+                        .map(TermsTemplateResponse::from)
                         .toList());
     }
 
-    @PreAuthorize("hasAuthority('standard_terms:view')")
+    @PreAuthorize("hasAuthority('terms_template:view')")
     @GetMapping("/{uuid}")
-    public ResponseEntity<StandardTermsResponse> getStandardTerms(@PathVariable UUID uuid) {
-        return standardTermsService.findById(uuid)
-                .map(StandardTermsResponse::from)
+    public ResponseEntity<TermsTemplateResponse> getStandardTerms(@PathVariable UUID uuid) {
+        return termsTemplateService.findById(uuid)
+                .map(TermsTemplateResponse::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasAuthority('standard_terms:manage_global')")
+    @PreAuthorize("hasAuthority('terms_template:manage_global')")
     @PostMapping("/global")
-    public ResponseEntity<StandardTermsResponse> createGlobalTemplate(
+    public ResponseEntity<TermsTemplateResponse> createGlobalTemplate(
             @Valid @RequestBody CreateGlobalTemplateRequest request) {
 
-        StandardTerms created =
-                standardTermsService.createGlobalTemplate(request.name(), request.agreementType());
-        return ResponseEntity.status(HttpStatus.CREATED).body(StandardTermsResponse.from(created));
+        TermsTemplate created =
+                termsTemplateService.createGlobalTemplate(request.name(), request.agreementType());
+        return ResponseEntity.status(HttpStatus.CREATED).body(TermsTemplateResponse.from(created));
     }
 
     // Copying a template in is what authorizes a property to offer that agreement type.
-    @PreAuthorize("hasAuthority('standard_terms:manage_global')")
+    @PreAuthorize("hasAuthority('terms_template:manage_global')")
     @PostMapping("/{templateId}/copy")
-    public ResponseEntity<StandardTermsResponse> copyTemplateToProperty(
+    public ResponseEntity<TermsTemplateResponse> copyTemplateToProperty(
             @PathVariable UUID templateId,
             @Valid @RequestBody CopyTemplateRequest request) {
 
-        return standardTermsService.copyTemplateToProperty(templateId, request.propertyId())
-                .map(StandardTermsResponse::from)
+        return termsTemplateService.copyTemplateToProperty(templateId, request.propertyId())
+                .map(TermsTemplateResponse::from)
                 .map(created -> ResponseEntity.status(HttpStatus.CREATED).body(created))
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasAuthority('standard_terms:edit')")
+    @PreAuthorize("hasAuthority('terms_template:edit')")
     @PatchMapping("/{uuid}")
-    public ResponseEntity<StandardTermsResponse> patchStandardTerms(
+    public ResponseEntity<TermsTemplateResponse> patchStandardTerms(
             @PathVariable UUID uuid,
             @RequestBody Map<String, Object> request) {
 
@@ -131,16 +128,16 @@ public class StandardTermsController {
             }
         });
 
-        return standardTermsService.patchStandardTerms(uuid, changes)
-                .map(StandardTermsResponse::from)
+        return termsTemplateService.patchTermsTemplate(uuid, changes)
+                .map(TermsTemplateResponse::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasAuthority('standard_terms:delete')")
+    @PreAuthorize("hasAuthority('terms_template:delete')")
     @DeleteMapping("/{uuid}")
-    public ResponseEntity<Void> deleteStandardTerms(@PathVariable UUID uuid) {
-        return standardTermsService.deleteStandardTerms(uuid)
+    public ResponseEntity<Void> deleteTermsTemplate(@PathVariable UUID uuid) {
+        return termsTemplateService.deleteTermsTemplate(uuid)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
     }
