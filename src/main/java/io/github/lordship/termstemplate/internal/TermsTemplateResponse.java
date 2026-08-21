@@ -1,16 +1,16 @@
-package io.github.lordship.standardterms.internal;
+package io.github.lordship.termstemplate.internal;
 
 import io.github.lordship.shared.AgreementType;
 import io.github.lordship.shared.FeeMethod;
 import io.github.lordship.shared.UtilityMethod;
-import io.github.lordship.standardterms.StandardTerms;
+import io.github.lordship.termstemplate.TermsTemplate;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 
-public record StandardTermsResponse(
+public record TermsTemplateResponse(
         UUID uuid,
         UUID property, // NOTE: A null property means this is a global template.
         String name,
@@ -53,8 +53,8 @@ public record StandardTermsResponse(
         UUID createdBy,
         OffsetDateTime updatedAt
 ) {
-    public static StandardTermsResponse from(StandardTerms terms) {
-        return new StandardTermsResponse(
+    public static TermsTemplateResponse from(TermsTemplate terms) {
+        return new TermsTemplateResponse(
                 terms.uuid(), terms.property(), terms.name(), terms.agreementType(), terms.targetRate(),
                 terms.carFee(), terms.allowedCars(), terms.carsMax(), terms.petFee(), terms.allowedPets(),
                 terms.paymentDueDay(), terms.gracePeriodDays(),

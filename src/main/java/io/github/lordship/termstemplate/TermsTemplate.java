@@ -1,4 +1,4 @@
-package io.github.lordship.standardterms;
+package io.github.lordship.termstemplate;
 
 import io.github.lordship.shared.AgreementType;
 import io.github.lordship.shared.FeeMethod;
@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 // One property's standard deal for one agreement type: the terms a new tenancy is created from.
-public record StandardTerms(
+public record TermsTemplate(
         UUID uuid,
         UUID property,
         UUID copiedFrom, // the global template this was copied from; null on a global template

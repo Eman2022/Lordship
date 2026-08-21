@@ -1,8 +1,8 @@
-package io.github.lordship.standardterms.internal;
+package io.github.lordship.termstemplate.internal;
 
 import io.github.lordship.shared.AgreementType;
 import io.github.lordship.shared.FeeMethod;
-import io.github.lordship.standardterms.StandardTerms;
+import io.github.lordship.termstemplate.TermsTemplate;
 import io.github.lordship.shared.UtilityMethod;
 
 import java.math.BigDecimal;
@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 // Component order matches the column order in V1__enums_and_property.sql.
-public record StandardTermsRow(
+public record TermsTemplateRow(
         UUID uuid,
         UUID property,
         UUID copiedFrom, // provenance only; may point at a retired template
@@ -55,8 +55,8 @@ public record StandardTermsRow(
         UUID createdBy, // original author; never changes
         OffsetDateTime deletedAt
 ) {
-    public StandardTerms toStandardTerms() {
-        return new StandardTerms(
+    public TermsTemplate toTermsTemplate() {
+        return new TermsTemplate(
                 uuid, property, copiedFrom, name, agreementType, targetRate,
                 carFee, allowedCars, carsMax, petFee, allowedPets,
                 paymentDueDay, gracePeriodDays,
@@ -74,7 +74,7 @@ public record StandardTermsRow(
     // Minimal insert -- every other column has a DB default.
     // Nulls are grouped and labelled so a miscount is visible; positional
     // mistakes here compile silently because every component is a reference type.
-    public StandardTermsRow(UUID property, String name, AgreementType agreementType, UUID createdBy) {
+    public TermsTemplateRow(UUID property, String name, AgreementType agreementType, UUID createdBy) {
         this(null, property, null, name, agreementType,
                 null,                          // targetRate
                 null, null, null,              // carFee, allowedCars, carsMax
@@ -96,8 +96,8 @@ public record StandardTermsRow(
     // Copies a global template into a property, keeping the terms and dropping
     // identity. copiedFrom records the source; the copying agent is the author
     // of the copy, not whoever authored the template.
-    public StandardTermsRow copyTo(UUID targetProperty, UUID copiedBy) {
-        return new StandardTermsRow(
+    public TermsTemplateRow copyTo(UUID targetProperty, UUID copiedBy) {
+        return new TermsTemplateRow(
                 null, targetProperty, uuid, name, agreementType, targetRate,
                 carFee, allowedCars, carsMax, petFee, allowedPets,
                 paymentDueDay, gracePeriodDays,

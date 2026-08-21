@@ -11,10 +11,7 @@ import io.github.lordship.persons.PersonService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -233,7 +230,7 @@ public class PersonControllerIT extends IntegrationTest {
     }
 
     @Test
-    void getAnyPerson_shouldReturn401_whenNoTokenProvided() throws Exception {
+    void getAnyPerson_shouldReturn403_whenNoTokenProvided() throws Exception {
         mockMvc.perform(get("/api/persons/{uuid}", UUID.randomUUID()))
                 .andExpect(status().isForbidden());
     }

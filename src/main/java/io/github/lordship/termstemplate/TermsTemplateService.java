@@ -1,12 +1,13 @@
-package io.github.lordship.standardterms;
+package io.github.lordship.termstemplate;
 
 import io.github.lordship.audit.ActingAgent;
 import io.github.lordship.audit.AuditContext;
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
 import io.github.lordship.shared.AgreementType;
-import io.github.lordship.standardterms.internal.StandardTermsRepository;
-import io.github.lordship.standardterms.internal.StandardTermsRow;
+import io.github.lordship.shared.FeeMethod;
+import io.github.lordship.termstemplate.internal.TermsTemplateRepository;
+import io.github.lordship.termstemplate.internal.TermsTemplateRow;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,10 +22,19 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @Service
-public class StandardTermsService {
+public class TermsTemplateService {
 
-    private static final Set<String> FEE_METHODS = Set.of("NONE", "FLAT", "BANK_OR_FLAT", "PERCENT_OF_RENT");
+    private static final Set<String> LATE_FEE_METHODS = Set.of(
+            FeeMethod.NONE.name(), FeeMethod.FLAT.name(), FeeMethod.PERCENT_OF_RENT.name());
+
+    private static final Set<String> NSF_FEE_METHODS = Set.of(
+            FeeMethod.NONE.name(), FeeMethod.FLAT.name(), FeeMethod.BANK_OR_FLAT.name());
+
+    private static final Set<String> VIOLATION_FEE_METHODS = Set.of(
+            FeeMethod.NONE.name(), FeeMethod.FLAT.name());
+
     private static final Set<String> UTILITY_METHODS = Set.of("NONE", "FLAT", "RUBS", "SUBMETERED");
+
     private static final Set<String> TRASH_METHODS = Set.of("NONE", "FLAT", "RUBS");
 
     // if only these things change - DO NOT do an audit log
@@ -34,145 +44,145 @@ public class StandardTermsService {
             String methodColumn,
             String amountColumn,
             Set<String> allowedMethods,
-            Function<StandardTermsRow, Enum<?>> currentMethod,
-            Function<StandardTermsRow, BigDecimal> currentAmount) {}
+            Function<TermsTemplateRow, Enum<?>> currentMethod,
+            Function<TermsTemplateRow, BigDecimal> currentAmount) {}
 
     private static final List<MethodAmountPair> METHOD_AMOUNT_PAIRS = List.of(
-            new MethodAmountPair("late_fee_method", "late_fee_amount", FEE_METHODS,
-                    StandardTermsRow::lateFeeMethod, StandardTermsRow::lateFeeAmount),
-            new MethodAmountPair("rule_violation_fee_method", "rule_violation_fee_amount", FEE_METHODS,
-                    StandardTermsRow::ruleViolationFeeMethod, StandardTermsRow::ruleViolationFeeAmount),
-            new MethodAmountPair("nsf_fee_method", "nsf_fee_amount", FEE_METHODS,
-                    StandardTermsRow::nsfFeeMethod, StandardTermsRow::nsfFeeAmount),
+            new MethodAmountPair("late_fee_method", "late_fee_amount", LATE_FEE_METHODS,
+                    TermsTemplateRow::lateFeeMethod, TermsTemplateRow::lateFeeAmount),
+            new MethodAmountPair("rule_violation_fee_method", "rule_violation_fee_amount", VIOLATION_FEE_METHODS,
+                    TermsTemplateRow::ruleViolationFeeMethod, TermsTemplateRow::ruleViolationFeeAmount),
+            new MethodAmountPair("nsf_fee_method", "nsf_fee_amount", NSF_FEE_METHODS,
+                    TermsTemplateRow::nsfFeeMethod, TermsTemplateRow::nsfFeeAmount),
             new MethodAmountPair("water_method", "water_flat_amount", UTILITY_METHODS,
-                    StandardTermsRow::waterMethod, StandardTermsRow::waterFlatAmount),
+                    TermsTemplateRow::waterMethod, TermsTemplateRow::waterFlatAmount),
             new MethodAmountPair("power_method", "power_flat_amount", UTILITY_METHODS,
-                    StandardTermsRow::powerMethod, StandardTermsRow::powerFlatAmount),
+                    TermsTemplateRow::powerMethod, TermsTemplateRow::powerFlatAmount),
             new MethodAmountPair("sewer_method", "sewer_flat_amount", UTILITY_METHODS,
-                    StandardTermsRow::sewerMethod, StandardTermsRow::sewerFlatAmount),
+                    TermsTemplateRow::sewerMethod, TermsTemplateRow::sewerFlatAmount),
             new MethodAmountPair("trash_method", "trash_flat_amount", TRASH_METHODS,
-                    StandardTermsRow::trashMethod, StandardTermsRow::trashFlatAmount));
+                    TermsTemplateRow::trashMethod, TermsTemplateRow::trashFlatAmount));
 
-    private final StandardTermsRepository standardTermsRepository;
+    private final TermsTemplateRepository termsTemplateRepository;
     private final AuditService auditService;
     private final AuditContext auditContext;
 
-    public StandardTermsService(StandardTermsRepository standardTermsRepository,
+    public TermsTemplateService(TermsTemplateRepository termsTemplateRepository,
                                 AuditService auditService,
                                 AuditContext auditContext) {
-        this.standardTermsRepository = standardTermsRepository;
+        this.termsTemplateRepository = termsTemplateRepository;
         this.auditService = auditService;
         this.auditContext = auditContext;
     }
 
-    public Optional<StandardTerms> findById(UUID uuid) {
-        return standardTermsRepository.findById(uuid).map(StandardTermsRow::toStandardTerms);
+    public Optional<TermsTemplate> findById(UUID uuid) {
+        return termsTemplateRepository.findById(uuid).map(TermsTemplateRow::toTermsTemplate);
     }
 
     // The deal types this property may offer.
-    public List<StandardTerms> findByProperty(UUID property) {
-        return standardTermsRepository.findByProperty(property).stream()
-                .map(StandardTermsRow::toStandardTerms)
+    public List<TermsTemplate> findByProperty(UUID property) {
+        return termsTemplateRepository.findByProperty(property).stream()
+                .map(TermsTemplateRow::toTermsTemplate)
                 .toList();
     }
 
     // The admin-only pool a property copies from.
-    public List<StandardTerms> findGlobalTemplates() {
-        return standardTermsRepository.findGlobalTemplates().stream()
-                .map(StandardTermsRow::toStandardTerms)
+    public List<TermsTemplate> findGlobalTemplates() {
+        return termsTemplateRepository.findGlobalTemplates().stream()
+                .map(TermsTemplateRow::toTermsTemplate)
                 .toList();
     }
 
     // Used when a tenancy is created: the terms it starts from.
-    public Optional<StandardTerms> findForProperty(UUID property, AgreementType agreementType) {
-        return standardTermsRepository.findByPropertyAndAgreementType(property, agreementType)
-                .map(StandardTermsRow::toStandardTerms);
+    public Optional<TermsTemplate> findForProperty(UUID property, AgreementType agreementType) {
+        return termsTemplateRepository.findByPropertyAndAgreementType(property, agreementType)
+                .map(TermsTemplateRow::toTermsTemplate);
     }
 
     @Transactional
-    public StandardTerms createGlobalTemplate(String name, AgreementType agreementType) {
+    public TermsTemplate createGlobalTemplate(String name, AgreementType agreementType) {
         requireGlobalNameIsFree(name);
 
-        StandardTermsRow saved = standardTermsRepository.save(
-                new StandardTermsRow(null, name, agreementType, ActingAgent.resolve(auditContext)));
+        TermsTemplateRow saved = termsTemplateRepository.save(
+                new TermsTemplateRow(null, name, agreementType, ActingAgent.resolve(auditContext)));
 
-        auditService.recordInsert("standard_terms", saved.uuid(), AuditMapper.toMap(saved));
-        return saved.toStandardTerms();
+        auditService.recordInsert("terms_template", saved.uuid(), AuditMapper.toMap(saved));
+        return saved.toTermsTemplate();
     }
 
     // A property gains an agreement type only by an admin copying a global template in.
     // Empty means the template does not exist.
     @Transactional
-    public Optional<StandardTerms> copyTemplateToProperty(UUID templateUuid, UUID property) {
-        Optional<StandardTermsRow> templateOpt = standardTermsRepository.findById(templateUuid);
+    public Optional<TermsTemplate> copyTemplateToProperty(UUID templateUuid, UUID property) {
+        Optional<TermsTemplateRow> templateOpt = termsTemplateRepository.findById(templateUuid);
         if (templateOpt.isEmpty()) {
             return Optional.empty();
         }
-        StandardTermsRow template = templateOpt.get();
+        TermsTemplateRow template = templateOpt.get();
 
         if (template.property() != null) {
             throw new IllegalArgumentException("Only a global template can be copied into a property");
         }
         requirePropertyScopeIsFree(property, template.agreementType());
 
-        StandardTermsRow saved = standardTermsRepository.saveCopy(template.copyTo(property, ActingAgent.resolve(auditContext)));
-        auditService.recordInsert("standard_terms", saved.uuid(), AuditMapper.toMap(saved));
-        return Optional.of(saved.toStandardTerms());
+        TermsTemplateRow saved = termsTemplateRepository.saveCopy(template.copyTo(property, ActingAgent.resolve(auditContext)));
+        auditService.recordInsert("terms_template", saved.uuid(), AuditMapper.toMap(saved));
+        return Optional.of(saved.toTermsTemplate());
     }
 
     @Transactional
-    public Optional<StandardTerms> patchStandardTerms(UUID uuid, Map<String, Object> changes) {
-        Optional<StandardTermsRow> beforeOpt = standardTermsRepository.findById(uuid);
+    public Optional<TermsTemplate> patchTermsTemplate(UUID uuid, Map<String, Object> changes) {
+        Optional<TermsTemplateRow> beforeOpt = termsTemplateRepository.findById(uuid);
         if (beforeOpt.isEmpty()) {
             return Optional.empty();
         }
-        StandardTermsRow before = beforeOpt.get();
+        TermsTemplateRow before = beforeOpt.get();
 
         reconcileMethodAmountPairs(before, changes);
 
-        Optional<StandardTermsRow> afterOpt =
-                standardTermsRepository.patch(uuid, changes);
+        Optional<TermsTemplateRow> afterOpt =
+                termsTemplateRepository.patch(uuid, changes);
 
         if (afterOpt.isEmpty()) {
             return Optional.empty();
         }
 
-        StandardTermsRow after = afterOpt.get();
+        TermsTemplateRow after = afterOpt.get();
 
         AuditMapper.Diff diff = AuditMapper.diff(before, after);
         Map<String, Object> changedBefore = withoutHousekeeping(diff.before());
         Map<String, Object> changedAfter = withoutHousekeeping(diff.after());
 
         if (!changedBefore.isEmpty()) {
-            auditService.recordUpdate("standard_terms", uuid, changedBefore, changedAfter);
+            auditService.recordUpdate("terms_template", uuid, changedBefore, changedAfter);
         }
 
-        return Optional.of(after.toStandardTerms());
+        return Optional.of(after.toTermsTemplate());
     }
 
     @Transactional
-    public boolean deleteStandardTerms(UUID uuid) {
-        return standardTermsRepository.findById(uuid).map(existing -> {
-            if (!standardTermsRepository.softDelete(uuid)) {
+    public boolean deleteTermsTemplate(UUID uuid) {
+        return termsTemplateRepository.findById(uuid).map(existing -> {
+            if (!termsTemplateRepository.softDelete(uuid)) {
                 return false;
             }
-            auditService.recordDelete("standard_terms", uuid, AuditMapper.toMap(existing));
+            auditService.recordDelete("terms_template", uuid, AuditMapper.toMap(existing));
             return true;
         }).orElse(false);
     }
 
     // A property may hold only one set per agreement type.
     private void requirePropertyScopeIsFree(UUID property, AgreementType agreementType) {
-        if (standardTermsRepository.findByPropertyAndAgreementType(property, agreementType).isPresent()) {
+        if (termsTemplateRepository.findByPropertyAndAgreementType(property, agreementType).isPresent()) {
             throw new IllegalStateException(
-                    "This property already has a standard terms set for " + agreementType);
+                    "This property already has a terms template set for " + agreementType);
         }
     }
 
     // Globals may repeat an agreement type -- WA_Land_Lease and OR_Land_Lease -- so
 // the name is the identity.
     private void requireGlobalNameIsFree(String name) {
-        if (standardTermsRepository.findGlobalByName(name).isPresent()) {
+        if (termsTemplateRepository.findGlobalByName(name).isPresent()) {
             throw new IllegalStateException("A global template named " + name + " already exists");
         }
     }
@@ -180,7 +190,7 @@ public class StandardTermsService {
     // A flat amount is only meaningful when the method is FLAT; every other method
     // requires it to be zero. Resolve the resulting pair from `before` plus the patch,
     // so patching either half alone still lands on a row the CHECK constraints accept.
-    private static void reconcileMethodAmountPairs(StandardTermsRow before, Map<String, Object> changes) {
+    private static void reconcileMethodAmountPairs(TermsTemplateRow before, Map<String, Object> changes) {
         for (MethodAmountPair pair : METHOD_AMOUNT_PAIRS) {
             boolean methodTouched = changes.containsKey(pair.methodColumn());
             boolean amountTouched = changes.containsKey(pair.amountColumn());

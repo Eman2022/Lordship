@@ -1,4 +1,4 @@
-package io.github.lordship.standardterms.internal;
+package io.github.lordship.termstemplate.internal;
 
 import io.github.lordship.shared.AgreementType;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Repository
-public class StandardTermsRepository {
+public class TermsTemplateRepository {
 
     // property, agreement_type, copied_from and created_by not included - they should not be changed
     private static final Set<String> PATCHABLE_COLUMNS = Set.of(
@@ -31,17 +31,17 @@ public class StandardTermsRepository {
     );
 
     private final JdbcClient jdbc;
-    private final StandardTermsRowMapper rowMapper;
+    private final TermsTemplateRowMapper rowMapper;
 
-    public StandardTermsRepository(JdbcClient jdbc, StandardTermsRowMapper standardTermsRowMapper) {
+    public TermsTemplateRepository(JdbcClient jdbc, TermsTemplateRowMapper termsTemplateRowMapper) {
         this.jdbc = jdbc;
-        this.rowMapper = standardTermsRowMapper;
+        this.rowMapper = termsTemplateRowMapper;
     }
 
     // Creates a blank set -- every term column takes its DB default.
-    public StandardTermsRow save(StandardTermsRow row) {
+    public TermsTemplateRow save(TermsTemplateRow row) {
         return jdbc.sql("""
-                INSERT INTO standard_terms (property, name, agreement_type, created_by)
+                INSERT INTO terms_template (property, name, agreement_type, created_by)
                 VALUES (:property, :name, :agreementType::agreement_type, :createdBy)
                 RETURNING *
                 """)
@@ -54,9 +54,9 @@ public class StandardTermsRepository {
     }
 
     // copy a template into a property.
-    public StandardTermsRow saveCopy(StandardTermsRow row) {
+    public TermsTemplateRow saveCopy(TermsTemplateRow row) {
         return jdbc.sql("""
-                INSERT INTO standard_terms (
+                INSERT INTO terms_template (
                     property, copied_from, name, agreement_type, target_rate,
                     car_fee, allowed_cars, cars_max, pet_fee, allowed_pets,
                     payment_due_day, grace_period_days,
@@ -114,17 +114,17 @@ public class StandardTermsRepository {
                 .single();
     }
 
-    public Optional<StandardTermsRow> findById(UUID uuid) {
-        return jdbc.sql("SELECT * FROM standard_terms WHERE uuid = :uuid AND deleted_at IS NULL")
+    public Optional<TermsTemplateRow> findById(UUID uuid) {
+        return jdbc.sql("SELECT * FROM terms_template WHERE uuid = :uuid AND deleted_at IS NULL")
                 .param("uuid", uuid)
                 .query(rowMapper)
                 .optional();
     }
 
     // The deal types this property may offer, in enum declaration order.
-    public List<StandardTermsRow> findByProperty(UUID property) {
+    public List<TermsTemplateRow> findByProperty(UUID property) {
         return jdbc.sql("""
-                SELECT * FROM standard_terms
+                SELECT * FROM terms_template
                 WHERE property = :property AND deleted_at IS NULL
                 ORDER BY agreement_type
                 """)
@@ -134,9 +134,9 @@ public class StandardTermsRepository {
     }
 
     // Admin-only templates: the pool a property copies from.
-    public List<StandardTermsRow> findGlobalTemplates() {
+    public List<TermsTemplateRow> findGlobalTemplates() {
         return jdbc.sql("""
-                SELECT * FROM standard_terms
+                SELECT * FROM terms_template
                 WHERE property IS NULL AND deleted_at IS NULL
                 ORDER BY agreement_type
                 """)
@@ -146,9 +146,9 @@ public class StandardTermsRepository {
 
     // Property-scoped only. Global templates may have several per agreement type,
     // so they are looked up by name instead.
-    public Optional<StandardTermsRow> findByPropertyAndAgreementType(UUID property, AgreementType agreementType) {
+    public Optional<TermsTemplateRow> findByPropertyAndAgreementType(UUID property, AgreementType agreementType) {
         return jdbc.sql("""
-            SELECT * FROM standard_terms
+            SELECT * FROM terms_template
             WHERE property = :property
               AND agreement_type = :agreementType::agreement_type
               AND deleted_at IS NULL
@@ -159,9 +159,9 @@ public class StandardTermsRepository {
                 .optional();
     }
 
-    public Optional<StandardTermsRow> findGlobalByName(String name) {
+    public Optional<TermsTemplateRow> findGlobalByName(String name) {
         return jdbc.sql("""
-            SELECT * FROM standard_terms
+            SELECT * FROM terms_template
             WHERE property IS NULL
               AND lower(name) = lower(:name)
               AND deleted_at IS NULL
@@ -171,7 +171,7 @@ public class StandardTermsRepository {
                 .optional();
     }
 
-    public Optional<StandardTermsRow> patch(UUID uuid, Map<String, Object> changes) {
+    public Optional<TermsTemplateRow> patch(UUID uuid, Map<String, Object> changes) {
         if (changes.isEmpty()) return findById(uuid);
 
         for (String col : changes.keySet()) {
@@ -180,7 +180,7 @@ public class StandardTermsRepository {
             }
         }
 
-        StringBuilder sql = new StringBuilder("UPDATE standard_terms SET ");
+        StringBuilder sql = new StringBuilder("UPDATE terms_template SET ");
         changes.forEach((col, val) -> sql.append(col).append(" = :").append(col).append(", "));
         sql.append("updated_at = now()");
         sql.append(" WHERE uuid = :uuid AND deleted_at IS NULL RETURNING *");
@@ -195,7 +195,7 @@ public class StandardTermsRepository {
     }
 
     public boolean softDelete(UUID uuid) {
-        return jdbc.sql("UPDATE standard_terms SET deleted_at = now() WHERE uuid = :uuid AND deleted_at IS NULL")
+        return jdbc.sql("UPDATE terms_template SET deleted_at = now() WHERE uuid = :uuid AND deleted_at IS NULL")
                 .param("uuid", uuid)
                 .update() > 0;
     }
