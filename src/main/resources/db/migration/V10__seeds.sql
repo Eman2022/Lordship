@@ -1,8 +1,12 @@
 -- ============================================================
--- V2: All seed data — permissions, roles, and role grants.
--- Consolidates V5, V7, V10, V17, V20, V23, V24.
+-- V2: All seed data — permissions, standard terms, roles, and role grants.
 -- Also fixes V24's missing role grants for meters:*.
 -- ============================================================
+
+INSERT INTO standard_terms (property, created_by, name, agreement_type, target_rate, car_fee, allowed_cars, cars_max, allowed_pets, pet_fee, rule_violation_fee_method, rule_violation_fee_amount, nsf_fee_method, nsf_fee_amount)
+VALUES (NULL, '00000000-0000-7000-8000-000000000002', 'Standard Manufactured Home Lot Terms', 'LAND', 0, 45, 2, 4, 2, 0, 'FLAT',65, 'FLAT', 35),
+       (NULL, '00000000-0000-7000-8000-000000000002', 'Standard Residential Terms',           'RESIDENTIAL', 0, 45, 2, 4, 2, 45, 'FLAT', 65, 'FLAT', 35),
+       (NULL, '00000000-0000-7000-8000-000000000002', 'Standard Storage Terms',               'STORAGE', 0, 0, 0, 0,0, 0, 'NONE', 0, 'FLAT', 25);
 
 
 -- ── Permissions ───────────────────────────────────────────────────────────────
@@ -172,7 +176,7 @@ AND p.permission_name IN (
     'tenants:create',
     'tenants:view',
     'tenants:edit',
-    'standard_term:view',
+    'standard_terms:view',
     'tenancy_term:view',
     'tenancy_term:edit',
     'tenancy_term:create',

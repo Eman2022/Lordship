@@ -50,6 +50,7 @@ public record StandardTermsResponse(
 
         String note,
         OffsetDateTime createdAt,
+        UUID createdBy,
         OffsetDateTime updatedAt
 ) {
     public static StandardTermsResponse from(StandardTerms terms) {
@@ -64,7 +65,7 @@ public record StandardTermsResponse(
                 terms.powerMethod(), terms.powerFlatAmount(),
                 terms.sewerMethod(), terms.sewerFlatAmount(),
                 terms.trashMethod(), terms.trashFlatAmount(),
-                terms.note(), terms.createdAt(), terms.updatedAt()
+                terms.note(), terms.createdAt(), terms.createdBy(), terms.updatedAt()
         );
     }
 }

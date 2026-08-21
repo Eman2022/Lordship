@@ -1,5 +1,7 @@
 package io.github.lordship.standardterms.internal;
 
+import io.github.lordship.identity.AgentPrincipal;
+import io.github.lordship.identity.LordshipPrincipal;
 import io.github.lordship.shared.AgreementType;
 import io.github.lordship.standardterms.StandardTerms;
 import io.github.lordship.standardterms.StandardTermsService;
@@ -9,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -21,7 +24,7 @@ import java.util.UUID;
 public class StandardTermsController {
 
     // JSON field -> column. Twenty-three explicit ifs would be worse than the loop.
-    private static final Map<String, String> PATCHABLE = Map.ofEntries(
+    private static final Map<String, String> PATCHABLE_COLUMNS = Map.ofEntries(
             Map.entry("name", "name"),
             Map.entry("targetRate", "target_rate"),
             Map.entry("carFee", "car_fee"),
@@ -122,7 +125,7 @@ public class StandardTermsController {
             @RequestBody Map<String, Object> request) {
 
         Map<String, Object> changes = new HashMap<>();
-        PATCHABLE.forEach((jsonField, column) -> {
+        PATCHABLE_COLUMNS.forEach((jsonField, column) -> {
             if (request.containsKey(jsonField)) {
                 changes.put(column, request.get(jsonField));
             }
