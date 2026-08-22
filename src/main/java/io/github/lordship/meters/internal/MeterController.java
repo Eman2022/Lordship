@@ -1,9 +1,6 @@
 package io.github.lordship.meters.internal;
 
-import io.github.lordship.meters.MeterRead;
-import io.github.lordship.meters.MeterRelation;
-import io.github.lordship.meters.MeterService;
-import io.github.lordship.meters.Meters;
+import io.github.lordship.meters.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -48,7 +45,7 @@ public class MeterController {
     }
 
     @PreAuthorize("hasAuthority('meters:view')")
-    @GetMapping("/meters/{meterId}")
+    @GetMapping("/lot/{meterId}")
     public ResponseEntity<List<MeterResponse>> getMeterByLot(@PathVariable UUID meterId) {
         List<MeterResponse> responses = meterService.findActiveMetersByLot(meterId)
                 .stream()
@@ -107,22 +104,35 @@ public class MeterController {
             return ResponseEntity.notFound().build();
         }
     }
-/*
+
     @PreAuthorize("hasAuthority('meters:view')")
     @GetMapping("/{uuid}/usage")
     public ResponseEntity<UsageResponse> getUsageForPeriod(
             @PathVariable UUID uuid,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime start,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime end) {
+            @RequestParam OffsetDateTime start,
+            @RequestParam OffsetDateTime end) {
         try {
-            int usage = meterService.getUsageForPeriod(uuid, start, end);
-            return ResponseEntity.ok(new UsageResponse(uuid, start, end, usage));
+            Usage usage = meterService.getUsageForPeriod(uuid, start, end);
+            return ResponseEntity.ok(UsageResponse.from(usage));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalStateException e) {
-            return ResponseEntity.unprocessableEntity().build(); // Returns error 422 --> a read exists but can't be computed
+            return ResponseEntity.unprocessableEntity().build(); // 422: reads exist but usage can't be computed
         }
-    } */
+    }
+
+    @PreAuthorize("hasAuthority('meters:view')")
+    @GetMapping("/{uuid}/usage/current")
+    public ResponseEntity<UsageResponse> getUsageForCurrentPeriod(@PathVariable UUID uuid) {
+        try {
+            Usage usage = meterService.getUsageForCurrentPeriod(uuid);
+            return ResponseEntity.ok(UsageResponse.from(usage));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.unprocessableEntity().build();
+        }
+    }
 
     @PreAuthorize("hasAuthority('meters:edit')")
     @PostMapping("/relationships")
@@ -156,7 +166,7 @@ public class MeterController {
     @GetMapping("/relationships/{childMeterId}/parent")
     public ResponseEntity<UUID> resolveParentMeter(
             @PathVariable UUID childMeterId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOf) {
+            @RequestParam LocalDate asOf) {
         return meterService.resolveParentMeter(childMeterId, asOf)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

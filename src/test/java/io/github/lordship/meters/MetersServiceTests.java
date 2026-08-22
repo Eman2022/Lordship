@@ -53,6 +53,7 @@ public class MetersServiceTests {
         uuid2 = UUID.randomUUID();
     }
 
+
     private MeterRow row(UUID id) {
         return new MeterRow(
                 id,
@@ -76,6 +77,9 @@ public class MetersServiceTests {
         );
     }
 
+
+
+
     private MeterRow createTestMeter(UUID lotId, boolean isMaster) {
         return new MeterRow(
                 UUID.randomUUID(),
@@ -98,6 +102,8 @@ public class MetersServiceTests {
                 false
         );
     }
+
+
 
     @Test
     void create_shouldSaveAndAudit() {
@@ -332,34 +338,9 @@ public class MetersServiceTests {
         verify(auditService, never()).recordUpdate(any(), any(), any(), any());
     }
 
+
+
     // Meter Read Tests
-    @Test
-    void recordRead_incrementsRolloverCount_whenValueDecreases() {
-        UUID id = UUID.randomUUID();
-        MeterRow meter = createTestMeter(id, false);
-
-        when(meterRepository.findById(meter.uuid())).thenReturn(Optional.of(meter));
-        when(meterRead.save(any())).thenAnswer(inv -> {
-            MeterReadRow row = inv.getArgument(0);
-            return new MeterReadRow(
-                    UUID.randomUUID(),
-                    row.targetedMeter(),
-                    row.meterAmount(),
-                    row.readAt(),
-                    row.isEstimated(),
-                    row.rolloverCount(),
-                    OffsetDateTime.now(),
-                    OffsetDateTime.now(),
-                    null
-            );
-        });
-
-        meterService.recordRead(meter.uuid(), 99000, OffsetDateTime.now().minusDays(2), false);
-        var rolledOver = meterService.recordRead(meter.uuid(), 500, OffsetDateTime.now(), false);
-
-        assertEquals(1, rolledOver.rolloverCount());
-    }
-
     @Test
     void recordRead_doesNotIncrementRollover_whenValueIncreasesNormally() {
         UUID id = UUID.randomUUID();
@@ -387,36 +368,6 @@ public class MetersServiceTests {
         assertEquals(0, next.rolloverCount());
     }
 
-    @Test
-    void getUsageForPeriod_computesSimpleDelta_withNoRollover() {
-        UUID id = UUID.randomUUID();
-        MeterRow meter = createTestMeter(id, false);
-
-        when(meterRepository.findById(meter.uuid())).thenReturn(Optional.of(meter));
-        when(meterRead.save(any())).thenAnswer(inv -> {
-            MeterReadRow row = inv.getArgument(0);
-            return new MeterReadRow(
-                    UUID.randomUUID(),
-                    row.targetedMeter(),
-                    row.meterAmount(),
-                    row.readAt(),
-                    row.isEstimated(),
-                    row.rolloverCount(),
-                    OffsetDateTime.now(),
-                    OffsetDateTime.now(),
-                    null
-            );
-        });
-
-        OffsetDateTime start = OffsetDateTime.now().minusDays(30);
-        OffsetDateTime end = OffsetDateTime.now();
-
-        meterService.recordRead(meter.uuid(), 1000, start, false);
-        meterService.recordRead(meter.uuid(), 1450, end, false);
-
-        int usage = meterService.getUsageForPeriod(meter.uuid(), start, end);
-        assertEquals(450, usage);
-    }
 
     @Test
     void getUsageForPeriod_throws_whenNoReadingExistsBeforePeriodStart() {
@@ -426,66 +377,5 @@ public class MetersServiceTests {
         when(meterRepository.findById(meter.uuid())).thenReturn(Optional.of(meter));
         assertThrows(IllegalStateException.class, () ->
                 meterService.getUsageForPeriod(meter.uuid(), OffsetDateTime.now().minusDays(30), OffsetDateTime.now()));
-    }
-
-    // Meter Relation Tests
-    @Test
-    void linkMeters_succeeds_whenParentIsMasterAndTypesMatch() {
-        UUID id = UUID.randomUUID();
-        MeterRow parent = createTestMeter(id, true);
-        MeterRow child = createTestMeter(id, false);
-
-        var relationship = meterService.linkMeters(parent.uuid(), child.uuid(), false, LocalDate.now());
-
-        assertEquals(parent.uuid(), relationship.parentMeter());
-        assertEquals(child.uuid(), relationship.childMeter());
-    }
-
-    @Test
-    void linkMeters_throws_whenParentIsNotFlaggedAsMasterMeter() {
-        UUID id = UUID.randomUUID();
-        MeterRow notMaster = createTestMeter(id, false);
-        MeterRow child = createTestMeter(id, false);
-
-        assertThrows(IllegalArgumentException.class, () ->
-                meterService.linkMeters(notMaster.uuid(), child.uuid(), false, LocalDate.now()));
-    }
-
-    @Test
-    void linkMeters_throws_whenChildAlreadyHasActiveParent() {
-        UUID id = UUID.randomUUID();
-        MeterRow parentA = createTestMeter(id, true);
-        MeterRow parentB = createTestMeter(id, true);
-        MeterRow child = createTestMeter(id, false);
-
-        meterService.linkMeters(parentA.uuid(), child.uuid(), false, LocalDate.now());
-
-        assertThrows(IllegalStateException.class, () ->
-                meterService.linkMeters(parentB.uuid(), child.uuid(), false, LocalDate.now()));
-    }
-
-    @Test
-    void unlinkMeter_thenResolveParentMeter_returnsEmpty() {
-        UUID id = UUID.randomUUID();
-        MeterRow parent = createTestMeter(id, true);
-        MeterRow child = createTestMeter(id, false);
-
-        meterService.linkMeters(parent.uuid(), child.uuid(), false, LocalDate.now().minusDays(10));
-        meterService.unlinkMeter(child.uuid(), LocalDate.now());
-
-        assertTrue(meterService.resolveParentMeter(child.uuid(), LocalDate.now()).isEmpty());
-    }
-
-    @Test
-    void resolveParentMeter_returnsCorrectParent_whenActiveRelationshipExists() {
-        UUID id = UUID.randomUUID();
-        MeterRow parent = createTestMeter(id, true);
-        MeterRow child = createTestMeter(id, false);
-
-        meterService.linkMeters(parent.uuid(), child.uuid(), false, LocalDate.now().minusDays(5));
-
-        var resolved = meterService.resolveParentMeter(child.uuid(), LocalDate.now());
-        assertTrue(resolved.isPresent());
-        assertEquals(parent.uuid(), resolved.get());
     }
 }

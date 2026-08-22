@@ -16,6 +16,9 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -55,7 +58,7 @@ public class MeterControllerIT extends IntegrationTest {
                 2.0,
                 MeterType.WATER,
                 MeterMeasurement.KWH,
-                false,
+                true,
                 99999,
                 1.0,
                 15,
@@ -69,13 +72,8 @@ public class MeterControllerIT extends IntegrationTest {
 
     private UUID insertTestLot(UUID propertyId) {
         return jdbc.sql("""
-                INSERT INTO lot (property_id, lot_number)
-                VALUES (:propertyId, '1')
-                RETURNING uuid
-                """)
-                .param("propertyId", propertyId)
-                .query(UUID.class)
-                .single();
+            INSERT INTO lot (property_id, lot_number, sort_order) VALUES (:propertyId, '1', 1) RETURNING uuid
+            """).param("propertyId", propertyId).query(UUID.class).single();
     }
 
     private UUID setupFullChain() {
@@ -84,6 +82,21 @@ public class MeterControllerIT extends IntegrationTest {
     }
 
     private UUID createTestMeter(String token, UUID meterId) throws Exception {
+        MvcResult result = mockMvc.perform(
+                        post("/meters/create")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(new MeterCreateRequest(meterId, 1.0, 1.0, MeterType.WATER, MeterMeasurement.GAL, true, 99999,                 1.0,
+                                        15,
+                                        false)))
+                )
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.uuid"));
+    }
+
+    private UUID createChildMeter(String token, UUID meterId) throws Exception {
         MvcResult result = mockMvc.perform(
                         post("/meters/create")
                                 .header("Authorization", "Bearer " + token)
@@ -98,11 +111,12 @@ public class MeterControllerIT extends IntegrationTest {
         return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.uuid"));
     }
 
+
     // REPOSITORY TESTS
     @Test
     void findAMeterById() {
         UUID meterId = setupFullChain();
-        MeterRow saved = meterRepository.save(buildRow(meterId));
+        MeterRow saved = testData.insertChainToMeters();
 
         Optional<MeterRow> found = meterRepository.findById(saved.uuid());
 
@@ -190,9 +204,128 @@ public class MeterControllerIT extends IntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                         {
-                            "installedAt": "not-a-date",
+                            "installedAt": "not-a-date"
                         }
                     """))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void patchMeter_shouldReturn200_whenValidDateProvided() throws Exception {
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        UUID lotId = setupFullChain();
+        UUID meterUuid = createTestMeter(token, lotId);
+
+        mockMvc.perform(patch("/meters/{uuid}", meterUuid)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"installedAt\": \"2026-01-01\"}"))
+                .andExpect(status().isOk())
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void recordRead_shouldReturn201_withCorrectFields() throws Exception {
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+
+        UUID lotId = setupFullChain();
+        UUID meterUuid = createTestMeter(token, lotId);
+
+        String body = """
+            { "meterAmount": 1000.00, "readAt": "%s", "isEstimated": false, "rolloverCount": 0 }
+            """.formatted(OffsetDateTime.now());
+
+        mockMvc.perform(post("/meters/{uuid}/reads", meterUuid)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void recordRead_shouldReturn404_whenMeterDoesNotExist() throws Exception {
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        String body = """
+            { "meterAmount": 1000, "readAt": "%s", "isEstimated": false, "rolloverCount": 0 }
+            """.formatted(OffsetDateTime.now());
+
+        mockMvc.perform(post("/meters/{uuid}/reads", UUID.randomUUID())
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void linkMeters_shouldReturn201_whenParentIsMasterAndTypesMatch() throws Exception {
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        UUID lotId = setupFullChain();
+        UUID lotId2 = setupFullChain();
+        UUID parentUuid = createTestMeter(token, lotId);
+        UUID childUuid = createTestMeter(token, lotId2);
+
+        String body = String.format("""
+            { "parentMeter": "%s", "childMeter": "%s", "hasUnmeteredRemainder": false, "effectiveFrom": "%s" }
+            """, parentUuid, childUuid, LocalDate.now());
+
+        mockMvc.perform(post("/meters/relationships")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void linkMeters_shouldReturn400_whenParentIsNotMasterMeter() throws Exception {
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        UUID lotId = setupFullChain();
+        UUID lotId2 = setupFullChain();
+        UUID notMaster = createChildMeter(token, lotId);
+        UUID child = createChildMeter(token, lotId2);
+
+        String body = String.format("""
+            { "parentMeter": "%s", "childMeter": "%s", "hasUnmeteredRemainder": false, "effectiveFrom": "%s" }
+            """, notMaster, child, LocalDate.now());
+
+        mockMvc.perform(post("/meters/relationships")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void resolveParentMeter_shouldReturn200_afterLinking() throws Exception {
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        UUID lotId = setupFullChain();
+        UUID lotId2 = setupFullChain();
+        UUID parentUuid = createTestMeter(token, lotId);
+        UUID childUuid = createTestMeter(token, lotId2);
+
+        String linkBody = String.format("""
+            { "parentMeter": "%s", "childMeter": "%s", "hasUnmeteredRemainder": false, "effectiveFrom": "%s" }
+            """, parentUuid, childUuid, LocalDate.now());
+        mockMvc.perform(post("/meters/relationships")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(linkBody))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/meters/relationships/{childMeterId}/parent", childUuid)
+                        .header("Authorization", "Bearer " + token)
+                        .param("asOf", LocalDate.now().toString()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void resolveParentMeter_shouldReturn404_whenNoRelationshipExists() throws Exception {
+        String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
+        UUID lotId = setupFullChain();
+        UUID childUuid = createTestMeter(token, lotId);
+
+        mockMvc.perform(get("/meters/relationships/{childMeterId}/parent", childUuid)
+                        .header("Authorization", "Bearer " + token)
+                        .param("asOf", LocalDate.now().toString()))
+                .andExpect(status().isNotFound());
     }
 }

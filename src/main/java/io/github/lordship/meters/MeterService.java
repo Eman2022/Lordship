@@ -236,8 +236,8 @@ public class MeterService {
         return saved.toMeterRead();
     }
 
-
-    public int getUsageForPeriod(UUID meterId, OffsetDateTime start, OffsetDateTime end) {
+    // Consider timing for bills that are delayed
+    public Usage getUsageForPeriod(UUID meterId, OffsetDateTime start, OffsetDateTime end) {
         MeterRow meter = meterRepository.findById(meterId)
                 .orElseThrow(() -> new EntityNotFoundException("Meter not found: " + meterId));
 
@@ -248,16 +248,48 @@ public class MeterService {
                 .orElseThrow(() -> new IllegalStateException(
                         "No reading exists at or before period end for meter " + meterId));
 
-        int startValue = adjustedValue(startRead, meter.rolloverMax());
-        int endValue = adjustedValue(endRead, meter.rolloverMax());
+        if (startRead.uuid().equals(endRead.uuid())) {
+            throw new IllegalStateException(
+                    "No reading was taken within the requested period for meter " + meterId +
+                            " — cannot compute usage without at least one read inside [" + start + ", " + end + "].");
+        }
 
-        if (endValue < startValue) { // Edge case: 0 or 1 readings when starting invoicing; what if start and end value same? what if one value?
+        int rawUsage = adjustedValue(endRead, meter.rolloverMax()) - adjustedValue(startRead, meter.rolloverMax());
+
+        if (rawUsage < 0) {
             throw new IllegalStateException(
                     "Computed negative usage for meter " + meterId +
                             " — check rollover_max is set correctly, or investigate a possible meter replacement.");
         }
 
-        return (int) (endValue - startValue);
+        double scaledUsage = applyMultiplier(rawUsage, meter.meterMultiplier());
+
+        return new Usage(meterId, startRead.toMeterRead(), endRead.toMeterRead(), scaledUsage);
+    }
+
+    public Usage getUsageForCurrentPeriod(UUID meterId) {
+        MeterRow meter = meterRepository.findById(meterId)
+                .orElseThrow(() -> new EntityNotFoundException("Meter not found: " + meterId));
+
+        LocalDate today = LocalDate.now();
+        LocalDate periodEndDate = resolvePeriodEnd(today, meter.readDueDay());
+        LocalDate periodStartDate = Boolean.TRUE.equals(meter.isBimonthly())
+                ? periodEndDate.minusMonths(2)
+                : periodEndDate.minusMonths(1);
+
+        OffsetDateTime start = periodStartDate.atStartOfDay().atOffset(java.time.ZoneOffset.UTC);
+        OffsetDateTime end = periodEndDate.atStartOfDay().atOffset(java.time.ZoneOffset.UTC);
+
+        return getUsageForPeriod(meterId, start, end);
+    }
+
+    private LocalDate resolvePeriodEnd(LocalDate today, Integer readDueDay) {
+        if (readDueDay == null) {
+            return today; // no fixed billing cycle configured — fall back to "as of today"
+        }
+        int dueDay = Math.min(readDueDay, today.lengthOfMonth());
+        LocalDate thisMonthDue = today.withDayOfMonth(dueDay);
+        return today.isBefore(thisMonthDue) ? thisMonthDue.minusMonths(1) : thisMonthDue;
     }
 
 
@@ -266,6 +298,13 @@ public class MeterService {
             return read.meterAmount();
         }
         return read.meterAmount() + ((int) read.rolloverCount() * rolloverMax);
+    }
+
+    private double applyMultiplier(int rawUsage, Double meterMultiplier) {
+        if (meterMultiplier == null || meterMultiplier == 0) {
+            return rawUsage;
+        }
+        return rawUsage * meterMultiplier;
     }
 
 

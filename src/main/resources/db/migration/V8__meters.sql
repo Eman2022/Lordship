@@ -22,7 +22,7 @@ CREATE TABLE meters (
                             is_master_meter  BOOL NOT NULL,
                             rollover_max     INTEGER NOT NULL, -- max value displayed on meter
                             meter_multiplier NUMERIC(5,4) NOT NULL DEFAULT 1.0, -- For meters that are 10 GAL/CBF or 100 GAL/CBF; use to calc CBF --> GAL
-                            read_due_day     INTEGER NOT NULL DEFAULT 15, -- The day that meters are read
+                            read_due_day     INTEGER NOT NULL DEFAULT 15, -- The day that meters are read; TODO: implement helpers for RDD
                             is_bimonthly     BOOLEAN NOT NULL DEFAULT FALSE, -- If not bimonthly, then monthly
                             FOREIGN KEY (meter_id) REFERENCES lot(uuid),
                             CONSTRAINT uq_meters_uuid_measurement UNIQUE (uuid, measurement)

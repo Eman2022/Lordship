@@ -6,6 +6,7 @@ import io.github.lordship.tenancy.internal.TenancyRow;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.*;
 
 @Repository
@@ -30,7 +31,7 @@ public class MeterBillsRepository {
                         INSERT INTO meter_billing (
                                 billed_meter, billed_amount, rate_amount, rate_unit, period_start, period_end
                             ) VALUES (
-                                :billedMeter, :billedAmount, rateAmount, :rateUnit::meter_measurement, periodStart, periodEnd
+                                :billedMeter, :billedAmount, :rateAmount, :rateUnit::meter_measurement, :periodStart, :periodEnd
                             ) RETURNING *
                         """)
                 .param("billedMeter", row.billedMeter())
@@ -50,12 +51,27 @@ public class MeterBillsRepository {
                 .optional();
     }
 
-    public Optional<MeterBillsRow> findByBilledMeter(UUID billedMeter) {
+    public List<MeterBillsRow> findByBilledMeter(UUID billedMeter) {
         return jdbc.sql("""
                         SELECT * from meter_billing WHERE billed_meter = :billedMeter
-                        AND period_start IS NOT NULL AND period_end IS NULL
+                        AND period_start IS NOT NULL
                         """)
                 .param("billedMeter", billedMeter)
+                .query(MeterBillsRow.class)
+                .list();
+    }
+
+    // Takes data info from MeterReads
+    public Optional<MeterBillsRow> findRateForPeriod(UUID billedMeter, LocalDate periodStart, LocalDate periodEnd) {
+        return jdbc.sql("""
+                        SELECT * FROM meter_billing
+                        WHERE billed_meter = :billedMeter
+                          AND period_start <= :periodStart AND period_end >= :periodEnd
+                          AND deleted_at IS NULL
+                        """)
+                .param("billedMeter", billedMeter)
+                .param("periodStart", periodStart)
+                .param("periodEnd", periodEnd)
                 .query(MeterBillsRow.class)
                 .optional();
     }

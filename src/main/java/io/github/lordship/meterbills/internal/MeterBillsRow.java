@@ -4,6 +4,7 @@ package io.github.lordship.meterbills.internal;
 import io.github.lordship.meterbills.MeterBills;
 import io.github.lordship.meters.MeterMeasurement;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -11,8 +12,8 @@ import java.util.UUID;
 public record MeterBillsRow(
         UUID uuid,
         UUID billedMeter,
-        Integer billedAmount,
-        Double rateAmount,
+        BigDecimal billedAmount, // BigDecimal for currency
+        BigDecimal rateAmount,
         MeterMeasurement rateUnit,
         LocalDate periodStart,
         LocalDate periodEnd,
@@ -36,8 +37,8 @@ public record MeterBillsRow(
     }
     public static MeterBillsRow forInsert(
             UUID billedMeter,
-            int billedAmount,
-            double rateAmount,
+            BigDecimal billedAmount,
+            BigDecimal rateAmount,
             MeterMeasurement rateUnit,
             LocalDate periodStart,
             LocalDate periodEnd
