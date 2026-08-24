@@ -1,4 +1,4 @@
-package io.github.lordship.access.internal.rbac;
+package io.github.lordship.access.internal.grantedrole;
 
 import java.util.UUID;
 
@@ -7,6 +7,4 @@ public record GrantedRoleResponse(
         UUID agentId,
         UUID roleId,
         UUID grantedBy)
-{
-
-}
+{ }

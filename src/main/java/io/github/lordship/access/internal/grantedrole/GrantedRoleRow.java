@@ -1,4 +1,4 @@
-package io.github.lordship.access.internal.rbac;
+package io.github.lordship.access.internal.grantedrole;
 
 import io.github.lordship.access.GrantedRole;
 

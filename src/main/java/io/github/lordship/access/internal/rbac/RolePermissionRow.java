@@ -1,24 +1,23 @@
 package io.github.lordship.access.internal.rbac;
 
-import java.time.OffsetDateTime;
+import io.github.lordship.access.RolePermission;
+
+import java.time.Instant;
 import java.util.UUID;
 
-// represents a permission assigned to a role
 public record RolePermissionRow(
         UUID uuid,
         UUID roleId,
         UUID permissionId,
-        OffsetDateTime createdAt,
-        OffsetDateTime deletedAt
+        Instant createdAt,
+        Instant deletedAt
 ) {
-    public RolePermissionRow(UUID roleId, UUID permissionId){
-        this(
-          null,
-          roleId,
-          permissionId,
-          null,
-          null
-        );
+
+    public RolePermissionRow(UUID roleId, UUID permissionId) {
+        this(null, roleId, permissionId, null, null);
+    }
+
+    public RolePermission toRolePermission() {
+        return new RolePermission(uuid, roleId, permissionId, createdAt, deletedAt);
     }
 }
-

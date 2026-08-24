@@ -23,8 +23,12 @@ INSERT INTO permission (uuid, permission_name) VALUES
 
     -- Permissions
     (uuidv7(), 'permissions:view'),
-    (uuidv7(), 'permissions:assign'),
+    (uuidv7(), 'permissions:assign_to_role'),
     (uuidv7(), 'permissions:deny'),
+
+    (uuidv7(), 'role_permissions:delete'),
+    (uuidv7(), 'role_permissions:view'),
+    (uuidv7(), 'role_permissions:edit'),
 
     -- Roles
     (uuidv7(), 'agent_roles:view'),
@@ -151,6 +155,7 @@ AND p.permission_name IN (
     'agents:view_own',
     'agents:edit_own',
     'permissions:view',
+    'role_permissions:view',
     'persons_ssn:view',
     'persons:view',
     'persons:edit',

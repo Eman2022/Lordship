@@ -125,7 +125,7 @@ public class PersonControllerIT extends IntegrationTest {
 
         // get Tony's id and grant him property manager permissions
         String newAgentUuid = JsonPath.read(registerResult.getResponse().getContentAsString(), "$.uuid");
-        mockMvc.perform(post("/roles/grant")
+        mockMvc.perform(post("/api/granted-roles/grant")
                 .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(String.format("""

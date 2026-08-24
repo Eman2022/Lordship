@@ -34,9 +34,10 @@ public class AgentController {
     public ResponseEntity<AgentLoginResponse> login(@Valid @RequestBody AgentLoginRequest request, HttpServletRequest httpRequest) {
 
         return agentService.verifyLogin(request.workEmail(),
-                        request.password(),
-                        httpRequest.getHeader("User-Agent"),
-                        httpRequest.getRemoteAddr())
+                                        request.password(),
+                                        httpRequest.getHeader("User-Agent"),
+                                        httpRequest.getRemoteAddr()
+                )
                 .map(result -> AgentLoginResponse.from(result.agentWithPerson(), result.token()))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());

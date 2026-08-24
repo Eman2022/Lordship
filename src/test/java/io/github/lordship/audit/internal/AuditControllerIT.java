@@ -72,7 +72,7 @@ public class AuditControllerIT extends IntegrationTest {
                 }
                 """, jimmyUuid);
 
-        mockMvc.perform(post("/roles/grant")
+        mockMvc.perform(post("/api/granted-roles/grant")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + rootAuthToken)
                         .content(grantRoleForJimmy))

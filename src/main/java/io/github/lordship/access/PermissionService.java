@@ -1,7 +1,7 @@
 package io.github.lordship.access;
 
-import io.github.lordship.access.internal.rbac.PermissionRepository;
-import io.github.lordship.access.internal.rbac.PermissionRow;
+import io.github.lordship.access.internal.permissions.PermissionRepository;
+import io.github.lordship.access.internal.permissions.PermissionRow;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
@@ -9,11 +9,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class PermissionResolverService {
+public class PermissionService {
 
     private final PermissionRepository permissionRepository;
 
-    public PermissionResolverService(PermissionRepository permissionRepository) {
+    public PermissionService(PermissionRepository permissionRepository) {
         this.permissionRepository = permissionRepository;
     }
 
@@ -21,6 +21,12 @@ public class PermissionResolverService {
     public Set<Permission> findPermissionsForAgent(UUID agentId) {
         return permissionRepository.findActivePermissionsForAgent(agentId)
                 .stream()
+                .map(PermissionRow::toPermission)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public Set<Permission> getAllPermissions() {
+        return permissionRepository.getAllPermissions().stream()
                 .map(PermissionRow::toPermission)
                 .collect(Collectors.toUnmodifiableSet());
     }

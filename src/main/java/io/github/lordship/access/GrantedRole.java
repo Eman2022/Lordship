@@ -1,6 +1,6 @@
 package io.github.lordship.access;
 
-import io.github.lordship.access.internal.rbac.GrantedRoleResponse;
+import io.github.lordship.access.internal.grantedrole.GrantedRoleResponse;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;

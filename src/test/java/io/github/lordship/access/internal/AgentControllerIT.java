@@ -7,7 +7,7 @@ import io.github.lordship.access.Agent;
 import io.github.lordship.access.AgentLoginRequest;
 import io.github.lordship.access.AgentService;
 import io.github.lordship.access.internal.agents.AgentRegistrationRequest;
-import io.github.lordship.access.internal.rbac.RoleCreationRequest;
+import io.github.lordship.access.internal.role.RoleController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -151,7 +151,7 @@ public class AgentControllerIT extends IntegrationTest {
         String testRoleDesc = "A role to know you're a loser";
         String rootUserToken = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
 
-        RoleCreationRequest rcr = new RoleCreationRequest(testRoleName, testRoleDesc);
+        RoleController.RoleCreationRequest rcr = new RoleController.RoleCreationRequest(testRoleName, testRoleDesc);
 
         // first make sure the role can't be created if we're not logged in
         mockMvc.perform(post("/api/roles")

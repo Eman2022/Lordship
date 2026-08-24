@@ -25,7 +25,7 @@ public class AgentService {
     private final AgentRepository agentRepository;
     private final PersonService personService;
     private final PasswordService passwordService;
-    private final PermissionResolverService permissionResolverService;
+    private final PermissionService permissionService;
     private final JwtService jwtService;
     private final GrantedRoleService grantedRoleService;
     private final LoginEventRepository loginEventRepository;
@@ -38,7 +38,7 @@ public class AgentService {
             AgentRepository agentRepository,
             PersonService personService,
             PasswordService passwordService,
-            PermissionResolverService permissionResolverService,
+            PermissionService permissionService,
             JwtService jwtService,
             GrantedRoleService grantedRoleService,
             LoginEventRepository loginEventRepository,
@@ -47,7 +47,7 @@ public class AgentService {
         this.agentRepository = agentRepository;
         this.personService = personService;
         this.passwordService = passwordService;
-        this.permissionResolverService = permissionResolverService;
+        this.permissionService = permissionService;
         this.jwtService = jwtService;
         this.grantedRoleService = grantedRoleService;
         this.loginEventRepository = loginEventRepository;
@@ -129,7 +129,7 @@ public class AgentService {
             return personService.findByID(ar.personId())
                     .map(person -> {
                         AgentWithPerson agentWithPerson = new AgentWithPerson(ar.toAgent(), person);
-                        Set<Permission> permissions = permissionResolverService.findPermissionsForAgent(ar.uuid());
+                        Set<Permission> permissions = permissionService.findPermissionsForAgent(ar.uuid());
                         String token = jwtService.generateToken(agentWithPerson, permissions);
                         return new AgentAuthResult(agentWithPerson, token);
                     });
@@ -154,12 +154,8 @@ public class AgentService {
         );
 
         Agent agent = agentRepository.save(agentRow).toAgent();
-        GrantedRole grantedRole = grantedRoleService.grantRoleByName(agent.uuid(), "Admin", agent.uuid());
 
-        // log the changes
-        auditService.recordSystemInsert(correlationId,"agent", agent.uuid(), AuditMapper.toMap(agent));
-        auditService.recordSystemInsert(correlationId,"granted_role", grantedRole.uuid(), AuditMapper.toMap(grantedRole));
-
+        grantedRoleService.systemGrantRole(agent.uuid(), "Admin");
         log.warn("Root agent with email {} has been created - change password ASAP", email);
     }
 
