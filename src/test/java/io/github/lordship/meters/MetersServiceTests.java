@@ -1,13 +1,14 @@
 package io.github.lordship.meters;
 
 import io.github.lordship.audit.AuditService;
-import io.github.lordship.meters.internal.MeterCreateRequest;
-import io.github.lordship.meters.internal.MeterRepository;
-import io.github.lordship.meters.internal.MeterRow;
+import io.github.lordship.meters.internal.*;
+import io.github.lordship.properties.internal.PropertyRow;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.simple.JdbcClient;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -23,6 +24,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class MetersServiceTests {
     private MeterRepository meterRepository;
+    private MeterRelationRepository meterRelation;
+    private MeterReadRepository meterRead;
     private AuditService auditService;
     private MeterService meterService;
 
@@ -33,10 +36,14 @@ public class MetersServiceTests {
     @BeforeEach
     void setup() {
         meterRepository = mock(MeterRepository.class);
+        meterRead = mock(MeterReadRepository.class);
+        meterRelation = mock(MeterRelationRepository.class);
         auditService = mock(AuditService.class);
 
         meterService = new MeterService(
                 meterRepository,
+                meterRead,
+                meterRelation,
                 null,          // encryptionService unused
                 auditService
         );
@@ -45,6 +52,7 @@ public class MetersServiceTests {
         uuid1 = UUID.randomUUID();
         uuid2 = UUID.randomUUID();
     }
+
 
     private MeterRow row(UUID id) {
         return new MeterRow(
@@ -61,14 +69,48 @@ public class MetersServiceTests {
                 null,
                 null,
                 null,
-                true
+                true,
+                99999,
+                1.0,
+                15,
+                false
         );
     }
+
+
+
+
+    private MeterRow createTestMeter(UUID lotId, boolean isMaster) {
+        return new MeterRow(
+                UUID.randomUUID(),
+                meterId,
+                "Water meter",
+                null,
+                "065E1GHB",
+                0.0,
+                0.0,
+                null,
+                OffsetDateTime.now(ZoneOffset.UTC).minusDays(10).truncatedTo(ChronoUnit.DAYS),
+                OffsetDateTime.now(ZoneOffset.UTC).minusDays(5).truncatedTo(ChronoUnit.DAYS),
+                null,
+                null,
+                null,
+                true,
+                99999,
+                1.0,
+                15,
+                false
+        );
+    }
+
+
 
     @Test
     void create_shouldSaveAndAudit() {
         MeterCreateRequest req = new MeterCreateRequest(
-                meterId, 1.0, 2.0, MeterType.WATER, MeterMeasurement.GAL, true
+                meterId, 1.0, 2.0, MeterType.WATER, MeterMeasurement.GAL, true, 99999,                 1.0,
+                15,
+                false
         );
 
         MeterRow saved = row(uuid1);
@@ -101,12 +143,17 @@ public class MetersServiceTests {
                 2.0,
                 MeterType.ENERGY,
                 MeterMeasurement.KWH,
+                false,
+                99999,
+                1.0,
+                15,
                 false
         );
 
         MeterRow saved = MeterRow.forInsert(
                 req.meterId(), req.pointX(), req.pointY(),
-                req.utilityType(), req.measurement(), req.isMasterMeter()
+                req.utilityType(), req.measurement(), req.isMasterMeter(),
+                req.rolloverMax(), req.meterMultiplier(), req.readDueDay(), req.isBimonthly()
         );
 
         when(meterRepository.save(any())).thenReturn(saved);
@@ -125,6 +172,10 @@ public class MetersServiceTests {
                 2.0,
                 MeterType.ENERGY,
                 MeterMeasurement.GAL,
+                false,
+                99999,
+                1.0,
+                15,
                 false
         );
 
@@ -140,12 +191,17 @@ public class MetersServiceTests {
                 2.0,
                 MeterType.WATER,
                 MeterMeasurement.GAL,
+                false,
+                99999,
+                1.0,
+                15,
                 false
         );
 
         MeterRow saved = MeterRow.forInsert(
                 req.meterId(), req.pointX(), req.pointY(),
-                req.utilityType(), req.measurement(), req.isMasterMeter()
+                req.utilityType(), req.measurement(), req.isMasterMeter(),
+                req.rolloverMax(), req.meterMultiplier(), req.readDueDay(), req.isBimonthly()
         );
 
         when(meterRepository.save(any())).thenReturn(saved);
@@ -164,6 +220,10 @@ public class MetersServiceTests {
                 2.0,
                 MeterType.WATER,
                 MeterMeasurement.KWH,
+                false,
+                99999,
+                1.0,
+                15,
                 false
         );
 
@@ -178,7 +238,9 @@ public class MetersServiceTests {
         MeterRow before = new MeterRow(
                 id, UUID.randomUUID(), "Energy meter", "Should throw error", "123456789",
                 1.0, 2.0, LocalDate.now(), OffsetDateTime.now(), null,
-                null, MeterType.ENERGY, MeterMeasurement.KWH, false
+                null, MeterType.ENERGY, MeterMeasurement.KWH, false, 99999,                 1.0,
+                15,
+                false
         );
 
 
@@ -197,7 +259,9 @@ public class MetersServiceTests {
         MeterRow before = new MeterRow(
                 id, UUID.randomUUID(), "Energy meter", "Should patch successfully", "123456789",
                 1.0, 2.0, LocalDate.now(), OffsetDateTime.now(), null,
-                null, MeterType.WATER, MeterMeasurement.CBF, false
+                null, MeterType.WATER, MeterMeasurement.CBF, false, 99999,                 1.0,
+                15,
+                false
         );
 
         when(meterRepository.findById(id)).thenReturn(Optional.of(before));
@@ -215,7 +279,11 @@ public class MetersServiceTests {
                 null,
                 MeterType.WATER,
                 MeterMeasurement.GAL,   // patch CBF to GAL
-                before.isMasterMeter()
+                before.isMasterMeter(),
+                99999,
+                1.0,
+                15,
+                false
         );
 
         when(meterRepository.patch(eq(id), any())).thenReturn(Optional.of(after));
@@ -235,7 +303,9 @@ public class MetersServiceTests {
         MeterRow before = new MeterRow(
                 id, UUID.randomUUID(), "Energy meter", "Should patch successfully", "123456789",
                 1.0, 2.0, LocalDate.now(), OffsetDateTime.now(), null,
-                null, MeterType.WATER, MeterMeasurement.GAL, false
+                null, MeterType.WATER, MeterMeasurement.GAL, false, 99999,                 1.0,
+                15,
+                false
         );
 
         when(meterRepository.findById(id)).thenReturn(Optional.of(before));
@@ -253,7 +323,9 @@ public class MetersServiceTests {
         MeterRow before = new MeterRow(
                 id, UUID.randomUUID(), "Water meter", "Should patch successfully", "123456789",
                 1.0, 2.0, LocalDate.now(), OffsetDateTime.now(), null,
-                null, MeterType.WATER, MeterMeasurement.GAL, false
+                null, MeterType.WATER, MeterMeasurement.GAL, false, 99999,                 1.0,
+                15,
+                false
         );
 
         when(meterRepository.findById(id)).thenReturn(Optional.of(before));
@@ -264,5 +336,46 @@ public class MetersServiceTests {
 
         assertTrue(result.isPresent());
         verify(auditService, never()).recordUpdate(any(), any(), any(), any());
+    }
+
+
+
+    // Meter Read Tests
+    @Test
+    void recordRead_doesNotIncrementRollover_whenValueIncreasesNormally() {
+        UUID id = UUID.randomUUID();
+        MeterRow meter = createTestMeter(id, false);
+
+        when(meterRepository.findById(meter.uuid())).thenReturn(Optional.of(meter));
+        when(meterRead.save(any())).thenAnswer(inv -> {
+            MeterReadRow row = inv.getArgument(0);
+            return new MeterReadRow(
+                    UUID.randomUUID(),
+                    row.targetedMeter(),
+                    row.meterAmount(),
+                    row.readAt(),
+                    row.isEstimated(),
+                    row.rolloverCount(),
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now(),
+                    null
+            );
+        });
+
+        meterService.recordRead(meter.uuid(), 100, OffsetDateTime.now().minusDays(2), false);
+        var next = meterService.recordRead(meter.uuid(), 450, OffsetDateTime.now(), false);
+
+        assertEquals(0, next.rolloverCount());
+    }
+
+
+    @Test
+    void getUsageForPeriod_throws_whenNoReadingExistsBeforePeriodStart() {
+        UUID id = UUID.randomUUID();
+        MeterRow meter = createTestMeter(id, false);
+
+        when(meterRepository.findById(meter.uuid())).thenReturn(Optional.of(meter));
+        assertThrows(IllegalStateException.class, () ->
+                meterService.getUsageForPeriod(meter.uuid(), OffsetDateTime.now().minusDays(30), OffsetDateTime.now()));
     }
 }

@@ -6,6 +6,7 @@ import io.github.lordship.tenancy.internal.TenancyRow;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.*;
 
 @Repository
@@ -30,7 +31,7 @@ public class MeterBillsRepository {
                         INSERT INTO meter_billing (
                                 billed_meter, billed_amount, rate_amount, rate_unit, period_start, period_end
                             ) VALUES (
-                                :billedMeter, :billedAmount, rateAmount, :rateUnit::meter_measurement, periodStart, periodEnd
+                                :billedMeter, :billedAmount, :rateAmount, :rateUnit::meter_measurement, :periodStart, :periodEnd
                             ) RETURNING *
                         """)
                 .param("billedMeter", row.billedMeter())
@@ -50,10 +51,35 @@ public class MeterBillsRepository {
                 .optional();
     }
 
-    public boolean softDelete(UUID uuid) {
-        return jdbc.sql("UPDATE meter_billing SET deleted_at = CURRENT_TIMESTAMP WHERE uuid = :uuid AND deleted_at IS NULL")
+    public List<MeterBillsRow> findByBilledMeter(UUID billedMeter) {
+        return jdbc.sql("""
+                        SELECT * from meter_billing WHERE billed_meter = :billedMeter
+                        AND period_start IS NOT NULL
+                        """)
+                .param("billedMeter", billedMeter)
+                .query(MeterBillsRow.class)
+                .list();
+    }
+
+    // Takes data info from MeterReads
+    public Optional<MeterBillsRow> findRateForPeriod(UUID billedMeter, LocalDate periodStart, LocalDate periodEnd) {
+        return jdbc.sql("""
+                        SELECT * FROM meter_billing
+                        WHERE billed_meter = :billedMeter
+                          AND period_start <= :periodStart AND period_end >= :periodEnd
+                          AND deleted_at IS NULL
+                        """)
+                .param("billedMeter", billedMeter)
+                .param("periodStart", periodStart)
+                .param("periodEnd", periodEnd)
+                .query(MeterBillsRow.class)
+                .optional();
+    }
+
+    public void softDelete(UUID uuid) {
+        jdbc.sql("UPDATE meter_billing SET deleted_at = CURRENT_TIMESTAMP WHERE uuid = :uuid")
                 .param("uuid", uuid)
-                .update() > 0;
+                .update();
     }
 
     public Optional<MeterBillsRow> patch(UUID uuid, Map<String, Object> changes) {

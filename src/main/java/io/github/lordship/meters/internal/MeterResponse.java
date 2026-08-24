@@ -20,7 +20,8 @@ public record MeterResponse(
         MeterType utilityType,
         MeterMeasurement measurement,
         Boolean isMasterMeter,
-        LocalDate installedAt
+        LocalDate installedAt,
+        Integer rolloverMax
 ) {
 
     public static io.github.lordship.meters.internal.MeterResponse from(Meters m) {
@@ -35,7 +36,8 @@ public record MeterResponse(
                 m.utilityType(),
                 m.measurement(),
                 m.isMasterMeter(),
-                m.installedAt()
+                m.installedAt(),
+                m.rolloverMax()
         );
     }
 }

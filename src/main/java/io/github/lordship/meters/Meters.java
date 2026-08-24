@@ -20,7 +20,11 @@ public record Meters(
     OffsetDateTime deletedAt,
     MeterType utilityType,
     MeterMeasurement measurement,
-    Boolean isMasterMeter
+    Boolean isMasterMeter,
+    Integer rolloverMax,
+    Double meterMultiplier,
+    Integer readDueDay,
+    Boolean isBimonthly
 ) {
     public boolean isSoftDeleted() {
         return deletedAt != null;

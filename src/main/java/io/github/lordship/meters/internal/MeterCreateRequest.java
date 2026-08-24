@@ -23,6 +23,18 @@ public record MeterCreateRequest(
     MeterMeasurement measurement,
 
     @NotNull
-    Boolean isMasterMeter
+    Boolean isMasterMeter,
+
+    @NotNull
+    Integer rolloverMax,
+
+    @NotNull
+    Double meterMultiplier,
+
+    @NotNull
+    Integer readDueDay,
+
+    @NotNull
+    Boolean isBimonthly
 ) {
 }
