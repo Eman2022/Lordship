@@ -1,8 +1,10 @@
-package io.github.lordship.access.internal.rbac;
+package io.github.lordship.access.internal.role;
 
 import io.github.lordship.access.Role;
 import io.github.lordship.access.RoleService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +18,14 @@ import java.util.UUID;
 @Controller
 @RequestMapping("/api/roles")
 public class RoleController {
+
+    public record RoleCreationRequest(
+            @NotBlank
+            @Size(max = 60)
+            String roleName,
+
+            String roleDescription
+    ) { }
 
     private final RoleService roleService;
 
@@ -46,9 +56,10 @@ public class RoleController {
                 ResponseEntity.notFound().build();
     }
 
+
     @PreAuthorize("hasAuthority('agent_roles:edit')")
     @PatchMapping("/{uuid}")
-    public ResponseEntity<Role> editRole(@PathVariable UUID uuid, @RequestBody Map<String, Object> request) {
+    public ResponseEntity<Role> patchRole(@PathVariable UUID uuid, @RequestBody Map<String, Object> request) {
         Map<String, Object> changes = new HashMap<>();
 
         if (request.containsKey("roleName")) changes.put("role_name", request.get("roleName"));

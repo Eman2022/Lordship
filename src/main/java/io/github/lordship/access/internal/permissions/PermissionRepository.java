@@ -1,4 +1,4 @@
-package io.github.lordship.access.internal.rbac;
+package io.github.lordship.access.internal.permissions;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -26,6 +26,24 @@ public class PermissionRepository {
                 .optional();
     }
 
+    public Optional<PermissionRow> findByName(String permissionName) {
+        return jdbc.sql("""
+                SELECT * FROM permission
+                WHERE permission_name = :permissionName
+                """)
+                .param("permissionName", permissionName)
+                .query(PermissionRow.class)
+                .optional();
+    }
+
+    public Set<PermissionRow> getAllPermissions() {
+        return new HashSet<>(jdbc.sql("""
+                SELECT * from permission 
+                """)   // note: permissions can't be deleted
+                .query(PermissionRow.class)
+                .list());
+    }
+
     public Set<PermissionRow> findActivePermissionsForAgent(UUID agentId) {
         return new HashSet<>(jdbc.sql("""
                 SELECT DISTINCT p.*
@@ -35,7 +53,6 @@ public class PermissionRepository {
                 WHERE gr.agent_id = :agentId
                  AND gr.deleted_at IS NULL
                  AND rp.deleted_at IS NULL
-                 AND p.deleted_at IS NULL
                  AND p.uuid NOT IN (
                  SELECT permission_id
                  FROM denied_permission

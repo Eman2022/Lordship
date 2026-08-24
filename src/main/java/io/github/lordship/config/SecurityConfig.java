@@ -2,7 +2,7 @@ package io.github.lordship.config;
 
 import io.github.lordship.access.AgentService;
 import io.github.lordship.access.JwtService;
-import io.github.lordship.access.PermissionResolverService;
+import io.github.lordship.access.PermissionService;
 import io.github.lordship.audit.AuditContext;
 import io.github.lordship.propertyassignments.PropertyAssignmentService;
 import jakarta.servlet.Filter;
@@ -30,10 +30,10 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthFilter jwtAuthFilter(JwtService jwtService,
-                                       PermissionResolverService permissionResolverService,
+                                       PermissionService permissionService,
                                        AgentService agentService,
                                        PropertyAssignmentService propertyAssignmentService) {
-        return new JwtAuthFilter(jwtService, permissionResolverService, agentService, propertyAssignmentService);
+        return new JwtAuthFilter(jwtService, permissionService, agentService, propertyAssignmentService);
     }
 
     @Bean

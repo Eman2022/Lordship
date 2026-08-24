@@ -26,19 +26,17 @@ import java.util.stream.Collectors;
 
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    //protected final Log logger = LogFactory.getLog(getClass());
-
     private final JwtService jwtService;
-    private final PermissionResolverService permissionResolverService;
+    private final PermissionService permissionService;
     private final AgentService agentService;
     private final PropertyAssignmentService propertyAssignmentService;
 
     public JwtAuthFilter(JwtService jwtService,
-                         PermissionResolverService permissionResolverService,
+                         PermissionService permissionService,
                          AgentService agentService,
                          PropertyAssignmentService propertyAssignmentService) {
         this.jwtService = jwtService;
-        this.permissionResolverService = permissionResolverService;
+        this.permissionService = permissionService;
         this.agentService = agentService;
         this.propertyAssignmentService = propertyAssignmentService;
     }
@@ -73,7 +71,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if ("AGENT".equals(userType)) {
             Agent agent = agentService.findById(agentId).orElseThrow();
 
-            authorities = permissionResolverService.findPermissionsForAgent(agentId)
+            authorities = permissionService.findPermissionsForAgent(agentId)
                     .stream()
                     .map(p -> new SimpleGrantedAuthority(p.permissionName()))
                     .collect(Collectors.toSet());

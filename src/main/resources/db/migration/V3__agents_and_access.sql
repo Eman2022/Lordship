@@ -37,14 +37,12 @@ CREATE TABLE agent_role (
                             deleted_at       TIMESTAMPTZ
 );
 
-CREATE TABLE permission (
+CREATE TABLE permission ( -- note permissions are seeded and NOT editable (hence no created_at or deleted_at timestamps
                             uuid            UUID PRIMARY KEY DEFAULT uuidv7(),
-                            permission_name VARCHAR(60) NOT NULL UNIQUE,
-                            created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-                            deleted_at      TIMESTAMPTZ
+                            permission_name VARCHAR(60) NOT NULL UNIQUE
 );
 
-CREATE TABLE role_permission (
+CREATE TABLE role_permission (  -- where a permission is granted to a role
                                  uuid          UUID PRIMARY KEY DEFAULT uuidv7(),
                                  role_id       UUID NOT NULL,
                                  permission_id UUID NOT NULL,

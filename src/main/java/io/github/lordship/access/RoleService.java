@@ -1,7 +1,7 @@
 package io.github.lordship.access;
 
-import io.github.lordship.access.internal.rbac.RoleRepository;
-import io.github.lordship.access.internal.rbac.RoleRow;
+import io.github.lordship.access.internal.role.RoleRepository;
+import io.github.lordship.access.internal.role.RoleRow;
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
 import org.slf4j.Logger;

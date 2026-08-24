@@ -1,8 +1,8 @@
 package io.github.lordship.access.internal;
 
 import io.github.lordship.IntegrationTest;
-import io.github.lordship.access.internal.rbac.RoleRepository;
-import io.github.lordship.access.internal.rbac.RoleRow;
+import io.github.lordship.access.internal.role.RoleRepository;
+import io.github.lordship.access.internal.role.RoleRow;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
