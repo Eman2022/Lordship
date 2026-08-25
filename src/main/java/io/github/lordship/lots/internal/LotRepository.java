@@ -15,7 +15,7 @@ import java.util.UUID;
 public class LotRepository {
 
     private static final Set<String> PATCHABLE_COLUMNS = Set.of(
-            "lot_number", "lot_address", "description", "notes",
+            "lot_number", "lot_address", "lot_parcel", "description", "notes",
             "is_rentable", "not_rentable_reason"
     );
 

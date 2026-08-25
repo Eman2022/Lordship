@@ -41,6 +41,7 @@ CREATE TABLE property (
                           property_zip     TEXT,
                           purchase_date    DATE,
                           property_zoning  TEXT,
+                          property_parcel  TEXT,
                           year_built       INT,
                           property_manager UUID, -- FK to agent added in V3 after agent table exists
                           created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -141,12 +142,10 @@ CREATE TABLE property_fee_cap (
                                       CHECK (cap_percent_of_rent IS NULL OR (cap_percent_of_rent >= 0 AND cap_percent_of_rent <= 1)),
 
                                   cap_source     TEXT NOT NULL CHECK (length(trim(cap_source)) > 0),
-
                                   note           TEXT,
                                   created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
                                   created_by     UUID NOT NULL,  -- FK added in V3 after agent table exists
                                   deleted_at     TIMESTAMPTZ,
-
                                   CONSTRAINT fee_cap_has_a_limit CHECK (cap_flat IS NOT NULL OR cap_percent_of_rent IS NOT NULL)
 );
 
@@ -172,6 +171,5 @@ CREATE TABLE property_fee_waiver (
 CREATE UNIQUE INDEX property_fee_waiver_uq
     ON property_fee_waiver (property, agreement_type, fee_type)
     WHERE deleted_at IS NULL;
-
 
 -- default standard terms seeded in V10

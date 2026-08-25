@@ -27,6 +27,7 @@ public class LotRowMapper implements RowMapper<LotRow> {
                 rs.getString("not_rentable_reason"),
                 rs.getString("lot_number"),
                 rs.getString("lot_address"),
+                rs.getString("lot_parcel"),
                 rs.getString("description"),
                 rs.getString("notes"),
                 (Integer) rs.getObject("sort_order"),

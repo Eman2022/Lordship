@@ -15,6 +15,7 @@ public record Lot(
         String notRentableReason,
         String lotNumber,
         String lotAddress,
+        String lotParcel,
         String description,
         String notes,
         Integer sortOrder,

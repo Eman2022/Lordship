@@ -15,6 +15,7 @@ public record LotRow(
         String notRentableReason,
         String lotNumber,
         String lotAddress,
+        String lotParcel,
         String description,
         String notes,
         Integer sortOrder,
@@ -42,6 +43,7 @@ public record LotRow(
                 this.notRentableReason,
                 this.lotNumber,
                 this.lotAddress,
+                this.lotParcel,
                 this.description,
                 this.notes,
                 this.sortOrder,
@@ -56,6 +58,6 @@ public record LotRow(
 
     // Convenience constructor for insert
     public LotRow(UUID propertyId, String lotNumber) {
-        this(null, propertyId, true, null, lotNumber, null, null, null, null, null, null, null);
+        this(null, propertyId, true, null, lotNumber, null, null, null, null, null, null, null, null);
     }
 }
