@@ -182,10 +182,10 @@ CREATE TABLE tenancy_charge_term (
 
                                      agreement_type    agreement_type NOT NULL, -- do not allow editing from patch requests
 
-                                     rate              NUMERIC(12,2) NOT NULL CHECK (rate >= 0), -- COALESCE(lot rate, standard_terms.target_rate)
+                                     rate              NUMERIC(12,2) NOT NULL CHECK (rate >= 0), -- COALESCE(lot rate, terms_template.target_rate)
                                      car_fee           NUMERIC(12,2) NOT NULL CHECK (car_fee >= 0),
                                      allowed_cars      INT           NOT NULL CHECK (allowed_cars >= 0),
-                                     cars_max          INT           NOT NULL CHECK (cars_max >= 0),
+                                     cars_max          INT           NOT NULL,
                                      pet_fee           NUMERIC(12,2) NOT NULL CHECK (pet_fee >= 0),
                                      allowed_pets      INT           NOT NULL CHECK (allowed_pets >= 0),
 
@@ -194,11 +194,11 @@ CREATE TABLE tenancy_charge_term (
 
                                      rule_violation_fee_method TEXT NOT NULL
                                          CHECK (rule_violation_fee_method IN ('NONE','FLAT')),
-                                     rule_violation_fee_amount NUMERIC(12,2) CHECK (rule_violation_fee_amount >= 0),
+                                     rule_violation_fee_amount NUMERIC(12,2) NOT NULL CHECK (rule_violation_fee_amount >= 0),
 
-                                     nsf_fee_method    TEXT NOT NULL  -- BANK_FEE and BANK_PLUS_FLAT not implemented
-                                         CHECK (nsf_fee_method IN ('NONE','FLAT')),
-                                     nsf_fee_amount    NUMERIC(12,2) CHECK (nsf_fee_amount >= 0),
+                                     nsf_fee_method    TEXT NOT NULL
+                                         CHECK (nsf_fee_method IN ('NONE','FLAT','BANK_OR_FLAT')), -- BANK_OR_FLAT: either the flat amt or the bank fee if the bank fee is greater
+                                     nsf_fee_amount    NUMERIC(12,2) NOT NULL CHECK (nsf_fee_amount >= 0),
 
                                      late_fee_method   TEXT NOT NULL
                                          CHECK (late_fee_method IN ('NONE','FLAT', 'PERCENT_OF_RENT')),
@@ -244,17 +244,29 @@ CREATE TABLE tenancy_charge_term (
                                      CONSTRAINT term_source_same_tenancy -- enforces
                                          FOREIGN KEY (source_uuid, tenancy) REFERENCES instrument (uuid, tenancy),
 
+                                     CONSTRAINT term_cars_max_at_least_allowed CHECK (
+                                         status = 'PROPOSED' OR cars_max >= allowed_cars
+                                         ),
+
                                      CONSTRAINT term_late_fee_amount_matches_method CHECK (
                                          status = 'PROPOSED' OR
-                                         CASE WHEN late_fee_method = 'FLAT' THEN late_fee_amount > 0
-                                              ELSE late_fee_amount = 0 END
+                                         CASE
+                                             WHEN late_fee_method IN ('FLAT', 'PERCENT_OF_RENT')
+                                                 THEN late_fee_amount > 0
+                                             ELSE late_fee_amount = 0
+                                             END
                                          ),
 
                                      CONSTRAINT term_rule_violation_amount_matches_method CHECK (
                                          status = 'PROPOSED' OR
-                                         CASE WHEN rule_violation_fee_method = 'FLAT'
-                                                  THEN rule_violation_fee_amount IS NOT NULL AND rule_violation_fee_amount > 0
-                                              ELSE COALESCE(rule_violation_fee_amount, 0) = 0 END
+                                         CASE WHEN rule_violation_fee_method = 'FLAT' THEN rule_violation_fee_amount > 0
+                                              ELSE rule_violation_fee_amount = 0 END
+                                         ),
+
+                                     CONSTRAINT term_nsf_amount_matches_method CHECK (
+                                         status = 'PROPOSED' OR
+                                         CASE WHEN nsf_fee_method IN ('FLAT','BANK_OR_FLAT') THEN nsf_fee_amount > 0
+                                              ELSE nsf_fee_amount = 0 END
                                          ),
 
                                      CONSTRAINT term_water_amount_matches_method CHECK (
@@ -278,13 +290,6 @@ CREATE TABLE tenancy_charge_term (
                                               ELSE trash_flat_amount = 0 END
                                          ),
 
-                                     CONSTRAINT term_nsf_amount_matches_method CHECK (
-                                         status = 'PROPOSED' OR (
-                                             CASE WHEN nsf_fee_method = 'FLAT'
-                                                      THEN nsf_fee_amount IS NOT NULL AND nsf_fee_amount > 0
-                                                  ELSE COALESCE(nsf_fee_amount, 0) = 0 END
-                                             )
-                                         ),
                                      CONSTRAINT term_in_force_needs_paper CHECK (
                                          status NOT IN ('ACTIVE','CANCELLED')
                                              OR source = 'MIGRATION'

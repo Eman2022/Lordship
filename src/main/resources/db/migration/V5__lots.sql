@@ -9,7 +9,7 @@ CREATE TABLE lot ( --TODO: add square footage, also, add a MFH (manufactured hom
                      not_rentable_reason TEXT,
                      lot_number    TEXT NOT NULL,        -- human-facing id; numeric OR lettered (e.g. "DF"); mutable
                      lot_address   TEXT,
-                     lot_parcel    TEXT, -- optional (not all lots have their own parcels)
+                     lot_parcel    TEXT,                 -- optional (not all lots have their own parcels)
                      description   TEXT,
                      notes         TEXT,                 -- notes about the LOT, never the tenancy
                      sort_order    INT NOT NULL,         -- manual ordering for the map/menu view; per-property, 1..N

@@ -32,10 +32,15 @@ public record Lot(
     return deletedAt != null;
   }
 
-  public Optional<BigDecimal> targetRentFor(AgreementType agreementType) {
+  public boolean permits(AgreementType agreementType) {
+    return permissibleAgreementTypes.stream()
+            .anyMatch(pat -> pat.agreementType() == agreementType);
+  }
+
+  public Optional<BigDecimal> targetRateFor(AgreementType agreementType) {
     return permissibleAgreementTypes.stream()
             .filter(pat -> pat.agreementType() == agreementType)
-            .map(PermissibleAgreementType::targetRate)
-            .findFirst();
+            .findFirst()
+            .map(PermissibleAgreementType::targetRate);
   }
 }

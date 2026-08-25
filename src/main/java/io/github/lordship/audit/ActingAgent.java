@@ -1,6 +1,7 @@
 package io.github.lordship.audit;
 
 import io.github.lordship.shared.SystemPrincipal;
+import io.github.lordship.shared.UserType;
 import org.springframework.web.context.request.RequestContextHolder;
 
 import java.util.UUID;
@@ -20,4 +21,5 @@ public final class ActingAgent {
         UUID acting = auditContext.getActingUserId();
         return acting != null ? acting : SystemPrincipal.AGENT_UUID;
     }
+
 }

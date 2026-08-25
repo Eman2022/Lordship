@@ -124,7 +124,9 @@ INSERT INTO permission (uuid, permission_name) VALUES
     (uuidv7(), 'tenancy_term:view'),
     (uuidv7(), 'tenancy_term:edit'),
     (uuidv7(), 'tenancy_term:create'),
-    (uuidv7(), 'tenancy_term:delete')
+    (uuidv7(), 'tenancy_term:delete'),
+    (uuidv7(), 'tenancy_term:activate'),
+    (uuidv7(), 'tenancy_term:cancel')
 
 ;
 
@@ -186,6 +188,8 @@ AND p.permission_name IN (
     'tenancy_term:edit',
     'tenancy_term:create',
     'tenancy_term:delete',
+    'tenancy_term:activate',
+    'tenancy_term:cancel',
     'vehicles:view',
     'vehicles:edit',
     'vehicles:create',
