@@ -191,7 +191,9 @@ AND p.permission_name IN (
     'vehicles:create',
     'vehicles:delete',
     'meters:view',
-    'meterbills:view'
+    'meters:edit',
+    'meterbills:view',
+    'meterbills:edit'
 );
 
 -- Property Manager
@@ -225,7 +227,6 @@ AND p.permission_name IN (
     'tenancy_term:view',
     'vehicles:view',
     'meters:view',
-    'meters:edit', -- are we sure we want the property manager to be able to edit meter setups?
     'meterbills:view',
     'meterbills:edit'
 );

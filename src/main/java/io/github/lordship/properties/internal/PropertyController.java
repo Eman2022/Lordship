@@ -60,6 +60,7 @@ public class PropertyController {
         if (request.containsKey("propertyZip"))     changes.put("property_zip", request.get("propertyZip"));
         if (request.containsKey("propertyZoning"))  changes.put("property_zoning", request.get("propertyZoning"));
         if (request.containsKey("yearBuilt"))       changes.put("year_built", request.get("yearBuilt"));
+        if (request.containsKey("propertyParcel"))  changes.put("property_parcel", request.get("propertyParcel"));
         if (request.containsKey("propertyManager")) changes.put("property_manager", request.get("propertyManager"));
 
 

@@ -32,7 +32,7 @@ public class LotRepositoryTest extends IntegrationTest {
     private LotRow richRow(UUID propertyId, String lotNumber) {
         return new LotRow(
                 null, propertyId, true, null,
-                lotNumber, "123 Main St", "Rental lot", "Front row", 1,
+                lotNumber, "123 Main St", null, "Rental lot", "Front row", 1,
                 null, null, null
         );
     }

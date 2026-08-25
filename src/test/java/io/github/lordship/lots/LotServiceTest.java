@@ -52,7 +52,7 @@ public class LotServiceTest {
     private LotRow stubRow(UUID uuid, UUID propertyId) {
         return new LotRow(
                 uuid, propertyId, true, null,
-                "12", "123 Main St", "Rental lot", "Front row", 1,
+                "12", "123 Main St", null, "Rental lot", "Front row", 1,
                 null, OffsetDateTime.now(ZoneOffset.UTC), null
         );
     }
@@ -144,7 +144,7 @@ public class LotServiceTest {
         LotRow before = stubRow(propertyId);
         LotRow after = new LotRow(
                 before.uuid(), propertyId, true, null,
-                "14", before.lotAddress(), before.description(), before.notes(), before.sortOrder(),
+                "14", before.lotAddress(), "3005051", before.description(), before.notes(), before.sortOrder(),
                 before.shapeData(), before.createdAt(), null
         );
         when(lotRepository.findById(before.uuid())).thenReturn(Optional.of(before));
@@ -156,6 +156,7 @@ public class LotServiceTest {
 
         Map<String, Object> changes = new HashMap<>();
         changes.put("lot_number", "14");
+        changes.put("lot_parcel", "3005051");
 
         // Act
         Optional<Lot> result = lotService.patchLot(before.uuid(), changes);
@@ -168,12 +169,13 @@ public class LotServiceTest {
         assertEquals(1, result.get().permissibleAgreementTypes().size());
         assertEquals(AgreementType.RESIDENTIAL, result.get().permissibleAgreementTypes().get(0).agreementType());
 
-        // Only lotNumber moved, so the log must not carry the untouched fields.
+        // Only lotNumber and lot Parcel moved, so the log must not carry the untouched fields.
         AuditMapper.Diff logged = capturedUpdate(before.uuid());
-        assertEquals(Set.of("lotNumber"), logged.before().keySet());
+        assertEquals(Set.of("lotNumber", "lotParcel"), logged.before().keySet());
         assertEquals("12", logged.before().get("lotNumber"));
-        assertEquals(Set.of("lotNumber"), logged.after().keySet());
+        assertEquals(Set.of("lotNumber", "lotParcel"), logged.after().keySet());
         assertEquals("14", logged.after().get("lotNumber"));
+        assertEquals("3005051", logged.after().get("lotParcel"));
     }
 
     @Test
@@ -184,7 +186,7 @@ public class LotServiceTest {
         // value equality, not because the stub handed back the very same object.
         LotRow after = new LotRow(
                 before.uuid(), before.propertyId(), before.isRentable(), before.notRentableReason(),
-                before.lotNumber(), before.lotAddress(), before.description(), before.notes(),
+                before.lotNumber(), before.lotAddress(), before.lotParcel(), before.description(), before.notes(),
                 before.sortOrder(), before.shapeData(), before.createdAt(), before.deletedAt()
         );
         when(lotRepository.findById(before.uuid())).thenReturn(Optional.of(before));

@@ -14,6 +14,7 @@ public record Property(
         String propertyZip,
         LocalDate purchaseDate,
         String propertyZoning,
+        String propertyParcel,
         Integer yearBuilt,
         OffsetDateTime createdAt,
         OffsetDateTime deletedAt

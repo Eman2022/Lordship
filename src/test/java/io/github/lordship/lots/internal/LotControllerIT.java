@@ -82,6 +82,7 @@ public class LotControllerIT extends IntegrationTest {
                 .andExpect(jsonPath("$.notRentableReason").doesNotExist())
                 .andExpect(jsonPath("$.lotAddress").doesNotExist())
                 .andExpect(jsonPath("$.description").doesNotExist())
+                .andExpect(jsonPath("$.lotParcel").doesNotExist())
                 .andExpect(jsonPath("$.notes").doesNotExist())
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.deletedAt").doesNotExist())

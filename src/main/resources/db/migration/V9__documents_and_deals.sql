@@ -75,17 +75,17 @@ CREATE TABLE property_document (
 -- global clause, ADD contributes a clause this property authored. No REPLACE:
 -- a global clause body is never rewritten locally.
 CREATE TABLE property_document_clause (
-                                          uuid              UUID PRIMARY KEY DEFAULT uuidv7(),
-                                          property_document UUID NOT NULL REFERENCES property_document(uuid),
-                                          action            TEXT NOT NULL CHECK (action IN ('EXCLUDE','ADD')),
-                                          clause            UUID REFERENCES template_clause(uuid), -- set for EXCLUDE, null for ADD
-                                          ordinal           NUMERIC(10,4), -- shares the coordinate space with template_clause.ordinal
-                                          title             TEXT,
-                                          body              TEXT,
-                                          note              TEXT,
-                                          created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-                                          created_by        UUID NOT NULL REFERENCES agent(uuid),
-                                          deleted_at        TIMESTAMPTZ
+                                  uuid              UUID PRIMARY KEY DEFAULT uuidv7(),
+                                  property_document UUID NOT NULL REFERENCES property_document(uuid),
+                                  action            TEXT NOT NULL CHECK (action IN ('EXCLUDE','ADD')),
+                                  clause            UUID REFERENCES template_clause(uuid), -- set for EXCLUDE, null for ADD
+                                  ordinal           NUMERIC(10,4), -- shares the coordinate space with template_clause.ordinal
+                                  title             TEXT,
+                                  body              TEXT,
+                                  note              TEXT,
+                                  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                  created_by        UUID NOT NULL REFERENCES agent(uuid),
+                                  deleted_at        TIMESTAMPTZ
 );
 
 
@@ -201,8 +201,8 @@ CREATE TABLE tenancy_charge_term (
                                      nsf_fee_amount    NUMERIC(12,2) CHECK (nsf_fee_amount >= 0),
 
                                      late_fee_method   TEXT NOT NULL
-                                         CHECK (late_fee_method IN ('NONE','FLAT')),
-                                     late_fee_amount   NUMERIC(12,2) NOT NULL CHECK (late_fee_amount >= 0),
+                                         CHECK (late_fee_method IN ('NONE','FLAT', 'PERCENT_OF_RENT')),
+                                     late_fee_amount   NUMERIC(12,2) NOT NULL CHECK (late_fee_amount >= 0), -- can be a percent OR a flat rate
 
                                      water_method      TEXT NOT NULL
                                          CHECK (water_method IN ('NONE','FLAT','RUBS','SUBMETERED')),

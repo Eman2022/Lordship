@@ -223,7 +223,10 @@ public class PropertyControllerIT extends IntegrationTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "propertyName": "Updated Park Name" }
+                                {
+                                    "propertyName": "Updated Park Name",
+                                    "propertyParcel": "10-48-0002-0015-00-3"
+                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.propertyName").value("Updated Park Name"))
@@ -259,6 +262,7 @@ public class PropertyControllerIT extends IntegrationTest {
                                     "propertyAddress": "989 Test Ave",
                                     "propertyZip": "94123",
                                     "propertyState" : "WA",
+                                    "propertyParcel" : "11-12-0001-0014-00-1",
                                     "propertyZoning" : "Residential"
                                 }
                                 """))
@@ -266,6 +270,7 @@ public class PropertyControllerIT extends IntegrationTest {
                 .andExpect(jsonPath("$.propertyName").value("Updated Park Name"))
                 .andExpect(jsonPath("$.propertyZip").value("94123"))
                 .andExpect(jsonPath("$.propertyState").value("WA"))
+                .andExpect(jsonPath("$.propertyParcel").value("11-12-0001-0014-00-1"))
                 .andExpect(jsonPath("$.propertyZoning").value("Residential"))
                 .andExpect(jsonPath("$.propertyAddress").value("989 Test Ave"));
     }
