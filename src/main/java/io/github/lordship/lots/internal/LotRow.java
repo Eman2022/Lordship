@@ -51,7 +51,8 @@ public record LotRow(
                 this.createdAt,
                 this.deletedAt,
                 agreementTypeRows.stream()
-                        .map(r -> new PermissibleAgreementType(r.agreementType(), r.targetRent()))
+                        .map(r -> new PermissibleAgreementType(
+                                r.agreementType(), r.targetRate(), r.askingRate()))
                         .toList()
         );
     }

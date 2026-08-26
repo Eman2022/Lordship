@@ -12,9 +12,11 @@ public class LotPermissibleAgreementTypeRowMapper implements RowMapper<LotPermis
     @Override
     public LotPermissibleAgreementTypeRow mapRow(ResultSet rs, int rowNum) throws SQLException {
         return new LotPermissibleAgreementTypeRow(
+                (UUID) rs.getObject("uuid"),
                 (UUID) rs.getObject("lot_id"),
                 AgreementType.valueOf(rs.getString("agreement_type")),
-                rs.getBigDecimal("target_rate")
+                rs.getBigDecimal("target_rate"),
+                rs.getBigDecimal("asking_rate")
         );
     }
 }

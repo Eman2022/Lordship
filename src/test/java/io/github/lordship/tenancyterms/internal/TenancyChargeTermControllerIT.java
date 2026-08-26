@@ -446,8 +446,8 @@ public class TenancyChargeTermControllerIT extends IntegrationTest {
      */
     private void permitAgreementType(UUID lotId, AgreementType agreementType, BigDecimal targetRate) {
         jdbc.sql("""
-                INSERT INTO lot_permissible_agreement_type (lot_id, agreement_type, target_rate)
-                VALUES (:lotId, :agreementType::agreement_type, :targetRate)
+                INSERT INTO lot_permissible_agreement_type (lot_id, agreement_type, target_rate, asking_rate)
+                VALUES (:lotId, :agreementType::agreement_type, :targetRate, :targetRate)
                 """)
                 .param("lotId", lotId)
                 .param("agreementType", agreementType.name())
@@ -458,7 +458,7 @@ public class TenancyChargeTermControllerIT extends IntegrationTest {
     private void setLotRate(UUID lotId, AgreementType agreementType, BigDecimal targetRate) {
         jdbc.sql("""
                 UPDATE lot_permissible_agreement_type
-                SET target_rate = :targetRate
+                SET target_rate = :targetRate, asking_rate = :targetRate
                 WHERE lot_id = :lotId AND agreement_type = :agreementType::agreement_type
                 """)
                 .param("lotId", lotId)

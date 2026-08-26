@@ -32,11 +32,13 @@ CREATE TABLE lot ( --TODO: add square footage, also, add a MFH (manufactured hom
                          )
 );
 
-CREATE TABLE lot_permissible_agreement_type ( -- shows what agreements are permissible for any given lot
-            lot_id         UUID NOT NULL REFERENCES lot(uuid),
-            agreement_type agreement_type NOT NULL,
-            target_rate    NUMERIC(12,2) CHECK (target_rate >= 0),
-            PRIMARY KEY (lot_id, agreement_type)
+CREATE TABLE lot_permissible_agreement_type ( -- what agreements are permissible for a lot, and at what price
+                        uuid           UUID PRIMARY KEY DEFAULT uuidv7(),
+                        lot_id         UUID NOT NULL REFERENCES lot(uuid),
+                        agreement_type agreement_type NOT NULL,
+                        target_rate    NUMERIC(12,2) CHECK (target_rate >= 0), -- where existing tenancies are steered
+                        asking_rate    NUMERIC(12,2) CHECK (asking_rate >= 0), -- what a new applicant is quoted
+                        CONSTRAINT lot_permissible_agreement_type_uq UNIQUE (lot_id, agreement_type)
 );
 
 CREATE INDEX idx_lot_number_per_property

@@ -43,6 +43,8 @@ public class TenancyService {
             throw new IllegalStateException("Lot cannot have more than two tenancies at a time");
         }
 
+        // TODO: check to make sure the lot.is_rentable
+
         TenancyRow row = tenancyRepository.save(lotId);
         Tenancy tenancy = row.toTenancy();
         accountService.createAccount(tenancy.uuid(), null);

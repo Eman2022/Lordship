@@ -88,7 +88,7 @@ public class TenancyChargeTermServiceTest {
         // property to offer the agreement type at all
         when(tenancyService.findTenancyById(TENANCY)).thenReturn(Optional.of(tenancy()));
         when(lotService.findById(LOT)).thenReturn(Optional.of(
-                lot(new PermissibleAgreementType(AgreementType.STORAGE, null))));
+                lot(new PermissibleAgreementType(AgreementType.STORAGE, null, null))));
         when(termsTemplateService.findForProperty(PROPERTY, AgreementType.STORAGE))
                 .thenReturn(Optional.empty());
 
@@ -105,7 +105,7 @@ public class TenancyChargeTermServiceTest {
         // host one. The two gates are independent.
         when(tenancyService.findTenancyById(TENANCY)).thenReturn(Optional.of(tenancy()));
         when(lotService.findById(LOT)).thenReturn(Optional.of(
-                lot(new PermissibleAgreementType(AgreementType.STORAGE, null))));
+                lot(new PermissibleAgreementType(AgreementType.STORAGE, null, null))));
 
         // Act / Assert
         assertThrows(IllegalStateException.class, () -> tenancyChargeTermService.createFromTemplate(
@@ -117,7 +117,7 @@ public class TenancyChargeTermServiceTest {
     @Test
     void createFromTemplate_shouldPreferTheLotRate_overTheTemplateRate() {
         // Arrange -- rates are set while looking at lots on the map, so the lot wins
-        arrangeCreate(lot(new PermissibleAgreementType(AgreementType.LAND, new BigDecimal("725.00"))),
+        arrangeCreate(lot(new PermissibleAgreementType(AgreementType.LAND, new BigDecimal("725.00"), new BigDecimal("725.00"))),
                 template(new BigDecimal("650.00")));
 
         // Act
@@ -132,7 +132,7 @@ public class TenancyChargeTermServiceTest {
     @Test
     void createFromTemplate_shouldFallBackToTheTemplateRate_whenTheLotHasNone() {
         // Arrange -- the lot permits the agreement type but nobody set a rate on it
-        arrangeCreate(lot(new PermissibleAgreementType(AgreementType.LAND, null)),
+        arrangeCreate(lot(new PermissibleAgreementType(AgreementType.LAND, null, null)),
                 template(new BigDecimal("650.00")));
 
         // Act
@@ -694,7 +694,7 @@ public class TenancyChargeTermServiceTest {
 
     /** A lot that permits LAND but has no rate set on it yet. */
     private static Lot lotPermittingLand() {
-        return lot(new PermissibleAgreementType(AgreementType.LAND, null));
+        return lot(new PermissibleAgreementType(AgreementType.LAND, null, null));
     }
 
     private static Lot lot(PermissibleAgreementType... permissible) {
@@ -703,11 +703,15 @@ public class TenancyChargeTermServiceTest {
                 1, null, now, null, List.of(permissible));
     }
 
-    /** A property-level template, as TermsTemplateService would hand it over. */
-    private static TermsTemplate template(BigDecimal targetRate) {
+    /**
+     * A property-level template, as TermsTemplateService would hand it over.
+     * One figure covers both rates: these tests are about which tier the rate
+     * came from, not which of the two rates was picked.
+     */
+    private static TermsTemplate template(BigDecimal rate) {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         return new TermsTemplate(
-                TEMPLATE, PROPERTY, null, "Test Land Lease", AgreementType.LAND, targetRate,
+                TEMPLATE, PROPERTY, null, "Test Land Lease", AgreementType.LAND, rate, rate,
                 new BigDecimal("45.00"), 2, 4,
                 new BigDecimal("45.00"), 2,
                 1, 5,

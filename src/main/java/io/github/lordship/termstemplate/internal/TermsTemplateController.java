@@ -24,6 +24,7 @@ public class TermsTemplateController {
     private static final Map<String, String> PATCHABLE_COLUMNS = Map.ofEntries(
             Map.entry("name", "name"),
             Map.entry("targetRate", "target_rate"),
+            Map.entry("askingRate", "asking_rate"),
             Map.entry("carFee", "car_fee"),
             Map.entry("allowedCars", "allowed_cars"),
             Map.entry("carsMax", "cars_max"),
@@ -45,7 +46,8 @@ public class TermsTemplateController {
             Map.entry("sewerFlatAmount", "sewer_flat_amount"),
             Map.entry("trashMethod", "trash_method"),
             Map.entry("trashFlatAmount", "trash_flat_amount"),
-            Map.entry("note", "note"));
+            Map.entry("note", "note")
+    );
 
     private final TermsTemplateService termsTemplateService;
 

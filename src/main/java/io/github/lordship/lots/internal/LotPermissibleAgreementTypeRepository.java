@@ -4,6 +4,7 @@ import io.github.lordship.shared.AgreementType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -20,17 +21,48 @@ public class LotPermissibleAgreementTypeRepository {
 
     public LotPermissibleAgreementTypeRow save(LotPermissibleAgreementTypeRow row) {
         return jdbc.sql("""
-            INSERT INTO lot_permissible_agreement_type (lot_id, agreement_type, target_rent)
-            VALUES (:lotId, :agreementType::agreement_type, :targetRent)
+            INSERT INTO lot_permissible_agreement_type (lot_id, agreement_type, target_rate, asking_rate)
+            VALUES (:lotId, :agreementType::agreement_type, :targetRate, :askingRate)
             ON CONFLICT (lot_id, agreement_type)
-            DO UPDATE SET target_rent = EXCLUDED.target_rent
+            DO UPDATE SET target_rate = EXCLUDED.target_rate,
+                          asking_rate = EXCLUDED.asking_rate
             RETURNING *
             """)
                 .param("lotId", row.lotId())
                 .param("agreementType", row.agreementType().name())
-                .param("targetRent", row.targetRent())
+                .param("targetRate", row.targetRate())
+                .param("askingRate", row.askingRate())
                 .query(rowMapper)
                 .single();
+    }
+
+    /**
+     * The owner's pricing pass: one or both figures across a selection, for one
+     * kind of deal.
+     *
+     * <p>An UPDATE and not an upsert -- a lot in the selection that does not
+     * permit the type means the selection went stale, not that the lot should
+     * be enrolled. COALESCE leaves a figure alone when it was not supplied, so
+     * setting only the asking rate cannot wipe the target; clearing a rate is
+     * the single-lot endpoint's job.
+     */
+    public int updateRates(Collection<UUID> lotIds, AgreementType agreementType,
+                           BigDecimal targetRate, BigDecimal askingRate) {
+        if (lotIds.isEmpty()) {
+            return 0;
+        }
+        return jdbc.sql("""
+            UPDATE lot_permissible_agreement_type
+            SET target_rate = COALESCE(:targetRate, target_rate),
+                asking_rate = COALESCE(:askingRate, asking_rate)
+            WHERE lot_id IN (:lotIds)
+              AND agreement_type = :agreementType::agreement_type
+            """)
+                .param("lotIds", lotIds)
+                .param("agreementType", agreementType.name())
+                .param("targetRate", targetRate)
+                .param("askingRate", askingRate)
+                .update();
     }
 
     public List<LotPermissibleAgreementTypeRow> findByLotId(UUID lotId) {
@@ -58,13 +90,13 @@ public class LotPermissibleAgreementTypeRepository {
                 .list();
     }
 
-    public void delete(UUID lotId, AgreementType agreementType) {
-        jdbc.sql("""
+    public boolean delete(UUID lotId, AgreementType agreementType) {
+        return jdbc.sql("""
             DELETE FROM lot_permissible_agreement_type
             WHERE lot_id = :lotId AND agreement_type = :agreementType::agreement_type
             """)
                 .param("lotId", lotId)
                 .param("agreementType", agreementType.name())
-                .update();
+                .update() > 0;
     }
 }

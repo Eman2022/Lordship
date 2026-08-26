@@ -15,8 +15,10 @@ public record TermsTemplateRow(
         UUID property,
         UUID copiedFrom, // provenance only; may point at a retired template
         String name,
+
         AgreementType agreementType,
-        BigDecimal targetRate,
+        BigDecimal targetRate, // where existing tenancies are steered
+        BigDecimal askingRate, // what a new applicant is quoted
 
         BigDecimal carFee,
         Integer allowedCars, // cars allowed before being charged fees
@@ -57,7 +59,7 @@ public record TermsTemplateRow(
 ) {
     public TermsTemplate toTermsTemplate() {
         return new TermsTemplate(
-                uuid, property, copiedFrom, name, agreementType, targetRate,
+                uuid, property, copiedFrom, name, agreementType, targetRate, askingRate,
                 carFee, allowedCars, carsMax, petFee, allowedPets,
                 paymentDueDay, gracePeriodDays,
                 ruleViolationFeeMethod, ruleViolationFeeAmount,
@@ -76,7 +78,7 @@ public record TermsTemplateRow(
     // mistakes here compile silently because every component is a reference type.
     public TermsTemplateRow(UUID property, String name, AgreementType agreementType, UUID createdBy) {
         this(null, property, null, name, agreementType,
-                null,                          // targetRate
+                null, null,                    // targetRate, askingRate
                 null, null, null,              // carFee, allowedCars, carsMax
                 null, null,                    // petFee, allowedPets
                 null, null,                    // paymentDueDay, gracePeriodDays
@@ -98,7 +100,7 @@ public record TermsTemplateRow(
     // of the copy, not whoever authored the template.
     public TermsTemplateRow copyTo(UUID targetProperty, UUID copiedBy) {
         return new TermsTemplateRow(
-                null, targetProperty, uuid, name, agreementType, targetRate,
+                null, targetProperty, uuid, name, agreementType, targetRate, askingRate,
                 carFee, allowedCars, carsMax, petFee, allowedPets,
                 paymentDueDay, gracePeriodDays,
                 ruleViolationFeeMethod, ruleViolationFeeAmount,

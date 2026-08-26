@@ -24,6 +24,7 @@ public class TermsTemplateRowMapper implements RowMapper<TermsTemplateRow> {
                 rs.getString("name"),
                 enumOf(AgreementType.class, rs.getString("agreement_type")),
                 rs.getBigDecimal("target_rate"),
+                rs.getBigDecimal("asking_rate"),
 
                 rs.getBigDecimal("car_fee"),
                 rs.getObject("allowed_cars", Integer.class),

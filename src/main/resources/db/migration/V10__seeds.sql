@@ -83,6 +83,7 @@ INSERT INTO permission (uuid, permission_name) VALUES
     -- Lots
     (uuidv7(), 'lots:view'),
     (uuidv7(), 'lots:edit'),
+    (uuidv7(), 'lots:set_rates'),
     (uuidv7(), 'lots:create'),
     (uuidv7(), 'lots:delete'),
 

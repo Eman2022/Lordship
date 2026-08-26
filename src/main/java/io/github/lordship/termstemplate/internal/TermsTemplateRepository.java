@@ -16,7 +16,7 @@ public class TermsTemplateRepository {
 
     // property, agreement_type, copied_from and created_by not included - they should not be changed
     private static final Set<String> PATCHABLE_COLUMNS = Set.of(
-            "name", "target_rate",
+            "name", "target_rate", "asking_rate",
             "car_fee", "allowed_cars", "cars_max",
             "pet_fee", "allowed_pets",
             "payment_due_day", "grace_period_days",
@@ -57,7 +57,7 @@ public class TermsTemplateRepository {
     public TermsTemplateRow saveCopy(TermsTemplateRow row) {
         return jdbc.sql("""
                 INSERT INTO terms_template (
-                    property, copied_from, name, agreement_type, target_rate,
+                    property, copied_from, name, agreement_type, target_rate, asking_rate,
                     car_fee, allowed_cars, cars_max, pet_fee, allowed_pets,
                     payment_due_day, grace_period_days,
                     rule_violation_fee_method, rule_violation_fee_amount,
@@ -69,7 +69,7 @@ public class TermsTemplateRepository {
                     trash_method, trash_flat_amount,
                     note, created_by
                 ) VALUES (
-                    :property, :copiedFrom, :name, :agreementType::agreement_type, :targetRate,
+                    :property, :copiedFrom, :name, :agreementType::agreement_type, :targetRate, :askingRate,
                     :carFee, :allowedCars, :carsMax, :petFee, :allowedPets,
                     :paymentDueDay, :gracePeriodDays,
                     :ruleViolationFeeMethod, :ruleViolationFeeAmount,
@@ -87,6 +87,7 @@ public class TermsTemplateRepository {
                 .param("name", row.name())
                 .param("agreementType", nameOf(row.agreementType()))
                 .param("targetRate", row.targetRate())
+                .param("askingRate", row.askingRate())
                 .param("carFee", row.carFee())
                 .param("allowedCars", row.allowedCars())
                 .param("carsMax", row.carsMax())

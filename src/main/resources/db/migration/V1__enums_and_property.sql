@@ -56,6 +56,7 @@ CREATE TABLE terms_template ( -- note when the property is NULL this is a global
                             name     TEXT NOT NULL CHECK (length(trim(name)) > 0),
                             agreement_type agreement_type NOT NULL, -- do not patch
                             target_rate NUMERIC(12,2) CHECK (target_rate >= 0), -- keep zero for global terms
+                            asking_rate NUMERIC(12,2) CHECK (asking_rate >= 0),
 
                             car_fee           NUMERIC(12,2) NOT NULL DEFAULT 65.0 CHECK (car_fee >= 0),
                             allowed_cars      INT           NOT NULL DEFAULT 2    CHECK (allowed_cars >= 0),

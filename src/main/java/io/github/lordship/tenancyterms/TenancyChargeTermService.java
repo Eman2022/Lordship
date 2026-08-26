@@ -183,7 +183,7 @@ public class TenancyChargeTermService {
                 TenancyChargeTermRow.fromTemplate(
                         tenancy,
                         template,
-                        resolveRate(lot, template),
+                        resolveRate(lot, template, source),
                         validAt,
                         source,
                         batch,
@@ -362,13 +362,29 @@ public class TenancyChargeTermService {
         return Optional.of(after.toTenancyChargeTerm());
     }
 
-    // The lot's rate for this agreement type is the authority -- rates are set
-    // while looking at lots on the map, not while editing terms. The property's
-    // template is the fallback. Zero when neither has one, which is legal for a
-    // draft and refused at submission.
-    private static BigDecimal resolveRate(Lot lot, TermsTemplate template) {
-        return lot.targetRateFor(template.agreementType())
-                .or(() -> Optional.ofNullable(template.targetRate()))
+    /**
+     * The lot's rate for this agreement type is the authority -- rates are set
+     * while looking at lots on the map, not while editing terms. The property's
+     * template is the fallback. Zero when neither has one, which is legal for a
+     * draft and refused at submission.
+     *
+     * <p>Which of the two rates applies depends on who is signing. A tenancy
+     * starting fresh is quoted the asking rate; an increase notice is the
+     * instrument that steers an existing tenancy toward the target. How far it
+     * may move in one step is the rent-increase engine's problem, not this
+     * method's -- here the target is simply where it is headed.
+     */
+    private static BigDecimal resolveRate(Lot lot, TermsTemplate template, TenancyTermSource source) {
+        AgreementType agreementType = template.agreementType();
+
+        if (source == TenancyTermSource.INCREASE_NOTICE) {
+            return lot.targetRateFor(agreementType)
+                    .or(() -> Optional.ofNullable(template.targetRate()))
+                    .orElse(BigDecimal.ZERO);
+        }
+
+        return lot.askingRateFor(agreementType)
+                .or(() -> Optional.ofNullable(template.askingRate()))
                 .orElse(BigDecimal.ZERO);
     }
 

@@ -20,6 +20,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.annotation.Transactional;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -28,8 +29,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Transactional
 public class TenancyChargeTermRepositoryTest extends IntegrationTest {
@@ -66,11 +65,12 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
         TenancyChargeTermRow saved = tenancyChargeTermRepository.save(draft(LocalDate.of(2026, 9, 1)));
 
         // Assert
-        assertThat(saved.uuid()).isNotNull();
-        assertThat(saved.createdAt()).isNotNull();
-        assertThat(saved.deletedAt()).isNull();
-        assertThat(saved.status()).isEqualTo(TenancyTermStatus.PROPOSED);
-        assertThat(saved.termsTemplate()).isEqualTo(template.uuid());
+        assertNotNull(saved.uuid());
+        assertNotNull(saved.createdAt());
+        assertNull(saved.deletedAt());
+        assertEquals(TenancyTermStatus.PROPOSED, saved.status());
+
+        assertEquals(template.uuid(), saved.termsTemplate());
     }
 
     // Reading a column that does not exist throws; reading the WRONG column
@@ -87,41 +87,41 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
         TenancyChargeTermRow read = tenancyChargeTermRepository.findById(saved.uuid()).orElseThrow();
 
         // Assert
-        assertThat(read.tenancy()).isEqualTo(tenancy);
-        assertThat(read.validAt()).isEqualTo(LocalDate.of(2027, 3, 4));
-        assertThat(read.agreementType()).isEqualTo(AgreementType.LAND);
+        assertEquals(tenancy, read.tenancy());
+        assertEquals(LocalDate.of(2027, 3, 4), read.validAt());
+        assertEquals(AgreementType.LAND, read.agreementType());
 
-        assertThat(read.rate()).isEqualByComparingTo("101.00");
-        assertThat(read.carFee()).isEqualByComparingTo("102.00");
-        assertThat(read.allowedCars()).isEqualTo(3);
-        assertThat(read.carsMax()).isEqualTo(7);
-        assertThat(read.petFee()).isEqualByComparingTo("103.00");
-        assertThat(read.allowedPets()).isEqualTo(5);
+        assertEquals(0, read.rate().compareTo(new BigDecimal("101.00")));
+        assertEquals(0, read.carFee().compareTo(new BigDecimal("102.00")));
+        assertEquals(3, read.allowedCars());
+        assertEquals(7, read.carsMax());
+        assertEquals(0, read.petFee().compareTo(new BigDecimal("103.00")));
+        assertEquals(5, read.allowedPets());
 
-        assertThat(read.paymentDueDay()).isEqualTo(9);
-        assertThat(read.gracePeriodDays()).isEqualTo(11);
+        assertEquals(9, read.paymentDueDay());
+        assertEquals(11, read.gracePeriodDays());
 
-        assertThat(read.ruleViolationFeeMethod()).isEqualTo(FeeMethod.FLAT);
-        assertThat(read.ruleViolationFeeAmount()).isEqualByComparingTo("201.00");
-        assertThat(read.nsfFeeMethod()).isEqualTo(FeeMethod.BANK_OR_FLAT);
-        assertThat(read.nsfFeeAmount()).isEqualByComparingTo("202.00");
-        assertThat(read.lateFeeMethod()).isEqualTo(FeeMethod.PERCENT_OF_RENT);
-        assertThat(read.lateFeeAmount()).isEqualByComparingTo("203.00");
+        assertEquals(FeeMethod.FLAT, read.ruleViolationFeeMethod());
+        assertEquals(0, read.ruleViolationFeeAmount().compareTo(new BigDecimal("201.00")));
+        assertEquals(FeeMethod.BANK_OR_FLAT, read.nsfFeeMethod());
+        assertEquals(0, read.nsfFeeAmount().compareTo(new BigDecimal("202.00")));
+        assertEquals(FeeMethod.PERCENT_OF_RENT, read.lateFeeMethod());
+        assertEquals(0, read.lateFeeAmount().compareTo(new BigDecimal("203.00")));
 
-        assertThat(read.waterMethod()).isEqualTo(UtilityMethod.FLAT);
-        assertThat(read.waterFlatAmount()).isEqualByComparingTo("301.00");
-        assertThat(read.powerMethod()).isEqualTo(UtilityMethod.RUBS);
-        assertThat(read.powerFlatAmount()).isEqualByComparingTo("302.00");
-        assertThat(read.sewerMethod()).isEqualTo(UtilityMethod.SUBMETERED);
-        assertThat(read.sewerFlatAmount()).isEqualByComparingTo("303.00");
-        assertThat(read.trashMethod()).isEqualTo(UtilityMethod.RUBS);
-        assertThat(read.trashFlatAmount()).isEqualByComparingTo("304.00");
+        assertEquals(UtilityMethod.FLAT, read.waterMethod());
+        assertEquals(0, read.waterFlatAmount().compareTo(new BigDecimal("301.00")));
+        assertEquals(UtilityMethod.RUBS, read.powerMethod());
+        assertEquals(0, read.powerFlatAmount().compareTo(new BigDecimal("302.00")));
+        assertEquals(UtilityMethod.SUBMETERED, read.sewerMethod());
+        assertEquals(0, read.sewerFlatAmount().compareTo(new BigDecimal("303.00")));
+        assertEquals(UtilityMethod.RUBS, read.trashMethod());
+        assertEquals(0, read.trashFlatAmount().compareTo(new BigDecimal("304.00")));
 
-        assertThat(read.status()).isEqualTo(TenancyTermStatus.PROPOSED);
-        assertThat(read.source()).isEqualTo(TenancyTermSource.CORRECTION);
-        assertThat(read.termsTemplate()).isEqualTo(template.uuid());
-        assertThat(read.note()).isEqualTo("CT round trip");
-        assertThat(read.createdBy()).isEqualTo(SystemPrincipal.AGENT_UUID);
+        assertEquals(TenancyTermStatus.PROPOSED, read.status());
+        assertEquals(TenancyTermSource.CORRECTION, read.source());
+        assertEquals(template.uuid(), read.termsTemplate());
+        assertEquals("CT round trip", read.note());
+        assertEquals(SystemPrincipal.AGENT_UUID, read.createdBy());
     }
 
     @Test
@@ -131,7 +131,7 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
         tenancyChargeTermRepository.softDelete(saved.uuid());
 
         // Act / Assert
-        assertThat(tenancyChargeTermRepository.findById(saved.uuid())).isEmpty();
+        assertTrue(tenancyChargeTermRepository.findById(saved.uuid()).isEmpty());
     }
 
     @Test
@@ -145,8 +145,12 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
         List<TenancyChargeTermRow> found = tenancyChargeTermRepository.findByTenancy(tenancy);
 
         // Assert
-        assertThat(found).extracting(TenancyChargeTermRow::validAt).containsExactly(
-                LocalDate.of(2027, 1, 1), LocalDate.of(2026, 11, 1), LocalDate.of(2026, 9, 1));
+        assertEquals(
+                List.of(
+                        LocalDate.of(2027, 1, 1),
+                        LocalDate.of(2026, 11, 1),
+                        LocalDate.of(2026, 9, 1)),
+                found.stream().map(TenancyChargeTermRow::validAt).toList());
     }
 
     @Test
@@ -159,7 +163,7 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
         tenancyChargeTermRepository.save(draft(LocalDate.of(2026, 12, 1)));
 
         // Act / Assert
-        assertThat(tenancyChargeTermRepository.findByBatch(batch)).hasSize(2);
+        assertEquals(2, tenancyChargeTermRepository.findByBatch(batch).size());
     }
 
     // ---- patch ---------------------------------------------------------------
@@ -171,9 +175,8 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
         TenancyChargeTermRow saved = tenancyChargeTermRepository.save(draft(LocalDate.of(2026, 9, 1)));
 
         // Act / Assert
-        assertThatThrownBy(() -> tenancyChargeTermRepository.patch(
-                saved.uuid(), Map.of("agreement_type", "STORAGE")))
-                .isInstanceOf(InvalidDataAccessApiUsageException.class);
+        assertThrows(InvalidDataAccessApiUsageException.class, () -> tenancyChargeTermRepository.patch(
+                saved.uuid(), Map.of("agreement_type", "STORAGE")));
     }
 
     @Test
@@ -186,8 +189,8 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
                 saved.uuid(), Map.of("rate", new BigDecimal("777.00"), "note", "raised")).orElseThrow();
 
         // Assert
-        assertThat(patched.rate()).isEqualByComparingTo("777.00");
-        assertThat(patched.note()).isEqualTo("raised");
+        assertEquals(0, patched.rate().compareTo(new BigDecimal("777.00")));
+        assertEquals("raised", patched.note());
     }
 
     // ---- the escaped CHECK constraints --------------------------------------
@@ -202,8 +205,8 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
                 saved.uuid(), TenancyTermStatus.PROPOSED, TenancyTermStatus.PENDING);
 
         // Assert
-        assertThat(moved).isPresent();
-        assertThat(moved.get().status()).isEqualTo(TenancyTermStatus.PENDING);
+        assertTrue(moved.isPresent());
+        assertEquals(TenancyTermStatus.PENDING, moved.get().status());
     }
 
     @Test
@@ -212,8 +215,8 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
         TenancyChargeTermRow saved = tenancyChargeTermRepository.save(draft(LocalDate.of(2026, 9, 1)));
 
         // Act / Assert
-        assertThat(tenancyChargeTermRepository.updateStatus(
-                saved.uuid(), TenancyTermStatus.PENDING, TenancyTermStatus.ACTIVE)).isEmpty();
+        assertTrue(tenancyChargeTermRepository.updateStatus(
+                saved.uuid(), TenancyTermStatus.PENDING, TenancyTermStatus.ACTIVE).isEmpty());
     }
 
     // This is the whole reason the service validates before submitting. The
@@ -228,9 +231,8 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
                 "late_fee_amount", BigDecimal.ZERO));
 
         // Act / Assert
-        assertThatThrownBy(() -> tenancyChargeTermRepository.updateStatus(
-                saved.uuid(), TenancyTermStatus.PROPOSED, TenancyTermStatus.PENDING))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThrows(DataIntegrityViolationException.class, () -> tenancyChargeTermRepository.updateStatus(
+                saved.uuid(), TenancyTermStatus.PROPOSED, TenancyTermStatus.PENDING));
     }
 
     @Test
@@ -240,9 +242,8 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
         tenancyChargeTermRepository.patch(saved.uuid(), Map.of("allowed_cars", 6, "cars_max", 2));
 
         // Act / Assert
-        assertThatThrownBy(() -> tenancyChargeTermRepository.updateStatus(
-                saved.uuid(), TenancyTermStatus.PROPOSED, TenancyTermStatus.PENDING))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThrows(DataIntegrityViolationException.class, () -> tenancyChargeTermRepository.updateStatus(
+                saved.uuid(), TenancyTermStatus.PROPOSED, TenancyTermStatus.PENDING));
     }
 
     @Test
@@ -253,9 +254,8 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
                 saved.uuid(), TenancyTermStatus.PROPOSED, TenancyTermStatus.PENDING);
 
         // Act / Assert
-        assertThatThrownBy(() -> tenancyChargeTermRepository.updateStatus(
-                saved.uuid(), TenancyTermStatus.PENDING, TenancyTermStatus.ACTIVE))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThrows(DataIntegrityViolationException.class, () -> tenancyChargeTermRepository.updateStatus(
+                saved.uuid(), TenancyTermStatus.PENDING, TenancyTermStatus.ACTIVE));
     }
 
     // ---- cancel --------------------------------------------------------------
@@ -271,10 +271,10 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
                 active.uuid(), SystemPrincipal.AGENT_UUID, "tenant moved out").orElseThrow();
 
         // Assert
-        assertThat(cancelled.status()).isEqualTo(TenancyTermStatus.CANCELLED);
-        assertThat(cancelled.cancelledAt()).isNotNull();
-        assertThat(cancelled.cancelledBy()).isEqualTo(SystemPrincipal.AGENT_UUID);
-        assertThat(cancelled.cancelReason()).isEqualTo("tenant moved out");
+        assertEquals(TenancyTermStatus.CANCELLED, cancelled.status());
+        assertNotNull(cancelled.cancelledAt());
+        assertEquals(SystemPrincipal.AGENT_UUID, cancelled.cancelledBy());
+        assertEquals("tenant moved out", cancelled.cancelReason());
     }
 
     @Test
@@ -283,8 +283,8 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
         TenancyChargeTermRow saved = tenancyChargeTermRepository.save(draft(LocalDate.of(2026, 9, 1)));
 
         // Act / Assert
-        assertThat(tenancyChargeTermRepository.cancel(
-                saved.uuid(), SystemPrincipal.AGENT_UUID, "nope")).isEmpty();
+        assertTrue(tenancyChargeTermRepository.cancel(
+                saved.uuid(), SystemPrincipal.AGENT_UUID, "nope").isEmpty());
     }
 
     // ---- soft delete ---------------------------------------------------------
@@ -295,7 +295,7 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
         TenancyChargeTermRow saved = tenancyChargeTermRepository.save(draft(LocalDate.of(2026, 9, 1)));
 
         // Act / Assert
-        assertThat(tenancyChargeTermRepository.softDelete(saved.uuid())).isTrue();
+        assertTrue(tenancyChargeTermRepository.softDelete(saved.uuid()));
     }
 
     // The status guard lives in the WHERE clause, so this answers false rather
@@ -307,8 +307,8 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
         TenancyChargeTermRow active = activeTermAt(LocalDate.of(2026, 9, 1));
 
         // Act / Assert
-        assertThat(tenancyChargeTermRepository.softDelete(active.uuid())).isFalse();
-        assertThat(tenancyChargeTermRepository.findById(active.uuid())).isPresent();
+        assertFalse(tenancyChargeTermRepository.softDelete(active.uuid()));
+        assertTrue(tenancyChargeTermRepository.findById(active.uuid()).isPresent());
     }
 
     // ---- findInForceOn: what billing asks ------------------------------------
@@ -324,8 +324,8 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
                 tenancyChargeTermRepository.findInForceOn(tenancy, LocalDate.of(2026, 9, 1));
 
         // Assert
-        assertThat(found).isPresent();
-        assertThat(found.get().uuid()).isEqualTo(current.uuid());
+        assertTrue(found.isPresent());
+        assertEquals(current.uuid(), found.get().uuid());
     }
 
     @Test
@@ -339,8 +339,8 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
                 tenancyChargeTermRepository.findInForceOn(tenancy, LocalDate.of(2026, 9, 1));
 
         // Assert
-        assertThat(found).isPresent();
-        assertThat(found.get().uuid()).isEqualTo(current.uuid());
+        assertTrue(found.isPresent());
+        assertEquals(current.uuid(), found.get().uuid());
     }
 
     @Test
@@ -355,8 +355,8 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
                 tenancyChargeTermRepository.findInForceOn(tenancy, LocalDate.of(2026, 9, 1));
 
         // Assert
-        assertThat(found).isPresent();
-        assertThat(found.get().uuid()).isEqualTo(superseded.uuid());
+        assertTrue(found.isPresent());
+        assertEquals(superseded.uuid(), found.get().uuid());
     }
 
     @Test
@@ -367,7 +367,7 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
                 pending.uuid(), TenancyTermStatus.PROPOSED, TenancyTermStatus.PENDING);
 
         // Act / Assert
-        assertThat(tenancyChargeTermRepository.findInForceOn(tenancy, LocalDate.of(2026, 9, 1))).isEmpty();
+        assertTrue(tenancyChargeTermRepository.findInForceOn(tenancy, LocalDate.of(2026, 9, 1)).isEmpty());
     }
 
     @Test
@@ -377,8 +377,7 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
         activeTermAt(LocalDate.of(2026, 9, 1));
 
         // Act / Assert
-        assertThatThrownBy(() -> activeTermAt(LocalDate.of(2026, 9, 1)))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThrows(DataIntegrityViolationException.class, () -> activeTermAt(LocalDate.of(2026, 9, 1)));
     }
 
     // ---- attachSource: the composite foreign key -----------------------------
@@ -394,7 +393,7 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
                 tenancyChargeTermRepository.attachSource(saved.uuid(), instrument).orElseThrow();
 
         // Assert
-        assertThat(attached.sourceUuid()).isEqualTo(instrument);
+        assertEquals(instrument, attached.sourceUuid());
     }
 
     // The composite FK to instrument(uuid, tenancy) is the only thing standing
@@ -408,8 +407,7 @@ public class TenancyChargeTermRepositoryTest extends IntegrationTest {
         UUID foreignInstrument = insertInstrument(otherTenancy);
 
         // Act / Assert
-        assertThatThrownBy(() -> tenancyChargeTermRepository.attachSource(saved.uuid(), foreignInstrument))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThrows(DataIntegrityViolationException.class, () -> tenancyChargeTermRepository.attachSource(saved.uuid(), foreignInstrument));
     }
 
     // ---- Fixtures ------------------------------------------------------------
