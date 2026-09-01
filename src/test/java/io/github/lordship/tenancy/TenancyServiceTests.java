@@ -2,8 +2,11 @@ package io.github.lordship.tenancy;
 
 import io.github.lordship.accounts.AccountService;
 import io.github.lordship.audit.AuditService;
+import io.github.lordship.lots.Lot;
+import io.github.lordship.lots.LotService;
 import io.github.lordship.tenancy.internal.TenancyRepository;
 import io.github.lordship.tenancy.internal.TenancyRow;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,27 +26,32 @@ public class TenancyServiceTests {
     private TenancyRepository tenancyRepository;
     private AuditService auditService;
     private AccountService accountService;
+    private LotService lotService;
     private TenancyService tenancyService;
 
     private UUID lotId;
     private UUID uuid1;
     private UUID uuid2;
+    private UUID uuid3;
 
     @BeforeEach
     void setup() {
         tenancyRepository = mock(TenancyRepository.class);
         auditService = mock(AuditService.class);
         accountService = mock(AccountService.class);
+        lotService = mock(LotService.class);
 
         tenancyService = new TenancyService(
                 tenancyRepository,
                 auditService,
-                accountService
+                accountService,
+                lotService
         );
 
         lotId = UUID.randomUUID();
         uuid1 = UUID.randomUUID();
         uuid2 = UUID.randomUUID();
+        uuid3 = UUID.randomUUID();
     }
 
     private TenancyRow row(UUID id, LocalDate start, LocalDate end) {
@@ -62,9 +70,42 @@ public class TenancyServiceTests {
         );
     }
 
+    private Lot lot(boolean isRentable, String notRentableReason) {
+        return new Lot(
+                lotId,
+                UUID.randomUUID(),
+                isRentable,
+                notRentableReason,
+                "14",
+                null,
+                null,
+                null,
+                null,
+                1,
+                null,
+                OffsetDateTime.now(ZoneOffset.UTC),
+                null,
+                List.of()
+        );
+    }
+
+    // Stubbed per test rather than in setup: MockitoExtension is strict, and the
+    // tests that never reach create() would fail on an unused stub.
+    private void lotIsRentable() {
+        when(lotService.findById(lotId)).thenReturn(Optional.of(lot(true, null)));
+    }
+
+    // Map.of rejects null values, and clearing an end date is exactly a null.
+    private static Map<String, Object> change(String key, Object value) {
+        Map<String, Object> m = new HashMap<>();
+        m.put(key, value);
+        return m;
+    }
+
 
     @Test
     void create_allowsFirstTenancy() {
+        lotIsRentable();
         when(tenancyRepository.findActiveByLot(lotId)).thenReturn(List.of());
 
         TenancyRow saved = row(uuid1, LocalDate.now(), null);
@@ -76,8 +117,11 @@ public class TenancyServiceTests {
         verify(auditService).recordInsert(eq("tenancy"), eq(uuid1), any());
     }
 
+    // The overlap the office actually works in: the outgoing tenancy is still
+    // open while the incoming one is set up.
     @Test
     void create_allowsSecondTenancy() {
+        lotIsRentable();
         TenancyRow existing = row(uuid1, LocalDate.now().minusDays(10), null);
         when(tenancyRepository.findActiveByLot(lotId)).thenReturn(List.of(existing));
 
@@ -92,12 +136,34 @@ public class TenancyServiceTests {
 
     @Test
     void create_rejectsThirdTenancy() {
+        lotIsRentable();
         TenancyRow t1 = row(uuid1, LocalDate.now().minusDays(10), null);
         TenancyRow t2 = row(uuid2, LocalDate.now().minusDays(5), null);
 
         when(tenancyRepository.findActiveByLot(lotId)).thenReturn(List.of(t1, t2));
 
         assertThrows(IllegalStateException.class, () -> tenancyService.create(lotId));
+        verify(tenancyRepository, never()).save(any());
+    }
+
+    @Test
+    void create_rejectsNotRentableLot() {
+        when(lotService.findById(lotId))
+                .thenReturn(Optional.of(lot(false, "condemned after the flood")));
+
+        IllegalStateException e = assertThrows(IllegalStateException.class,
+                () -> tenancyService.create(lotId));
+
+        assertTrue(e.getMessage().contains("condemned after the flood"));
+        verify(tenancyRepository, never()).findActiveByLot(any());
+        verify(tenancyRepository, never()).save(any());
+    }
+
+    @Test
+    void create_rejectsUnknownLot() {
+        when(lotService.findById(lotId)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> tenancyService.create(lotId));
         verify(tenancyRepository, never()).save(any());
     }
 
@@ -154,30 +220,119 @@ public class TenancyServiceTests {
         verify(auditService, never()).recordUpdate(any(), any(), any(), any());
     }
 
+    // A tenancy created but not yet given its possession date has a null
+    // start_date, which is the normal state during the overlap window.
     @Test
-    void endTenancy_closesTenancy() {
+    void enforceSecondTenancyLimit_doesNothingWhenAStartDateIsMissing() {
+        TenancyRow first = row(uuid1, LocalDate.now().minusMonths(2), null);
+        TenancyRow second = row(uuid2, null, null);
+
+        when(tenancyRepository.findActiveByLot(lotId)).thenReturn(List.of(first, second));
+
+        assertDoesNotThrow(() -> tenancyService.enforceSecondTenancyLimit(lotId));
+        verify(tenancyRepository, never()).close(any(), any());
+    }
+
+    @Test
+    void enforceSecondTenancyLimit_doesNothingWithFewerThanTwoTenancies() {
+        when(tenancyRepository.findActiveByLot(lotId)).thenReturn(List.of());
+
+        assertDoesNotThrow(() -> tenancyService.enforceSecondTenancyLimit(lotId));
+        verify(tenancyRepository, never()).close(any(), any());
+    }
+
+    // ---- end_date as a state transition -------------------------------------
+
+    @Test
+    void patchTenancy_closesTenancy_whenEndDateIsSet() {
+        LocalDate end = LocalDate.now();
         TenancyRow before = row(uuid1, LocalDate.now().minusDays(20), null);
-        TenancyRow after = row(uuid1, before.startDate(), LocalDate.now());
+        TenancyRow after = row(uuid1, before.startDate(), end);
 
         when(tenancyRepository.findById(uuid1)).thenReturn(Optional.of(before));
-        when(tenancyRepository.close(uuid1, LocalDate.now())).thenReturn(after);
+        when(tenancyRepository.patch(eq(uuid1), any())).thenReturn(Optional.of(after));
 
-        Tenancy result = tenancyService.endTenancy(uuid1, LocalDate.now());
+        Optional<Tenancy> result = tenancyService.patchTenancy(uuid1, change("end_date", end.toString()));
 
-        assertEquals(LocalDate.now(), result.endDate());
+        assertTrue(result.isPresent());
+        assertEquals(end, result.get().endDate());
         verify(auditService).recordUpdate(eq("tenancy"), eq(uuid1), any(), any());
     }
 
+    // A figure someone typed wrong, not a state change.
     @Test
-    void endTenancy_throwsIfAlreadyClosed() {
-        TenancyRow before = row(uuid1, LocalDate.now().minusDays(20), LocalDate.now().minusDays(5));
+    void patchTenancy_correctsAnExistingEndDate() {
+        LocalDate corrected = LocalDate.now().minusDays(3);
+        TenancyRow before = row(uuid1, LocalDate.now().minusDays(20), LocalDate.now().minusDays(1));
+        TenancyRow after = row(uuid1, before.startDate(), corrected);
+
+        when(tenancyRepository.findById(uuid1)).thenReturn(Optional.of(before));
+        when(tenancyRepository.patch(eq(uuid1), any())).thenReturn(Optional.of(after));
+
+        Optional<Tenancy> result = tenancyService.patchTenancy(uuid1, change("end_date", corrected.toString()));
+
+        assertTrue(result.isPresent());
+        assertEquals(corrected, result.get().endDate());
+        verify(tenancyRepository, never()).findActiveByLot(any());
+    }
+
+    @Test
+    void patchTenancy_reopensTenancy_whenLotHasRoom() {
+        TenancyRow before = row(uuid1, LocalDate.now().minusDays(20), LocalDate.now().minusDays(1));
+        TenancyRow after = row(uuid1, before.startDate(), null);
+        TenancyRow other = row(uuid2, LocalDate.now().minusDays(5), null);
+
+        when(tenancyRepository.findById(uuid1)).thenReturn(Optional.of(before));
+        when(tenancyRepository.findActiveByLot(lotId)).thenReturn(List.of(other));
+        when(tenancyRepository.patch(eq(uuid1), any())).thenReturn(Optional.of(after));
+
+        Optional<Tenancy> result = tenancyService.patchTenancy(uuid1, change("end_date", null));
+
+        assertTrue(result.isPresent());
+        assertNull(result.get().endDate());
+    }
+
+    // Reopening is a third way onto a full lot, since create() never sees it.
+    @Test
+    void patchTenancy_rejectsReopen_whenLotAlreadyHasTwoActive() {
+        TenancyRow before = row(uuid1, LocalDate.now().minusDays(20), LocalDate.now().minusDays(1));
+        TenancyRow other1 = row(uuid2, LocalDate.now().minusDays(10), null);
+        TenancyRow other2 = row(uuid3, LocalDate.now().minusDays(5), null);
+
+        when(tenancyRepository.findById(uuid1)).thenReturn(Optional.of(before));
+        when(tenancyRepository.findActiveByLot(lotId)).thenReturn(List.of(other1, other2));
+
+        assertThrows(IllegalStateException.class,
+                () -> tenancyService.patchTenancy(uuid1, change("end_date", null)));
+
+        verify(tenancyRepository, never()).patch(any(), any());
+    }
+
+    @Test
+    void patchTenancy_rejectsEndDateBeforeStartDate() {
+        TenancyRow before = row(uuid1, LocalDate.now().minusDays(20), null);
 
         when(tenancyRepository.findById(uuid1)).thenReturn(Optional.of(before));
 
-        assertThrows(IllegalStateException.class,
-                () -> tenancyService.endTenancy(uuid1, LocalDate.now()));
+        assertThrows(IllegalArgumentException.class,
+                () -> tenancyService.patchTenancy(uuid1,
+                        change("end_date", LocalDate.now().minusDays(30).toString())));
+
+        verify(tenancyRepository, never()).patch(any(), any());
     }
 
+    @Test
+    void patchTenancy_rejectsStartDateAfterExistingEndDate() {
+        TenancyRow before = row(uuid1, LocalDate.now().minusDays(20), LocalDate.now().minusDays(10));
+
+        when(tenancyRepository.findById(uuid1)).thenReturn(Optional.of(before));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> tenancyService.patchTenancy(uuid1,
+                        change("start_date", LocalDate.now().toString())));
+
+        verify(tenancyRepository, never()).patch(any(), any());
+    }
 
     @Test
     void patchTenancy_updatesFields() {

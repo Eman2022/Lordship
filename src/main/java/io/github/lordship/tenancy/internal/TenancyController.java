@@ -2,6 +2,7 @@ package io.github.lordship.tenancy.internal;
 
 import io.github.lordship.tenancy.Tenancy;
 import io.github.lordship.tenancy.TenancyService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
@@ -15,10 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-
 @Validated
 @RestController
-@RequestMapping("/tenancy")
+@RequestMapping("/api/tenancy")
 public class TenancyController {
 
     private final TenancyService tenancyService;
@@ -60,6 +60,9 @@ public class TenancyController {
         return ResponseEntity.ok(responses);
     }
 
+    // Ending a tenancy is setting its endDate, so there is no separate close
+    // endpoint. Sending endDate null reopens one, which the service refuses when
+    // the lot is already carrying two.
     @PreAuthorize("hasAuthority('tenancy:edit')")
     @PatchMapping("/{uuid}")
     public ResponseEntity<TenancyResponse> patchTenancy(
@@ -76,21 +79,9 @@ public class TenancyController {
             changes.put("end_date", request.get("endDate"));
         }
 
-        try {
-            return tenancyService.patchTenancy(uuid, changes)
-                    .map(t -> ResponseEntity.ok(TenancyResponse.from(t)))
-                    .orElse(ResponseEntity.notFound().build());
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    @PreAuthorize("hasAuthority('tenancy:edit')")
-    @PatchMapping("/{uuid}/close")
-    public ResponseEntity<TenancyResponse> close(@PathVariable UUID uuid,
-                                                 @RequestBody @Valid TenancyUpdateRequest request) {
-        Tenancy tenancy = tenancyService.endTenancy(uuid, request.endDate());
-        return ResponseEntity.ok(TenancyResponse.from(tenancy));
+        return tenancyService.patchTenancy(uuid, changes)
+                .map(t -> ResponseEntity.ok(TenancyResponse.from(t)))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PreAuthorize("hasAuthority('tenancy:delete')")
@@ -99,5 +90,24 @@ public class TenancyController {
         return tenancyService.softDelete(uuid)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
+    }
+
+    // "Lot 14 cannot take a new tenancy: condemned after the flood" is the whole
+    // content of the refusal, and an empty 409 throws it away.
+    @ExceptionHandler(IllegalArgumentException.class)
+    ResponseEntity<Map<String, String>> badRequest(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("message", String.valueOf(e.getMessage())));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    ResponseEntity<Map<String, String>> conflict(IllegalStateException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("message", String.valueOf(e.getMessage())));
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    ResponseEntity<Map<String, String>> notFound(EntityNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", String.valueOf(e.getMessage())));
     }
 }
