@@ -15,15 +15,15 @@ CREATE TYPE agreement_type AS ENUM (
 
 -- shared by instrument and document_template so the vocabulary is defined once
 CREATE TYPE instrument_type AS ENUM (
-    'LEASE','INCREASE_NOTICE','ASSUMPTION','ADDENDUM','WAIVER'
+    'LEASE','INCREASE_NOTICE','ASSUMPTION','ADDENDUM','WAIVER', 'PAY_OR_VACATE'
     );
 
 -- ── Global settings ──────────────────────────────────────────────────────────
 
 CREATE TABLE global_settings ( -- singleton
                                  id         INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-                                 require_instrument_for_charges BOOLEAN NOT NULL DEFAULT FALSE,
                                  compliance_email TEXT,
+
                                  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -42,6 +42,8 @@ CREATE TABLE property (
                           purchase_date    DATE,
                           property_zoning  TEXT,
                           property_parcel  TEXT,
+                          payable_to       TEXT, -- who to pay
+                          remittance_address TEXT, -- where checks are mailed;
                           year_built       INT,
                           property_manager UUID, -- FK to agent added in V3 after agent table exists
                           created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),

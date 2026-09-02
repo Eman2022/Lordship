@@ -18,6 +18,8 @@ public record PropertyRow(
         LocalDate purchaseDate,
         String propertyZoning,
         String propertyParcel,
+        String payableTo,
+        String remittanceAddress,
         Integer yearBuilt,
         OffsetDateTime createdAt,
         OffsetDateTime deletedAt
@@ -35,6 +37,8 @@ public record PropertyRow(
                 this.purchaseDate,
                 this.propertyZoning,
                 this.propertyParcel,
+                this.payableTo,
+                this.remittanceAddress,
                 this.yearBuilt,
                 this.createdAt,
                 this.deletedAt
@@ -54,13 +58,15 @@ public PropertyRow(String propertyName, String propertyAddress){
                 null,
                 null,
                 null,
+                null,
+                null,
                 null
         );
 }
 
 public PropertyRow(UUID uuid, String propertyCode, String propertyName, String propertyAddress,
                    String propertyCity, String propertyState, String propertyZip,
-                   LocalDate purchaseDate, String propertyZoning, String propertyParcel, Integer yearBuilt) {
+                   LocalDate purchaseDate, String propertyZoning, String propertyParcel, String payableTo, String remittanceAddress, Integer yearBuilt) {
     this(
             uuid,
             propertyCode,
@@ -72,6 +78,8 @@ public PropertyRow(UUID uuid, String propertyCode, String propertyName, String p
             purchaseDate,
             propertyZoning,
             propertyParcel,
+            payableTo,
+            remittanceAddress,
             yearBuilt,
             null,
             null

@@ -2,12 +2,13 @@
 -- V9: Documents and Deals
 -- ============================================================
 -- Changed since last pass, all marked CHANGED:
---   * document_section: a section is a sub-document (own signature block, own
---     line in the addenda checklist), not a string on each clause
---   * template_clause hangs off a section, not the template
---   * property_permissible_document_clause -> _override, since a property can
---     now drop a whole section as well as a clause
---   * instrument_section: the packet structure is snapshotted alongside the wording
+--   * property_permissible_document      -> property_document_assignment
+--   * property_permissible_document_override -> property_document_customization
+--   * template_clause gains condition_field / condition_values: a clause whose
+--     wording depends on a method is authored once per method, not branched
+--     inside the body
+--   * instrument_clause keeps body_template alongside body, so a served
+--     document can be re-checked against the term it was printed from
 
 -- Every blob, in and out: rendered PDFs, proof of service, signed returns,
 -- scanned legacy leases. Not clauses -- clauses live in template_clause.
@@ -48,16 +49,16 @@ CREATE TABLE document_template (
                                    created_by      UUID NOT NULL REFERENCES agent(uuid),
                                    deleted_at      TIMESTAMPTZ,
 
-    -- lets property_permissible_document carry the two enums with a
+    -- lets property_document_assignment carry the two enums with a
     -- composite FK, so they cannot drift from the template
                                    CONSTRAINT document_template_kind_uq UNIQUE (uuid, agreement_type, instrument_type)
 );
 
 
--- CHANGED: new. One packet is several sub-documents -- Checklist, Tenant
--- Information, Lot Rental Agreement, Rules and Regulations, Vehicle Agreement,
--- Pet Agreement, Septic Addendum -- each signed separately and each with its
--- own line in the agreement's attached-addenda checklist.
+-- One packet is several sub-documents -- Checklist, Tenant Information, Lot
+-- Rental Agreement, Rules and Regulations, Vehicle Agreement, Pet Agreement,
+-- Septic Addendum -- each signed separately and each with its own line in the
+-- agreement's attached-addenda checklist.
 CREATE TABLE document_section (
                                   uuid            UUID PRIMARY KEY DEFAULT uuidv7(),
                                   template        UUID NOT NULL REFERENCES document_template(uuid),
@@ -79,87 +80,105 @@ CREATE TABLE document_section (
 CREATE INDEX document_section_template_idx ON document_section (template);
 
 
+-- CHANGED: condition_field / condition_values. A clause whose wording depends on
+-- a method is authored once per method and selected at generate, so the body
+-- stays editable and can never describe a method the term does not carry.
+--
+--   condition_field 'nsf_fee_method', values {BANK_OR_FLAT}
+--     -> "...the bank's charge or {{nsf_fee_amount}}, whichever is greater."
+--   condition_field 'nsf_fee_method', values {FLAT}
+--     -> "...a fee of {{nsf_fee_amount}}."
+--   NONE selects neither, so no NSF clause is printed.
 CREATE TABLE template_clause (
                                  uuid        UUID PRIMARY KEY DEFAULT uuidv7(),
-                                 section     UUID NOT NULL REFERENCES document_section(uuid), -- CHANGED: was TEXT; template reached through here
+                                 section     UUID NOT NULL REFERENCES document_section(uuid),
                                  ordinal     NUMERIC(10,4) NOT NULL, -- sparse sort key within the section: 12.5 slots between 12 and 13
                                  clause_key  TEXT, -- stable identity across versions, e.g. RENT_AND_FEES
                                  title       TEXT,
                                  body        TEXT, -- tokens only, never a literal amount
+
+                                 condition_field  TEXT,   -- a name from the code-side token registry; null means always include
+                                 condition_values TEXT[], -- include when the term's value for that field is in this set
+
                                  required    BOOLEAN NOT NULL DEFAULT FALSE, -- guards the edit screen; statute_ref is what guards generate
                                  statute_ref TEXT, -- the citation this clause exists to satisfy
                                  note        TEXT,
                                  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
                                  created_by  UUID NOT NULL REFERENCES agent(uuid),
                                  deleted_at  TIMESTAMPTZ
+    -- TODO at finalize: condition_field and condition_values are both set or both null
 );
 
 CREATE INDEX template_clause_section_idx ON template_clause (section);
 
 
--- Which documents a property may use -- a whitelist row, not a document, and
--- the thing a property's overrides hang off. A reference, not a copy: edits to
--- the template reach the property.
-CREATE TABLE property_permissible_document (
-                                               uuid              UUID PRIMARY KEY DEFAULT uuidv7(),
-                                               property          UUID NOT NULL REFERENCES property(uuid),
-                                               document_template UUID NOT NULL REFERENCES document_template(uuid),
+-- CHANGED (was property_permissible_document). Which documents a property uses.
+-- A reference, not a copy: edits to the template reach the property.
+CREATE TABLE property_document_assignment (
+                                              uuid              UUID PRIMARY KEY DEFAULT uuidv7(),
+                                              property          UUID NOT NULL REFERENCES property(uuid),
+                                              document_template UUID NOT NULL REFERENCES document_template(uuid),
 
     -- Carried so one park cannot end up with two documents answering
     -- to the same kind of deal. Kept honest by the composite FK.
-                                               agreement_type    agreement_type NOT NULL,
-                                               instrument_type   instrument_type NOT NULL,
+                                              agreement_type    agreement_type NOT NULL,
+                                              instrument_type   instrument_type NOT NULL,
 
-                                               note              TEXT,
-                                               created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-                                               created_by        UUID NOT NULL REFERENCES agent(uuid),
-                                               deleted_at        TIMESTAMPTZ,
+                                              note              TEXT,
+                                              created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                              created_by        UUID NOT NULL REFERENCES agent(uuid),
+                                              deleted_at        TIMESTAMPTZ,
 
-                                               CONSTRAINT property_permissible_document_kind_fk
-                                                   FOREIGN KEY (document_template, agreement_type, instrument_type)
-                                                       REFERENCES document_template (uuid, agreement_type, instrument_type)
+                                              CONSTRAINT property_document_assignment_kind_fk
+                                                  FOREIGN KEY (document_template, agreement_type, instrument_type)
+                                                      REFERENCES document_template (uuid, agreement_type, instrument_type)
 );
 
 -- "Generate the lease" has to resolve to exactly one document.
-CREATE UNIQUE INDEX property_permissible_document_uq
-    ON property_permissible_document (property, agreement_type, instrument_type)
+CREATE UNIQUE INDEX property_document_assignment_uq
+    ON property_document_assignment (property, agreement_type, instrument_type)
     WHERE deleted_at IS NULL;
 
 
--- CHANGED (was property_permissible_document_clause). Property customization of
--- an assigned document. A park on city sewer drops the whole septic section; a
--- park with a rule of its own adds a clause. Still no REPLACE: a global body is
--- never rewritten locally.
-CREATE TABLE property_permissible_document_override (
-                                                        uuid              UUID PRIMARY KEY DEFAULT uuidv7(),
-                                                        permissible_document UUID NOT NULL REFERENCES property_permissible_document(uuid),
-                                                        action            TEXT NOT NULL
-                                                            CHECK (action IN ('EXCLUDE_SECTION','EXCLUDE_CLAUSE','ADD_CLAUSE')),
+-- CHANGED (was property_permissible_document_override). What one property
+-- changes about a document it was assigned. A park on city sewer drops the whole
+-- septic section; a park with a rule of its own adds a clause. Still no REPLACE:
+-- a global body is never rewritten locally.
+CREATE TABLE property_document_customization (
+                                                 uuid        UUID PRIMARY KEY DEFAULT uuidv7(),
+                                                 assignment  UUID NOT NULL REFERENCES property_document_assignment(uuid),
+                                                 action      TEXT NOT NULL
+                                                     CHECK (action IN ('EXCLUDE_SECTION','EXCLUDE_CLAUSE','ADD_CLAUSE')),
 
-                                                        section           UUID REFERENCES document_section(uuid), -- EXCLUDE_SECTION, and ADD_CLAUSE says which section receives it
-                                                        clause            UUID REFERENCES template_clause(uuid),  -- EXCLUDE_CLAUSE only
+                                                 section     UUID REFERENCES document_section(uuid), -- EXCLUDE_SECTION, and ADD_CLAUSE says which section receives it
+                                                 clause      UUID REFERENCES template_clause(uuid),  -- EXCLUDE_CLAUSE only
 
-                                                        ordinal           NUMERIC(10,4), -- ADD_CLAUSE: shares the coordinate space with template_clause.ordinal
-                                                        title             TEXT,
-                                                        body              TEXT,
-                                                        note              TEXT,
-                                                        created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-                                                        created_by        UUID NOT NULL REFERENCES agent(uuid),
-                                                        deleted_at        TIMESTAMPTZ
+                                                 ordinal     NUMERIC(10,4), -- ADD_CLAUSE: shares the coordinate space with template_clause.ordinal
+                                                 title       TEXT,
+                                                 body        TEXT,
+
+    -- a property-authored clause can be conditional too
+                                                 condition_field  TEXT,
+                                                 condition_values TEXT[],
+
+                                                 note        TEXT,
+                                                 created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                                 created_by  UUID NOT NULL REFERENCES agent(uuid),
+                                                 deleted_at  TIMESTAMPTZ
     -- TODO at finalize, one CHECK per action:
     --   EXCLUDE_SECTION -> section NOT NULL, clause NULL
     --   EXCLUDE_CLAUSE  -> clause NOT NULL, section NULL
     --   ADD_CLAUSE      -> section NOT NULL, clause NULL, body NOT NULL, ordinal NOT NULL
 );
 
-CREATE INDEX property_permissible_document_override_idx
-    ON property_permissible_document_override (permissible_document) WHERE deleted_at IS NULL;
+CREATE INDEX property_document_customization_idx
+    ON property_document_customization (assignment) WHERE deleted_at IS NULL;
 
 
 CREATE TABLE instrument ( -- WIP
                             uuid           UUID PRIMARY KEY DEFAULT uuidv7(),
                             tenancy        UUID NOT NULL REFERENCES tenancy(uuid),
-                            type           instrument_type NOT NULL,
+                            type           instrument_type NOT NULL, -- includes paper that changes nothing: PAY_OR_VACATE, notices
 
                             status         TEXT NOT NULL DEFAULT 'DRAFT'
                                 CHECK (status IN ('DRAFT','GENERATED','SENT','SERVED','APPROVED','ABANDONED')),
@@ -174,9 +193,9 @@ CREATE TABLE instrument ( -- WIP
                             on_expiry      TEXT CHECK (on_expiry IN ('MONTH_TO_MONTH','AUTO_RENEW','TERMINATE')),
 
     -- Where the wording came from. What it SAID is in instrument_clause.
-                            template          UUID REFERENCES document_template(uuid),
-                            template_version  INT,
-                            permissible_document UUID REFERENCES property_permissible_document(uuid),
+                            template            UUID REFERENCES document_template(uuid),
+                            template_version    INT,
+                            document_assignment UUID REFERENCES property_document_assignment(uuid), -- CHANGED: renamed
 
                             generated_at   TIMESTAMPTZ,
                             generated_file UUID REFERENCES document_file(uuid),
@@ -205,7 +224,7 @@ CREATE TABLE instrument ( -- WIP
                                 generated_file IS NULL OR generated_at IS NOT NULL
                                 ),
 
-    -- These three are provenance. The wording itself is instrument_clause.
+    -- These three are where the wording came from. What it said is instrument_clause.
                             CONSTRAINT instrument_generated_has_provenance CHECK (
                                 generated_file IS NULL
                                     OR (template IS NOT NULL AND template_version IS NOT NULL AND serial IS NOT NULL)
@@ -252,12 +271,11 @@ CREATE INDEX instrument_open_idx
 
 
 -- ── Rendered packet ──────────────────────────────────────────────────────────
--- The structure and wording that actually produced the PDF: sections merged and
--- ordered, clauses with tokens already substituted. Written once at GENERATED
--- and never edited. What a lease says becomes a query instead of a replay of
--- template@version + overrides, which was never reconstructable.
+-- The structure and wording that actually produced the PDF. Written once at
+-- GENERATED and never edited. What a lease says becomes a query instead of a
+-- replay of template@version + customizations, which was never reconstructable.
 
-CREATE TABLE instrument_section ( -- CHANGED: new, mirrors document_section
+CREATE TABLE instrument_section (
                                     uuid            UUID PRIMARY KEY DEFAULT uuidv7(),
                                     instrument      UUID NOT NULL REFERENCES instrument(uuid),
                                     ordinal         NUMERIC(10,4) NOT NULL,
@@ -274,23 +292,28 @@ CREATE TABLE instrument_section ( -- CHANGED: new, mirrors document_section
 CREATE UNIQUE INDEX instrument_section_ordinal_uq ON instrument_section (instrument, ordinal);
 
 
+-- CHANGED: body_template. Keeping the authored form next to the printed form
+-- makes verification mechanical -- re-substitute the term's current values into
+-- body_template and compare with body. A mismatch names the clause where the
+-- paper and the deal diverged.
 CREATE TABLE instrument_clause (
-                                   uuid        UUID PRIMARY KEY DEFAULT uuidv7(),
-                                   instrument  UUID NOT NULL REFERENCES instrument(uuid),
-                                   section     UUID NOT NULL REFERENCES instrument_section(uuid), -- CHANGED
-                                   ordinal     NUMERIC(10,4) NOT NULL,
-                                   clause_key  TEXT, -- carried through so "the rent clause" is findable across leases
-                                   title       TEXT,
-                                   body        TEXT NOT NULL, -- the words on the page, amounts and all
-                                   statute_ref TEXT, -- copied down so a generate-time completeness check has something to test
-                                   origin      TEXT NOT NULL CHECK (origin IN ('TEMPLATE','PROPERTY')),
+                                   uuid          UUID PRIMARY KEY DEFAULT uuidv7(),
+                                   instrument    UUID NOT NULL REFERENCES instrument(uuid),
+                                   section       UUID NOT NULL REFERENCES instrument_section(uuid),
+                                   ordinal       NUMERIC(10,4) NOT NULL,
+                                   clause_key    TEXT, -- carried through so "the rent clause" is findable across leases
+                                   title         TEXT,
+                                   body          TEXT NOT NULL, -- the words on the page, amounts and all
+                                   body_template TEXT NOT NULL, -- the same words with the tokens still in them
+                                   statute_ref   TEXT, -- copied down so a generate-time completeness check has something to test
+                                   origin        TEXT NOT NULL CHECK (origin IN ('TEMPLATE','PROPERTY')),
 
     -- Deliberately NOT a foreign key: the clause it came from may be
     -- edited, retired or soft-deleted later, and this snapshot has to
     -- outlive that.
                                    source_clause UUID,
 
-                                   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     -- no deleted_at, no updated_at: a snapshot is not edited
 
     -- the section must belong to the same instrument
@@ -308,6 +331,8 @@ CREATE INDEX instrument_clause_key_idx ON instrument_clause (clause_key);
 
 -- ── Charge term ──────────────────────────────────────────────────────────────
 -- to go into effect two conditions must be met: now() >= valid_at && status = 'ACTIVE'
+-- source_uuid is set when the instrument is CREATED, not when the term activates,
+-- so the document has a term to substitute from before it renders.
 
 CREATE TABLE tenancy_charge_term (
                                      uuid              UUID PRIMARY KEY DEFAULT uuidv7(),

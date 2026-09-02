@@ -127,8 +127,13 @@ INSERT INTO permission (uuid, permission_name) VALUES
     (uuidv7(), 'tenancy_term:create'),
     (uuidv7(), 'tenancy_term:delete'),
     (uuidv7(), 'tenancy_term:activate'),
-    (uuidv7(), 'tenancy_term:cancel')
+    (uuidv7(), 'tenancy_term:cancel'),
 
+    -- documents
+    (uuidv7(), 'document_template:view'),
+    (uuidv7(), 'document_template:create'),
+    (uuidv7(), 'document_template:edit'),
+    (uuidv7(), 'document_template:delete')
 ;
 
 -- ── Roles ─────────────────────────────────────────────────────────────────────
@@ -198,7 +203,8 @@ AND p.permission_name IN (
     'meters:view',
     'meters:edit',
     'meterbills:view',
-    'meterbills:edit'
+    'meterbills:edit',
+    'document_template:view'
 );
 
 -- Property Manager
