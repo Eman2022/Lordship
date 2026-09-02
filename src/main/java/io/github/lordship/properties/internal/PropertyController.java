@@ -13,7 +13,7 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 
 @RestController
-@RequestMapping("/properties")
+@RequestMapping("/api/properties")
 public class PropertyController {
 
     private final PropertyService propertyService;
@@ -32,7 +32,6 @@ public class PropertyController {
     @PreAuthorize("hasAuthority('properties:view')")
     @GetMapping("/{propertyUuid}")
     ResponseEntity<Property> getProperty(@PathVariable UUID propertyUuid) {
-        System.out.println(propertyUuid);
         return propertyService.findByPropertyId(propertyUuid)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -59,6 +58,8 @@ public class PropertyController {
         if (request.containsKey("propertyState"))   changes.put("property_state", request.get("propertyState"));
         if (request.containsKey("propertyZip"))     changes.put("property_zip", request.get("propertyZip"));
         if (request.containsKey("propertyZoning"))  changes.put("property_zoning", request.get("propertyZoning"));
+        if (request.containsKey("payableTo"))       changes.put("payable_to", request.get("payableTo"));
+        if (request.containsKey("remittanceAddress"))  changes.put("remittance_address", request.get("remittanceAddress"));
         if (request.containsKey("yearBuilt"))       changes.put("year_built", request.get("yearBuilt"));
         if (request.containsKey("propertyParcel"))  changes.put("property_parcel", request.get("propertyParcel"));
         if (request.containsKey("propertyManager")) changes.put("property_manager", request.get("propertyManager"));

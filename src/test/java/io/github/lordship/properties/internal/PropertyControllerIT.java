@@ -41,7 +41,7 @@ public class PropertyControllerIT extends IntegrationTest {
 
     @Test
     void createProperty_shouldReturn403_whenNoTokenProvided() throws Exception {
-        mockMvc.perform(post("/properties/create")
+        mockMvc.perform(post("/api/properties/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -54,19 +54,19 @@ public class PropertyControllerIT extends IntegrationTest {
 
     @Test
     void getProperty_shouldReturn403_whenNoTokenProvided() throws Exception {
-        mockMvc.perform(get("/properties/TST01"))
+        mockMvc.perform(get("/api/properties/TST01"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void getAllProperties_shouldReturn403_whenNoTokenProvided() throws Exception {
-        mockMvc.perform(get("/properties"))
+        mockMvc.perform(get("/api/properties"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void patchProperty_shouldReturn403_whenNoTokenProvided() throws Exception {
-        mockMvc.perform(patch("/properties/" + UUID.randomUUID())
+        mockMvc.perform(patch("/api/properties/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "propertyName": "Updated Name" }
@@ -76,7 +76,7 @@ public class PropertyControllerIT extends IntegrationTest {
 
     @Test
     void deleteProperty_shouldReturn403_whenNoTokenProvided() throws Exception {
-        mockMvc.perform(delete("/properties/" + UUID.randomUUID()))
+        mockMvc.perform(delete("/api/properties/" + UUID.randomUUID()))
                 .andExpect(status().isForbidden());
     }
 
@@ -86,7 +86,7 @@ public class PropertyControllerIT extends IntegrationTest {
     void createProperty_shouldReturn201_withCorrectFields() throws Exception {
         String token = loginAsRoot();
 
-        mockMvc.perform(post("/properties/create")
+        mockMvc.perform(post("/api/properties/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -107,7 +107,7 @@ public class PropertyControllerIT extends IntegrationTest {
     void createProperty_shouldReturn400_whenPropertyNameIsBlank() throws Exception {
         String token = loginAsRoot();
 
-        mockMvc.perform(post("/properties/create")
+        mockMvc.perform(post("/api/properties/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -124,7 +124,7 @@ public class PropertyControllerIT extends IntegrationTest {
         String token = loginAsRoot();
 
         // Create first
-        MvcResult createResult = mockMvc.perform(post("/properties/create")
+        MvcResult createResult = mockMvc.perform(post("/api/properties/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -140,7 +140,7 @@ public class PropertyControllerIT extends IntegrationTest {
                 createResult.getResponse().getContentAsString(), "$.uuid");
 
         // Fetch by code
-        mockMvc.perform(get("/properties/{propertyUuid}", propertyUuid)
+        mockMvc.perform(get("/api/properties/{propertyUuid}", propertyUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.uuid").value(propertyUuid))
@@ -151,7 +151,7 @@ public class PropertyControllerIT extends IntegrationTest {
     void getProperty_whenPropertyDoesNotExist_shouldReturn404() throws Exception {
         String token = loginAsRoot();
 
-        mockMvc.perform(get("/properties/019fc8cb-65fd-74f4-bc78-bfe53b4ea03d")
+        mockMvc.perform(get("/api/properties/019fc8cb-65fd-74f4-bc78-bfe53b4ea03d")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound());
     }
@@ -162,7 +162,7 @@ public class PropertyControllerIT extends IntegrationTest {
         String token = loginAsRoot();
 
         // Act
-        mockMvc.perform(get("/properties/doggy8cb-65fd")
+        mockMvc.perform(get("/api/properties/doggy8cb-65fd")
                 .header("Authorization", "Bearer " + token))
         // Assert
                 .andExpect(status().isBadRequest());
@@ -172,7 +172,7 @@ public class PropertyControllerIT extends IntegrationTest {
     void getAllProperties_shouldReturn200_andIncludeCreatedProperty() throws Exception {
         String token = loginAsRoot();
 
-        MvcResult createResult = mockMvc.perform(post("/properties/create")
+        MvcResult createResult = mockMvc.perform(post("/api/properties/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -187,7 +187,7 @@ public class PropertyControllerIT extends IntegrationTest {
         String propertyUuid = JsonPath.read(
                 createResult.getResponse().getContentAsString(), "$.uuid");
 
-        mockMvc.perform(get("/properties/" + propertyUuid)
+        mockMvc.perform(get("/api/properties/" + propertyUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.uuid").value(propertyUuid));
@@ -196,7 +196,7 @@ public class PropertyControllerIT extends IntegrationTest {
     private String createTestProperty() throws Exception {
         String token = loginAsRoot();
 
-        MvcResult createResult = mockMvc.perform(post("/properties/create")
+        MvcResult createResult = mockMvc.perform(post("/api/properties/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -219,7 +219,7 @@ public class PropertyControllerIT extends IntegrationTest {
         String propertyUuid = createTestProperty();
 
         // Only patch the name — address should stay untouched
-        mockMvc.perform(patch("/properties/{uuid}", propertyUuid)
+        mockMvc.perform(patch("/api/properties/{uuid}", propertyUuid)
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -237,7 +237,7 @@ public class PropertyControllerIT extends IntegrationTest {
     void patchProperty_shouldReturn404_whenPropertyDoesNotExist() throws Exception {
         String token = loginAsRoot();
 
-        mockMvc.perform(patch("/properties/" + UUID.randomUUID())
+        mockMvc.perform(patch("/api/properties/" + UUID.randomUUID())
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -253,7 +253,7 @@ public class PropertyControllerIT extends IntegrationTest {
 
 
 
-        mockMvc.perform(patch("/properties/{uuid}", propertyUuid)
+        mockMvc.perform(patch("/api/properties/{uuid}", propertyUuid)
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -279,7 +279,7 @@ public class PropertyControllerIT extends IntegrationTest {
     void deleteProperty_shouldReturn204_andSubsequentGetReturns404() throws Exception {
         String token = loginAsRoot();
 
-        MvcResult createResult = mockMvc.perform(post("/properties/create")
+        MvcResult createResult = mockMvc.perform(post("/api/properties/create")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -295,12 +295,12 @@ public class PropertyControllerIT extends IntegrationTest {
                 createResult.getResponse().getContentAsString(), "$.uuid");
 
         // Delete
-        mockMvc.perform(delete("/properties/{propertyUuid}", propertyUuid)
+        mockMvc.perform(delete("/api/properties/{propertyUuid}", propertyUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
 
         // Confirm gone
-        mockMvc.perform(get("/properties/{propertyUuid}", propertyUuid)
+        mockMvc.perform(get("/api/properties/{propertyUuid}", propertyUuid)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound());
     }

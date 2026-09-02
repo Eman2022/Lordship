@@ -1,5 +1,7 @@
 package io.github.lordship.tenancyterms.internal;
 
+import io.github.lordship.shared.AgreementType;
+import io.github.lordship.tenancyterms.TenancyTermStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -14,8 +16,9 @@ import java.util.UUID;
 @Repository
 public class TenancyChargeTermRepository {
 
-    // tenancy, agreement_type, status, source, standard_terms and the cancel
-    // columns are not patchable - they move through service methods, not PATCH.
+    // tenancy, agreement_type, terms_template, batch, created_by and created_at
+    // are set once at creation. status, source_uuid and the cancel columns move
+    // through the transition methods below, never through PATCH.
     private static final Set<String> PATCHABLE_COLUMNS = Set.of(
             "valid_at", "rate",
             "car_fee", "allowed_cars", "cars_max",
@@ -34,16 +37,18 @@ public class TenancyChargeTermRepository {
     private final JdbcClient jdbc;
     private final TenancyChargeTermRowMapper rowMapper;
 
-    public TenancyChargeTermRepository(JdbcClient jdbc, TenancyChargeTermRowMapper rowMapper) {
+    public TenancyChargeTermRepository(JdbcClient jdbc, TenancyChargeTermRowMapper tenancyChargeTermRowMapper) {
         this.jdbc = jdbc;
-        this.rowMapper = rowMapper;
+        this.rowMapper = tenancyChargeTermRowMapper;
     }
 
+    // Note: the copy from a terms_template IS the create.
+    // Build the row with TenancyChargeTermRow.fromTemplate.
     public TenancyChargeTermRow save(TenancyChargeTermRow row) {
         return jdbc.sql("""
                 INSERT INTO tenancy_charge_term (
-                    tenancy, valid_at, agreement_type, rate,
-                    car_fee, allowed_cars, cars_max, pet_fee, allowed_pets,
+                    tenancy, valid_at, agreement_type,
+                    rate, car_fee, allowed_cars, cars_max, pet_fee, allowed_pets,
                     payment_due_day, grace_period_days,
                     rule_violation_fee_method, rule_violation_fee_amount,
                     nsf_fee_method, nsf_fee_amount,
@@ -52,11 +57,11 @@ public class TenancyChargeTermRepository {
                     power_method, power_flat_amount,
                     sewer_method, sewer_flat_amount,
                     trash_method, trash_flat_amount,
-                    status, source, source_uuid, standard_terms, batch,
+                    status, source, source_uuid, terms_template, batch,
                     note, created_by
                 ) VALUES (
-                    :tenancy, :validAt, :agreementType::agreement_type, :rate,
-                    :carFee, :allowedCars, :carsMax, :petFee, :allowedPets,
+                    :tenancy, :validAt, :agreementType::agreement_type,
+                    :rate, :carFee, :allowedCars, :carsMax, :petFee, :allowedPets,
                     :paymentDueDay, :gracePeriodDays,
                     :ruleViolationFeeMethod, :ruleViolationFeeAmount,
                     :nsfFeeMethod, :nsfFeeAmount,
@@ -65,7 +70,7 @@ public class TenancyChargeTermRepository {
                     :powerMethod, :powerFlatAmount,
                     :sewerMethod, :sewerFlatAmount,
                     :trashMethod, :trashFlatAmount,
-                    :status, :source, :sourceUuid, :standardTerms, :batch,
+                    :status, :source, :sourceUuid, :termsTemplate, :batch,
                     :note, :createdBy
                 ) RETURNING *
                 """)
@@ -97,7 +102,7 @@ public class TenancyChargeTermRepository {
                 .param("status", nameOf(row.status()))
                 .param("source", nameOf(row.source()))
                 .param("sourceUuid", row.sourceUuid())
-                .param("standardTerms", row.standardTerms())
+                .param("termsTemplate", row.termsTemplate())
                 .param("batch", row.batch())
                 .param("note", row.note())
                 .param("createdBy", row.createdBy())
@@ -112,27 +117,27 @@ public class TenancyChargeTermRepository {
                 .optional();
     }
 
-    // Everything ever agreed for this tenancy, newest deal first.
+    // The deal history for one tenancy, newest first.
     public List<TenancyChargeTermRow> findByTenancy(UUID tenancy) {
         return jdbc.sql("""
                 SELECT * FROM tenancy_charge_term
                 WHERE tenancy = :tenancy AND deleted_at IS NULL
-                ORDER BY valid_at DESC, created_at DESC
+                ORDER BY valid_at DESC, uuid DESC
                 """)
                 .param("tenancy", tenancy)
                 .query(rowMapper)
                 .list();
     }
 
-    // The deal in force on a given day: the latest ACTIVE term that has taken effect.
-    public Optional<TenancyChargeTermRow> findInForce(UUID tenancy, LocalDate on) {
+    // note this is just extra defense layered on top of the "tenancy_charge_term_in_force_uq" in V1
+    public Optional<TenancyChargeTermRow> findInForceOn(UUID tenancy, LocalDate on) {
         return jdbc.sql("""
                 SELECT * FROM tenancy_charge_term
                 WHERE tenancy = :tenancy
                   AND status = 'ACTIVE'
                   AND valid_at <= :on
                   AND deleted_at IS NULL
-                ORDER BY valid_at DESC
+                ORDER BY valid_at DESC, uuid DESC
                 LIMIT 1
                 """)
                 .param("tenancy", tenancy)
@@ -141,21 +146,20 @@ public class TenancyChargeTermRepository {
                 .optional();
     }
 
-    // The work queue: terms still being written or out for signature.
-    public List<TenancyChargeTermRow> findOpen(UUID tenancy) {
+    // One bulk run, so it can be reviewed or abandoned together.
+    public List<TenancyChargeTermRow> findByBatch(UUID batch) {
         return jdbc.sql("""
                 SELECT * FROM tenancy_charge_term
-                WHERE tenancy = :tenancy
-                  AND status IN ('PROPOSED','PENDING')
-                  AND deleted_at IS NULL
-                ORDER BY created_at
+                WHERE batch = :batch AND deleted_at IS NULL
+                ORDER BY valid_at DESC, uuid DESC
                 """)
-                .param("tenancy", tenancy)
+                .param("batch", batch)
                 .query(rowMapper)
                 .list();
     }
 
-    // Only a PROPOSED term is editable -- once paper is out, the values are frozen.
+    // Plain CRUD: whether the term is still editable is the service's call, so
+    // that a locked term answers 400 rather than being mistaken for missing.
     public Optional<TenancyChargeTermRow> patch(UUID uuid, Map<String, Object> changes) {
         if (changes.isEmpty()) return findById(uuid);
 
@@ -166,9 +170,12 @@ public class TenancyChargeTermRepository {
         }
 
         StringBuilder sql = new StringBuilder("UPDATE tenancy_charge_term SET ");
+
         changes.forEach((col, val) -> sql.append(col).append(" = :").append(col).append(", "));
+
+        // trim trailing comma and space
         sql.setLength(sql.length() - 2);
-        sql.append(" WHERE uuid = :uuid AND status = 'PROPOSED' AND deleted_at IS NULL RETURNING *");
+        sql.append(" WHERE uuid = :uuid AND deleted_at IS NULL RETURNING *");
 
         Map<String, Object> params = new HashMap<>(changes);
         params.put("uuid", uuid);
@@ -179,47 +186,69 @@ public class TenancyChargeTermRepository {
                 .optional();
     }
 
-    // Submitted: a document is out for signature or service.
-    public boolean markPending(UUID uuid, UUID instrument) {
+    // Guarded transition. Empty means the row was not in the expected state --
+    // which is also what stops two agents from submitting the same term twice.
+    // The escaped CHECK constraints re-evaluate on this UPDATE, so a PROPOSED
+    // row with inconsistent pairs fails here; the service validates first.
+    public Optional<TenancyChargeTermRow> updateStatus(UUID uuid,
+                                                       TenancyTermStatus from,
+                                                       TenancyTermStatus to) {
         return jdbc.sql("""
                 UPDATE tenancy_charge_term
-                SET status = 'PENDING', source_uuid = :instrument
-                WHERE uuid = :uuid AND status = 'PROPOSED' AND deleted_at IS NULL
+                SET status = :to
+                WHERE uuid = :uuid AND status = :from AND deleted_at IS NULL
+                RETURNING *
                 """)
                 .param("uuid", uuid)
-                .param("instrument", instrument)
-                .update() > 0;
+                .param("from", nameOf(from))
+                .param("to", nameOf(to))
+                .query(rowMapper)
+                .optional();
     }
 
-    // In force from valid_at until a later ACTIVE term supersedes it.
-    public boolean markActive(UUID uuid) {
+    // The instrument that produced this deal. Separate from PATCH because of the
+    // composite FK to instrument(uuid, tenancy): a document from another tenancy
+    // cannot be attached, and the database is what enforces it.
+    public Optional<TenancyChargeTermRow> attachSource(UUID uuid, UUID sourceUuid) {
         return jdbc.sql("""
                 UPDATE tenancy_charge_term
-                SET status = 'ACTIVE'
-                WHERE uuid = :uuid AND status = 'PENDING' AND deleted_at IS NULL
+                SET source_uuid = :sourceUuid
+                WHERE uuid = :uuid AND deleted_at IS NULL
+                RETURNING *
                 """)
                 .param("uuid", uuid)
-                .update() > 0;
+                .param("sourceUuid", sourceUuid)
+                .query(rowMapper)
+                .optional();
     }
 
-    public boolean cancel(UUID uuid, UUID cancelledBy, String reason) {
+    // Cancelling ends a term that HAS gone into effect, so it is guarded on
+    // ACTIVE. All four columns move in one UPDATE because term_cancel_facts and
+    // term_cancel_fields_only_when_cancelled would both fail on a partial write.
+    public Optional<TenancyChargeTermRow> cancel(UUID uuid, UUID cancelledBy, String cancelReason) {
         return jdbc.sql("""
                 UPDATE tenancy_charge_term
-                SET status = 'CANCELLED', cancelled_at = now(),
-                    cancelled_by = :cancelledBy, cancel_reason = :reason
+                SET status = 'CANCELLED',
+                    cancelled_at = now(),
+                    cancelled_by = :cancelledBy,
+                    cancel_reason = :cancelReason
                 WHERE uuid = :uuid AND status = 'ACTIVE' AND deleted_at IS NULL
+                RETURNING *
                 """)
                 .param("uuid", uuid)
                 .param("cancelledBy", cancelledBy)
-                .param("reason", reason)
-                .update() > 0;
+                .param("cancelReason", cancelReason)
+                .query(rowMapper)
+                .optional();
     }
 
-    // Only before a term has gone into force -- the DB constraint enforces this too.
     public boolean softDelete(UUID uuid) {
         return jdbc.sql("""
-                UPDATE tenancy_charge_term SET deleted_at = now()
-                WHERE uuid = :uuid AND status IN ('PROPOSED','PENDING') AND deleted_at IS NULL
+                UPDATE tenancy_charge_term
+                SET deleted_at = now()
+                WHERE uuid = :uuid
+                  AND status IN ('PROPOSED','PENDING')
+                  AND deleted_at IS NULL
                 """)
                 .param("uuid", uuid)
                 .update() > 0;

@@ -57,6 +57,11 @@ public class AuditService {
     }
 
     public void recordInsert(String tableName, UUID recordId, Map<String, Object> after) {
+        if (auditContext.getUserType() == null) {
+            throw new IllegalStateException(
+                    "No acting principal for an audit row on " + tableName
+                            + " -- use recordSystemInsert for system-authored rows");
+        }
         var row = new AuditLogRow(
                 auditContext.getCorrelationId(),
                 auditContext.getActingUserId(),
@@ -70,8 +75,6 @@ public class AuditService {
         );
         auditRepository.save(row);
     }
-
-
 
     public void recordSystemInsert(UUID correlationId, String tableName, UUID recordId, Map<String, Object> after) {
         AuditLogRow row = new AuditLogRow(

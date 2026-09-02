@@ -47,7 +47,7 @@ public class TermsTemplateRepositoryTest extends IntegrationTest {
         assertThat(saved.property()).isNull();
         assertThat(saved.copiedFrom()).isNull();
         assertThat(saved.agreementType()).isEqualTo(AgreementType.LAND);
-        assertThat(saved.targetRate()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(saved.targetRate()).isNull();
         assertThat(saved.carFee()).isEqualByComparingTo(new BigDecimal("65.00"));
         assertThat(saved.allowedCars()).isEqualTo(2);
         assertThat(saved.carsMax()).isEqualTo(4);
@@ -161,7 +161,8 @@ public class TermsTemplateRepositoryTest extends IntegrationTest {
 
         // Assert -- copy semantics, not reference semantics
         TermsTemplateRow reloaded = termsTemplateRepository.findById(template.uuid()).orElseThrow();
-        assertThat(reloaded.targetRate()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(reloaded.targetRate()).isNull();
+        //assertThat(reloaded.targetRate()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
     // ── Scoped reads ─────────────────────────────────────────────────────────

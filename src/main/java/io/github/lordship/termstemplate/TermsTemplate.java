@@ -15,7 +15,8 @@ public record TermsTemplate(
         UUID copiedFrom, // the global template this was copied from; null on a global template
         String name,
         AgreementType agreementType,
-        BigDecimal targetRate,
+        BigDecimal targetRate, // where existing tenancies are steered
+        BigDecimal askingRate, // what a new applicant is quoted
 
         BigDecimal carFee,
         int allowedCars, // cars allowed before being charged fees

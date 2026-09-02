@@ -15,15 +15,15 @@ CREATE TYPE agreement_type AS ENUM (
 
 -- shared by instrument and document_template so the vocabulary is defined once
 CREATE TYPE instrument_type AS ENUM (
-    'LEASE','INCREASE_NOTICE','ASSUMPTION','ADDENDUM','WAIVER'
+    'LEASE','INCREASE_NOTICE','ASSUMPTION','ADDENDUM','WAIVER', 'PAY_OR_VACATE'
     );
 
 -- ── Global settings ──────────────────────────────────────────────────────────
 
 CREATE TABLE global_settings ( -- singleton
                                  id         INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-                                 require_instrument_for_charges BOOLEAN NOT NULL DEFAULT FALSE,
                                  compliance_email TEXT,
+
                                  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -42,6 +42,8 @@ CREATE TABLE property (
                           purchase_date    DATE,
                           property_zoning  TEXT,
                           property_parcel  TEXT,
+                          payable_to       TEXT, -- who to pay
+                          remittance_address TEXT, -- where checks are mailed;
                           year_built       INT,
                           property_manager UUID, -- FK to agent added in V3 after agent table exists
                           created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -55,7 +57,8 @@ CREATE TABLE terms_template ( -- note when the property is NULL this is a global
                             copied_from UUID REFERENCES terms_template(uuid), -- provenance only; may point at a retired set
                             name     TEXT NOT NULL CHECK (length(trim(name)) > 0),
                             agreement_type agreement_type NOT NULL, -- do not patch
-                            target_rate NUMERIC(12,2) NOT NULL DEFAULT 0.0 CHECK (target_rate >= 0), -- keep zero for global terms
+                            target_rate NUMERIC(12,2) CHECK (target_rate >= 0), -- keep zero for global terms
+                            asking_rate NUMERIC(12,2) CHECK (asking_rate >= 0),
 
                             car_fee           NUMERIC(12,2) NOT NULL DEFAULT 65.0 CHECK (car_fee >= 0),
                             allowed_cars      INT           NOT NULL DEFAULT 2    CHECK (allowed_cars >= 0),
@@ -68,7 +71,7 @@ CREATE TABLE terms_template ( -- note when the property is NULL this is a global
 
                             rule_violation_fee_method TEXT NOT NULL DEFAULT 'FLAT'
                                 CHECK (rule_violation_fee_method IN ('NONE','FLAT')),
-                            rule_violation_fee_amount NUMERIC(12,2) DEFAULT 65 CHECK (rule_violation_fee_amount >= 0),
+                            rule_violation_fee_amount NUMERIC(12,2) NOT NULL DEFAULT 65 CHECK (rule_violation_fee_amount >= 0),
 
                             nsf_fee_method    TEXT          NOT NULL DEFAULT 'FLAT'
                                 CHECK (nsf_fee_method IN ('NONE','FLAT','BANK_OR_FLAT')), -- BANK_OR_FLAT: either the flat amt or the bank fee if the bank fee is greater

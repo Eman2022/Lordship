@@ -4,6 +4,8 @@ package io.github.lordship.tenancy;
 import io.github.lordship.accounts.AccountService;
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
+import io.github.lordship.lots.Lot;
+import io.github.lordship.lots.LotService;
 import io.github.lordship.tenancy.internal.TenancyRepository;
 import io.github.lordship.tenancy.internal.TenancyRow;
 import jakarta.persistence.EntityNotFoundException;
@@ -21,22 +23,46 @@ public class TenancyService {
     private final TenancyRepository tenancyRepository;
     private final AuditService auditService;
     private final AccountService accountService;
+    private final LotService lotService;
 
     private static final Logger log = LoggerFactory.getLogger(TenancyService.class);
 
     public TenancyService(
             TenancyRepository tenancyRepository,
             AuditService auditService,
-            AccountService accountService
+            AccountService accountService,
+            LotService lotService
     ) {
         this.tenancyRepository = tenancyRepository;
         this.auditService = auditService;
         this.accountService = accountService;
+        this.lotService = lotService;
     }
 
-    // Forces a maximum of two tenancies for a lot
+    /**
+     * A lot admits a new tenancy only when it is rentable, and never more than
+     * two at a time. Two is deliberate: an outgoing tenancy and its replacement
+     * overlap while the first is being wound up, and the office cannot be made
+     * to wait on that to set the next one up.
+     *
+     * <p>{@code is_rentable} governs new tenancies only. A lot that becomes
+     * flooded, condemned or held for a road widening keeps the tenants already
+     * on it -- same reasoning as revoking a permissible agreement type not
+     * invalidating a charge term already signed and served.
+     *
+     * <p>{@code LotService.findById} filters soft-deleted lots, so this also
+     * refuses a tenancy on a lot that was deleted.
+     */
     @Transactional
     public Tenancy create(UUID lotId) {
+        Lot lot = lotService.findById(lotId)
+                .orElseThrow(() -> new EntityNotFoundException("Lot not found: " + lotId));
+
+        if (Boolean.FALSE.equals(lot.isRentable())) {
+            throw new IllegalStateException("Lot " + lot.lotNumber()
+                    + " cannot take a new tenancy: " + lot.notRentableReason());
+        }
+
         List<TenancyRow> active = tenancyRepository.findActiveByLot(lotId);
 
         if (active.size() >= 2) {
@@ -52,13 +78,26 @@ public class TenancyService {
         return tenancy;
     }
 
-    // Manages timeslots for the second tenancy
+    /**
+     * Closes the newer of two overlapping tenancies once it has had its month.
+     * Does nothing while a lot has fewer than two, and does nothing while any
+     * active tenancy is missing its possession date: a tenancy with no
+     * start_date cannot be ranked against the others, and closing the wrong one
+     * is worse than closing neither.
+     */
     @Transactional
     public void enforceSecondTenancyLimit(UUID lotId) {
         List<TenancyRow> active = tenancyRepository.findActiveByLot(lotId);
 
+        if (active.size() < 2) {
+            return;
+        }
+        if (active.stream().anyMatch(t -> t.startDate() == null)) {
+            return;
+        }
+
         TenancyRow second = active.stream()
-                .max((a, b) -> a.startDate().compareTo(b.startDate()))
+                .max(Comparator.comparing(TenancyRow::startDate))
                 .orElseThrow();
 
         LocalDate start = second.startDate();
@@ -88,26 +127,20 @@ public class TenancyService {
                 .toList();
     }
 
-    @Transactional
-    public Tenancy endTenancy(UUID uuid, LocalDate endDate) {
-        TenancyRow before = tenancyRepository.findById(uuid)
-                .orElseThrow(() -> new EntityNotFoundException("Tenancy not found: " + uuid));
-
-        if (before.endDate() != null) {
-            throw new IllegalStateException("Tenancy already closed: " + uuid);
-        }
-
-        TenancyRow after = tenancyRepository.close(uuid, endDate);
-
-        var diff = AuditMapper.diff(before, after);
-        if (!diff.before().isEmpty()) {
-            auditService.recordUpdate("tenancy", uuid, diff.before(), diff.after());
-        }
-
-        return after.toTenancy();
-    }
-
-    // mutable hashmap to be able to properly patch changes
+    /**
+     * The one door onto a tenancy's dates. There is no separate close endpoint:
+     * ending a tenancy is setting its end_date, so it goes through here with
+     * everything else.
+     *
+     * <p>end_date is a state transition, not just a column. Null to a date
+     * closes the tenancy; date to a different date corrects a figure someone
+     * typed wrong; a date back to null reopens it, which is refused when the
+     * lot already carries its two active tenancies. Without that last check a
+     * reopen is a third way onto a full lot, since the create path never sees
+     * it.
+     *
+     * <p>Mutable hashmap so the no-op keys can be dropped before the write.
+     */
     @Transactional
     public Optional<Tenancy> patchTenancy(UUID uuid, Map<String, Object> changes) {
         Optional<TenancyRow> beforeOpt = tenancyRepository.findById(uuid);
@@ -170,6 +203,33 @@ public class TenancyService {
 
         if(mutable.isEmpty()) {
             return Optional.of(before.toTenancy());
+        }
+
+        // A key that survived the blocks above carries a real change; one that
+        // did not means the supplied value already matched, so `before` is the
+        // effective value either way.
+        LocalDate startAfter = mutable.containsKey("start_date")
+                ? (LocalDate) mutable.get("start_date")
+                : before.startDate();
+        LocalDate endAfter = mutable.containsKey("end_date")
+                ? (LocalDate) mutable.get("end_date")
+                : before.endDate();
+
+        if (startAfter != null && endAfter != null && endAfter.isBefore(startAfter)) {
+            throw new IllegalArgumentException(
+                    "endDate " + endAfter + " cannot be before startDate " + startAfter);
+        }
+
+        boolean reopening = before.endDate() != null && endAfter == null;
+        if (reopening) {
+            long othersActive = tenancyRepository.findActiveByLot(before.lotId()).stream()
+                    .filter(row -> !Objects.equals(row.uuid(), uuid))
+                    .count();
+
+            if (othersActive >= 2) {
+                throw new IllegalStateException(
+                        "Cannot reopen tenancy " + uuid + ": its lot already has two active tenancies");
+            }
         }
 
         Optional<TenancyRow> updatedTenancy = tenancyRepository.patch(uuid, mutable);

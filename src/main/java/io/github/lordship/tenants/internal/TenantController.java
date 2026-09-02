@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Validated
 @RestController
-@RequestMapping("/tenants")
+@RequestMapping("/api/tenants")
 public class TenantController {
     private final TenantService tenantService;
 

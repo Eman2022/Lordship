@@ -15,6 +15,8 @@ public record Property(
         LocalDate purchaseDate,
         String propertyZoning,
         String propertyParcel,
+        String payableTo,
+        String remittanceAddress,
         Integer yearBuilt,
         OffsetDateTime createdAt,
         OffsetDateTime deletedAt

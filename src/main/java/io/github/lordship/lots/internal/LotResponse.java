@@ -28,10 +28,12 @@ public record LotResponse(
 
     public record AgreementTypeResponse(
             AgreementType agreementType,
-            BigDecimal targetRent
+            BigDecimal targetRate, // where existing tenancies are steered
+            BigDecimal askingRate  // what a new applicant is quoted
     ) {
         public static AgreementTypeResponse from(PermissibleAgreementType type) {
-            return new AgreementTypeResponse(type.agreementType(), type.targetRate());
+            return new AgreementTypeResponse(
+                    type.agreementType(), type.targetRate(), type.askingRate());
         }
     }
 

@@ -65,7 +65,7 @@ public class TenantControllerIT extends IntegrationTest {
         var request = new TenantCreateRequest(UUID.randomUUID(), UUID.randomUUID());
 
         mockMvc.perform(
-                        post("/tenants/create")
+                        post("/api/tenants/create")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request))
                 )
@@ -80,7 +80,7 @@ public class TenantControllerIT extends IntegrationTest {
                 """;
 
         mockMvc.perform(
-                        post("/tenants/create")
+                        post("/api/tenants/create")
                                 .header("Authorization", "Bearer " + token)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(invalidJson)
@@ -92,14 +92,14 @@ public class TenantControllerIT extends IntegrationTest {
     void getTenant_shouldReturn404_whenTenantDoesNotExist() throws Exception {
         String token = TestAuthSupport.loginAsRoot(mockMvc, objectMapper, rootEmail, rootPassword);
 
-        mockMvc.perform(get("/tenants/{uuid}", UUID.randomUUID())
+        mockMvc.perform(get("/api/tenants/{uuid}", UUID.randomUUID())
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void getTenant_shouldReturn403_whenNoTokenProvided() throws Exception {
-        mockMvc.perform(get("/tenants/{uuid}", UUID.randomUUID()))
+        mockMvc.perform(get("/api/tenants/{uuid}", UUID.randomUUID()))
                 .andExpect(status().isForbidden());
     }
 }

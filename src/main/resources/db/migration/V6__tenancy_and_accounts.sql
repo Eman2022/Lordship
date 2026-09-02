@@ -28,8 +28,75 @@ CREATE TABLE tenancy (
                          FOREIGN KEY (lot_id) REFERENCES lot(uuid)
 );
 
-CREATE UNIQUE INDEX uix_tenancy_lot_active
+-- Not unique: a lot carries two active tenancies while one is being wound up
+-- and the next is being set up. Two is the ceiling, enforced by trigger.
+CREATE INDEX idx_tenancy_lot_active
     ON tenancy(lot_id) WHERE end_date IS NULL AND deleted_at IS NULL;
+
+-- Two rules, two triggers, because their column scopes differ. Rentability is
+-- asked only of a tenancy arriving on a lot; the ceiling is asked of anything
+-- that adds to a lot's active count, reopening included.
+
+CREATE OR REPLACE FUNCTION tenancy_lot_must_be_rentable()
+    RETURNS TRIGGER AS $$
+DECLARE
+    rentable BOOLEAN;
+    reason   TEXT;
+BEGIN
+    SELECT l.is_rentable, l.not_rentable_reason
+    INTO rentable, reason
+    FROM lot l
+    WHERE l.uuid = NEW.lot_id;
+
+    IF NOT rentable THEN
+        RAISE EXCEPTION 'Lot % cannot take a new tenancy: %',
+            NEW.lot_id, COALESCE(reason, 'no reason recorded')
+            USING ERRCODE = '23514';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION tenancy_active_limit()
+    RETURNS TRIGGER AS $$
+DECLARE
+    active INT;
+BEGIN
+    IF NEW.end_date IS NOT NULL OR NEW.deleted_at IS NOT NULL THEN
+        RETURN NEW;
+    END IF;
+
+    -- FOR UPDATE serializes concurrent writes on the same lot, so the count below is not a race
+    PERFORM 1 FROM lot WHERE uuid = NEW.lot_id FOR UPDATE;
+
+    SELECT count(*) INTO active
+    FROM tenancy t
+    WHERE t.lot_id = NEW.lot_id
+      AND t.uuid <> NEW.uuid
+      AND t.end_date IS NULL
+      AND t.deleted_at IS NULL;
+
+    IF active >= 2 THEN
+        RAISE EXCEPTION 'Lot % already has two active tenancies', NEW.lot_id
+            USING ERRCODE = '23514';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Insert and lot_id moves only. A lot flipping to not-rentable leaves the
+-- tenancies already on it alone, and so does correcting one of their dates.
+CREATE TRIGGER trg_tenancy_lot_must_be_rentable
+    BEFORE INSERT OR UPDATE OF lot_id ON tenancy
+    FOR EACH ROW EXECUTE FUNCTION tenancy_lot_must_be_rentable();
+
+-- end_date and deleted_at are here because clearing either one puts a tenancy
+-- back among the active, which the create path never sees.
+CREATE TRIGGER trg_tenancy_active_limit
+    BEFORE INSERT OR UPDATE OF lot_id, end_date, deleted_at ON tenancy
+    FOR EACH ROW EXECUTE FUNCTION tenancy_active_limit();
 
 CREATE TRIGGER trg_tenancy_updated_at
     BEFORE UPDATE ON tenancy

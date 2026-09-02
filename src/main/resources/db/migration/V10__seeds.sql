@@ -83,6 +83,7 @@ INSERT INTO permission (uuid, permission_name) VALUES
     -- Lots
     (uuidv7(), 'lots:view'),
     (uuidv7(), 'lots:edit'),
+    (uuidv7(), 'lots:set_rates'),
     (uuidv7(), 'lots:create'),
     (uuidv7(), 'lots:delete'),
 
@@ -124,8 +125,15 @@ INSERT INTO permission (uuid, permission_name) VALUES
     (uuidv7(), 'tenancy_term:view'),
     (uuidv7(), 'tenancy_term:edit'),
     (uuidv7(), 'tenancy_term:create'),
-    (uuidv7(), 'tenancy_term:delete')
+    (uuidv7(), 'tenancy_term:delete'),
+    (uuidv7(), 'tenancy_term:activate'),
+    (uuidv7(), 'tenancy_term:cancel'),
 
+    -- documents
+    (uuidv7(), 'document_template:view'),
+    (uuidv7(), 'document_template:create'),
+    (uuidv7(), 'document_template:edit'),
+    (uuidv7(), 'document_template:delete')
 ;
 
 -- ── Roles ─────────────────────────────────────────────────────────────────────
@@ -186,6 +194,8 @@ AND p.permission_name IN (
     'tenancy_term:edit',
     'tenancy_term:create',
     'tenancy_term:delete',
+    'tenancy_term:activate',
+    'tenancy_term:cancel',
     'vehicles:view',
     'vehicles:edit',
     'vehicles:create',
@@ -193,7 +203,8 @@ AND p.permission_name IN (
     'meters:view',
     'meters:edit',
     'meterbills:view',
-    'meterbills:edit'
+    'meterbills:edit',
+    'document_template:view'
 );
 
 -- Property Manager

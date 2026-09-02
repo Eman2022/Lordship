@@ -32,10 +32,26 @@ public record Lot(
     return deletedAt != null;
   }
 
-  public Optional<BigDecimal> targetRentFor(AgreementType agreementType) {
+  public boolean permits(AgreementType agreementType) {
+    return permissible(agreementType).isPresent();
+  }
+
+  /** Where existing tenancies on this lot are being steered. */
+  public Optional<BigDecimal> targetRateFor(AgreementType agreementType) {
+    return permissible(agreementType).map(PermissibleAgreementType::targetRate);
+  }
+
+  /** What a new applicant is quoted for this lot. */
+  public Optional<BigDecimal> askingRateFor(AgreementType agreementType) {
+    return permissible(agreementType).map(PermissibleAgreementType::askingRate);
+  }
+
+  // findFirst before map, never after: target_rate and asking_rate are both
+  // nullable, and Stream.findFirst throws on a null element where Optional.map
+  // simply returns empty.
+  private Optional<PermissibleAgreementType> permissible(AgreementType agreementType) {
     return permissibleAgreementTypes.stream()
             .filter(pat -> pat.agreementType() == agreementType)
-            .map(PermissibleAgreementType::targetRate)
             .findFirst();
   }
 }

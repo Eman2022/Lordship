@@ -93,7 +93,7 @@ public class TermsTemplateControllerIT extends IntegrationTest {
         assertEquals(7, created.gracePeriodDays());
         assertEquals(FeeMethod.FLAT, created.lateFeeMethod());
         assertEquals(UtilityMethod.NONE, created.waterMethod());
-        assertEquals(0, BigDecimal.ZERO.compareTo(created.targetRate()),
+        assertNull(created.targetRate(),
                 "a global rent default is meaningless across markets");
     }
 
@@ -224,7 +224,7 @@ public class TermsTemplateControllerIT extends IntegrationTest {
         TermsTemplate template = termsTemplateService.findById(templateId).orElseThrow();
 
         assertEquals(0, new BigDecimal("700.00").compareTo(copy.targetRate()));
-        assertEquals(0, BigDecimal.ZERO.compareTo(template.targetRate()),
+        assertNull(template.targetRate(),
                 "a global template must not move when a property edits its copy");
     }
 
