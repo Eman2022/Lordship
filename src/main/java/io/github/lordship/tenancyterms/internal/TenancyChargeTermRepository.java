@@ -1,6 +1,7 @@
 package io.github.lordship.tenancyterms.internal;
 
 import io.github.lordship.shared.AgreementType;
+import io.github.lordship.tenancyterms.ChargeTermConfiguration;
 import io.github.lordship.tenancyterms.TenancyTermStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -40,6 +41,40 @@ public class TenancyChargeTermRepository {
     public TenancyChargeTermRepository(JdbcClient jdbc, TenancyChargeTermRowMapper tenancyChargeTermRowMapper) {
         this.jdbc = jdbc;
         this.rowMapper = tenancyChargeTermRowMapper;
+    }
+
+    /**
+     * The distinct shapes of deal in force at one property, and how many tenancies
+     * have each. Only the columns a clause can branch on -- figures never decide
+     * whether a paragraph prints, so six thousand lots collapse to a handful of rows.
+     *
+     * <p>In force means the latest ACTIVE term whose valid_at has arrived, per
+     * tenancy: DISTINCT ON picks it, so a superseded term does not count twice.
+     */
+    public List<ChargeTermConfiguration> findConfigurationsInForceByProperty(UUID propertyId) {
+        return jdbc.sql("""
+            WITH in_force AS (
+                SELECT DISTINCT ON (t.tenancy) t.*
+                  FROM tenancy_charge_term t
+                  JOIN tenancy ten ON ten.uuid = t.tenancy AND ten.deleted_at IS NULL
+                  JOIN lot l       ON l.uuid = ten.lot_id  AND l.deleted_at IS NULL
+                 WHERE l.property_id = :propertyId
+                   AND t.status = 'ACTIVE'
+                   AND t.deleted_at IS NULL
+                   AND t.valid_at <= CURRENT_DATE
+                 ORDER BY t.tenancy, t.valid_at DESC
+            )
+            SELECT CAST(agreement_type AS text) AS agreement_type,
+                   late_fee_method, nsf_fee_method, rule_violation_fee_method,
+                   water_method, power_method, sewer_method, trash_method,
+                   COUNT(*)::int AS tenancy_count
+              FROM in_force
+             GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
+             ORDER BY tenancy_count DESC
+            """)
+                .param("propertyId", propertyId)
+                .query(ChargeTermConfiguration.class)
+                .list();
     }
 
     // Note: the copy from a terms_template IS the create.

@@ -119,6 +119,10 @@ public class TenancyChargeTermService {
                 .map(TenancyChargeTermRow::toTenancyChargeTerm);
     }
 
+    public List<ChargeTermConfiguration> findConfigurationsInForceByProperty(UUID propertyId) {
+        return tenancyChargeTermRepository.findConfigurationsInForceByProperty(propertyId);
+    }
+
     // The deal history for one tenancy, newest first.
     public List<TenancyChargeTerm> findByTenancy(UUID tenancy) {
         return tenancyChargeTermRepository.findByTenancy(tenancy).stream()
