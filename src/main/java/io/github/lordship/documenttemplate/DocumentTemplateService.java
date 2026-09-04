@@ -8,12 +8,16 @@ import io.github.lordship.documenttemplate.internal.*;
 import io.github.lordship.shared.AgreementType;
 import io.github.lordship.shared.DocumentToken;
 import io.github.lordship.shared.InstrumentType;
+import io.github.lordship.tenancyterms.TenancyChargeTerm;
+import io.github.lordship.tenancyterms.TenancyChargeTermService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,17 +43,20 @@ public class DocumentTemplateService {
     private final DocumentTemplateRepository documentTemplateRepository;
     private final DocumentSectionRepository documentSectionRepository;
     private final TemplateClauseRepository templateClauseRepository;
+    private final TenancyChargeTermService tenancyChargeTermService;
     private final AuditService auditService;
     private final AuditContext auditContext;
 
     public DocumentTemplateService(DocumentTemplateRepository documentTemplateRepository,
                                    DocumentSectionRepository documentSectionRepository,
                                    TemplateClauseRepository templateClauseRepository,
+                                   TenancyChargeTermService tenancyChargeTermService,
                                    AuditService auditService,
                                    AuditContext auditContext) {
         this.documentTemplateRepository = documentTemplateRepository;
         this.documentSectionRepository = documentSectionRepository;
         this.templateClauseRepository = templateClauseRepository;
+        this.tenancyChargeTermService = tenancyChargeTermService;
         this.auditService = auditService;
         this.auditContext = auditContext;
     }
@@ -66,6 +73,69 @@ public class DocumentTemplateService {
 
     public Optional<DocumentTemplate> findById(UUID uuid) {
         return documentTemplateRepository.findById(uuid).map(this::hydrate);
+    }
+
+    /**
+     * The document as it would come out for a set of method values typed by
+     * hand. Works on a document that has never been assigned anywhere, which
+     * matters because an author usually finishes writing before deciding which
+     * parks get it.
+     */
+    public Optional<DocumentTemplate.Preview> preview(UUID uuid, Map<String, String> methodValues) {
+        validateMethodValues(methodValues);
+        return findById(uuid).map(template -> template.preview(methodValues));
+    }
+
+    /**
+     * The same preview against a real deal. Reads the methods off a charge term
+     * rather than trusting a hand-typed map, so the combination previewed is
+     * one that actually exists.
+     */
+    public Optional<DocumentTemplate.Preview> previewForChargeTerm(UUID uuid, UUID chargeTermUuid) {
+        TenancyChargeTerm term = tenancyChargeTermService.findById(chargeTermUuid)
+                .orElseThrow(() -> new EntityNotFoundException("Charge term not found: " + chargeTermUuid));
+
+        return findById(uuid).map(template -> template.preview(methodValuesOf(term)));
+    }
+
+    // The subset of a charge term a clause may branch on. Anything not here is
+    // a figure, and figures do not decide whether a paragraph prints.
+    private static Map<String, String> methodValuesOf(TenancyChargeTerm term) {
+        Map<String, String> values = new LinkedHashMap<>();
+        put(values, DocumentToken.LATE_FEE_METHOD, term.lateFeeMethod());
+        put(values, DocumentToken.NSF_FEE_METHOD, term.nsfFeeMethod());
+        put(values, DocumentToken.RULE_VIOLATION_FEE_METHOD, term.ruleViolationFeeMethod());
+        put(values, DocumentToken.WATER_METHOD, term.waterMethod());
+        put(values, DocumentToken.POWER_METHOD, term.powerMethod());
+        put(values, DocumentToken.SEWER_METHOD, term.sewerMethod());
+        put(values, DocumentToken.TRASH_METHOD, term.trashMethod());
+        put(values, DocumentToken.AGREEMENT_TYPE, term.agreementType());
+        return values;
+    }
+
+    private static void put(Map<String, String> values, DocumentToken token, Enum<?> value) {
+        if (value != null) {
+            values.put(token.token(), value.name());
+        }
+    }
+
+    // A typo here would come back as a document quietly missing clauses, which
+    // is exactly the failure preview exists to catch.
+    private static void validateMethodValues(Map<String, String> methodValues) {
+        methodValues.forEach((field, value) -> {
+            DocumentToken token = DocumentToken.of(field).orElseThrow(() ->
+                    new IllegalArgumentException("No such token: {{" + field + "}}" + suggestionFor(field)));
+
+            if (!token.canCondition()) {
+                throw new IllegalArgumentException(
+                        "{{" + field + "}} is " + token.format() + ", not a method -- nothing branches on it");
+            }
+            if (!token.allowedValues().contains(value)) {
+                throw new IllegalArgumentException(
+                        "{{" + field + "}} does not take " + value + ". Allowed: "
+                                + token.allowedValues().stream().sorted().collect(Collectors.joining(", ")));
+            }
+        });
     }
 
     @Transactional

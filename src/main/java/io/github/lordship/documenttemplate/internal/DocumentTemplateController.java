@@ -221,6 +221,46 @@ public class DocumentTemplateController {
                 : ResponseEntity.notFound().build();
     }
 
+    // ---- preview -------------------------------------------------------------
+
+    // Supply one or the other. methodValues is typed by hand and works on a
+    // document assigned nowhere; chargeTerm reads a real deal.
+    public record PreviewRequest(
+            Map<String, String> methodValues,
+            UUID chargeTerm) { }
+
+    /**
+     * The document as it would come out for one configuration -- which clauses
+     * print, in order, and which were held back and why.
+     *
+     * <p>POST rather than GET because the input is a map of up to nine methods,
+     * which is a body rather than a query string. It reads and changes nothing.
+     *
+     * <p>Bodies keep their tokens: this answers whether the document is complete
+     * and reads correctly, which is a question about structure and prose.
+     * Substituting figures needs a real tenancy and belongs to generate.
+     */
+    @PreAuthorize("hasAuthority('document_template:view')")
+    @PostMapping("/{uuid}/preview")
+    public ResponseEntity<DocumentTemplate.Preview> preview(
+            @PathVariable UUID uuid,
+            @RequestBody(required = false) PreviewRequest request) {
+
+        if (request != null && request.chargeTerm() != null) {
+            return documentTemplateService.previewForChargeTerm(uuid, request.chargeTerm())
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        }
+
+        Map<String, String> methodValues = (request == null || request.methodValues() == null)
+                ? Map.of()
+                : request.methodValues();
+
+        return documentTemplateService.preview(uuid, methodValues)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     // ---- the token picker ----------------------------------------------------
 
     /**

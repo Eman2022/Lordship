@@ -27,6 +27,7 @@ public record DocumentTemplateResponse(
         int version,
         String note,
         OffsetDateTime createdAt,
+        List<DocumentTemplate.MethodCoverage> conditionWorklist,
         List<SectionResponse> sections
 ) {
 
@@ -115,6 +116,7 @@ public record DocumentTemplateResponse(
                 template.version(),
                 template.note(),
                 template.createdAt(),
+                template.conditionWorklist(),
                 template.sectionsInOrder().stream().map(SectionResponse::from).toList());
     }
 
@@ -128,6 +130,7 @@ public record DocumentTemplateResponse(
                 template.version(),
                 template.note(),
                 template.createdAt(),
+                List.of(),
                 List.of());
     }
 }
