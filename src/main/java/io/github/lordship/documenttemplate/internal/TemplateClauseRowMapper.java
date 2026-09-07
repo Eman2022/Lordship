@@ -46,7 +46,9 @@ public class TemplateClauseRowMapper implements RowMapper<TemplateClauseRow> {
         }
         try {
             String[] values = (String[]) array.getArray();
-            return values == null ? List.of() : Arrays.asList(values);
+            // Not Arrays.asList: that view stays writable through the backing
+            // array, and TemplateClauseRow is a record that does not copy it.
+            return values == null ? List.of() : Arrays.stream(values).toList();
         } finally {
             array.free();
         }

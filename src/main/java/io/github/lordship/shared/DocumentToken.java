@@ -287,6 +287,7 @@ public enum DocumentToken {
                 InstrumentType.LEASE, InstrumentType.ASSUMPTION);
     }
 
+    // allows a lookup table like "term.rate" → RATE
     private static final Map<String, DocumentToken> BY_NAME =
             Arrays.stream(values()).collect(Collectors.toMap(
                     DocumentToken::token, t -> t, (a, b) -> a, LinkedHashMap::new));
@@ -388,6 +389,7 @@ public enum DocumentToken {
      * money amount is a category error and is refused when the clause is saved,
      * rather than discovered at generate time on a legal document.
      */
+    // Can this token be used as a yes/no-ish decision for choosing which clause gets printed?
     public boolean canCondition() {
         return format == Format.ENUM;
     }

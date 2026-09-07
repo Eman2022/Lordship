@@ -119,7 +119,13 @@ public class TemplateClauseRepository {
         sql.append(" WHERE uuid = :uuid AND deleted_at IS NULL RETURNING *");
 
         Map<String, Object> params = new HashMap<>(changes);
-        params.computeIfPresent("condition_values", (col, val) -> toStringArray(val));
+        // Not computeIfPresent: it deletes the key when the function returns
+        // null, and clearing a condition is exactly the case that returns null.
+        // The column is still named in the SET clause, so the parameter has to
+        // stay in the map with a null value.
+        if (params.containsKey("condition_values")) {
+            params.put("condition_values", toStringArray(params.get("condition_values")));
+        }
         params.put("uuid", uuid);
 
         return jdbc.sql(sql.toString())

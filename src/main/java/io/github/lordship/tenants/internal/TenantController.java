@@ -19,9 +19,13 @@ import java.util.UUID;
 public class TenantController {
     private final TenantService tenantService;
 
+
+
     public TenantController(TenantService tenantService) {
         this.tenantService = tenantService;
     }
+
+
 
     @PreAuthorize("hasAuthority('tenants:create')")
     @PostMapping("/create")
@@ -30,6 +34,7 @@ public class TenantController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(TenantResponse.from(tenant));
     }
+
     @PreAuthorize("hasAuthority('tenants:view')")
     @GetMapping("/{uuid}")
     public ResponseEntity<TenantResponse> getById(@PathVariable UUID uuid) {

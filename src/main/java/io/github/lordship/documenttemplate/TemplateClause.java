@@ -57,12 +57,18 @@ public record TemplateClause(
      * Whether this clause prints, given the term's value for {@code
      * conditionField}. An unconditional clause always prints and ignores the
      * argument.
+     *
+     * <p>A null value means the method was never supplied, and a conditional
+     * clause does not print for it -- preview of a half-specified deal should
+     * show the holes rather than a plausible-looking document. The explicit
+     * null check is not decoration: {@code List.of(...)} throws on a null probe
+     * rather than answering false.
      */
     public boolean appliesTo(String conditionFieldValue) {
         if (!isConditional()) {
             return true;
         }
-        return conditionValues.contains(conditionFieldValue);
+        return conditionFieldValue != null && conditionValues.contains(conditionFieldValue);
     }
 
     /**

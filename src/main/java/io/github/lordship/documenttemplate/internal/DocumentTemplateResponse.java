@@ -69,7 +69,7 @@ public record DocumentTemplateResponse(
      * instead of branched inside the sentence.
      *
      * <p>{@code tokenNames} and {@code unguardedTokens} are both derived rather
-     * than stored. The first is what the body references. The second is the
+     * than stored. The first is what the body references. UnguardedTokens is the
      * subset whose value depends on a method this clause does not condition on,
      * so the editor can flag a clause that will print a figure that is not
      * really there -- computed on every read, not only after an edit, which is
