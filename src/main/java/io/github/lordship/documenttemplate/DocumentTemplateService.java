@@ -130,6 +130,13 @@ public class DocumentTemplateService {
                 throw new IllegalArgumentException(
                         "{{" + field + "}} is " + token.format() + ", not a method -- nothing branches on it");
             }
+            // Same trap as appliesTo: Set.of(...) throws on a null probe. Leave
+            // a method out of the map to say "unset"; naming it with no value
+            // is a mistake worth reporting.
+            if (value == null) {
+                throw new IllegalArgumentException(
+                        "{{" + field + "}} was given no value. Omit it entirely to preview it as unset");
+            }
             if (!token.allowedValues().contains(value)) {
                 throw new IllegalArgumentException(
                         "{{" + field + "}} does not take " + value + ". Allowed: "
@@ -214,8 +221,8 @@ public class DocumentTemplateService {
             return Optional.empty();
         }
 
-        recordUpdate("document_section", sectionUuid, before, afterOpt.get());
-        return Optional.of(reloadAndBump(before.template()));
+        Set<String> changed = recordUpdate("document_section", sectionUuid, before, afterOpt.get());
+        return Optional.of(reload(before.template(), affectsPrintedOutput(changed)));
     }
 
     // A required section is there to satisfy the statute in statute_ref.
@@ -265,22 +272,24 @@ public class DocumentTemplateService {
         }
         TemplateClauseRow before = beforeOpt.get();
 
-        validateBody(changes);
-        validateCondition(before, changes);
+        Map<String, Object> effective = withConditionClearing(changes);
 
-        Optional<TemplateClauseRow> afterOpt = templateClauseRepository.patch(clauseUuid, changes);
+        validateBody(effective);
+        validateCondition(before, effective);
+
+        Optional<TemplateClauseRow> afterOpt = templateClauseRepository.patch(clauseUuid, effective);
         if (afterOpt.isEmpty()) {
             return Optional.empty();
         }
 
-        recordUpdate("template_clause", clauseUuid, before, afterOpt.get());
+        Set<String> changed = recordUpdate("template_clause", clauseUuid, before, afterOpt.get());
 
         UUID templateId = documentSectionRepository.findById(before.section())
                 .map(DocumentSectionRow::template)
                 .orElseThrow(() -> new IllegalStateException(
                         "Clause " + clauseUuid + " points at a section that no longer exists"));
 
-        return Optional.of(reloadAndBump(templateId));
+        return Optional.of(reload(templateId, affectsPrintedOutput(changed)));
     }
 
     @Transactional
@@ -330,6 +339,36 @@ public class DocumentTemplateService {
                     (problems.size() == 1 ? "No such token: " : "No such tokens: ")
                             + String.join("; ", problems));
         }
+    }
+
+    /**
+     * Unchecking the last value and clearing the field are the same act: the
+     * clause is no longer conditional. The two columns are stored together, so
+     * clearing either one clears the other, rather than being refused for
+     * leaving the pair half-set -- an editor that unticks the last checkbox
+     * should not have to know it must also null the field.
+     *
+     * <p>Only when the other half is not being set in the same request. Sending
+     * a field with an empty list, or values with a null field, is still a
+     * mistake worth reporting: it asks for a clause that could never print.
+     */
+    private static Map<String, Object> withConditionClearing(Map<String, Object> changes) {
+        boolean fieldSet = changes.containsKey("condition_field")
+                && asStringOrNull(changes.get("condition_field")) != null;
+        boolean valuesSet = changes.containsKey("condition_values")
+                && !asStringList(changes.get("condition_values")).isEmpty();
+
+        boolean fieldCleared = changes.containsKey("condition_field") && !fieldSet;
+        boolean valuesCleared = changes.containsKey("condition_values") && !valuesSet;
+
+        if (!(fieldCleared && !valuesSet) && !(valuesCleared && !fieldSet)) {
+            return changes;
+        }
+
+        Map<String, Object> effective = new LinkedHashMap<>(changes);
+        effective.put("condition_field", null);
+        effective.put("condition_values", List.of());
+        return effective;
     }
 
     /**
@@ -452,24 +491,58 @@ public class DocumentTemplateService {
     }
 
     /**
-     * Any change to a section or a clause is a change to the document, so the
-     * number an instrument freezes as template_version means something. Returns
-     * the template as it now stands, which is what the editor needs back.
+     * The template as it now stands, which is what the editor needs back after
+     * any edit to a section or a clause.
+     *
+     * <p>{@code bump} carries the one decision worth making here: a change to
+     * the wording moves the version an instrument freezes, and a change to a
+     * note does not. A no-op patch does not move it either.
      */
-    private DocumentTemplate reloadAndBump(UUID templateId) {
-        return documentTemplateRepository.bumpVersion(templateId)
-                .map(this::hydrate)
+    private DocumentTemplate reload(UUID templateId, boolean bump) {
+        Optional<DocumentTemplateRow> row = bump
+                ? documentTemplateRepository.bumpVersion(templateId)
+                : documentTemplateRepository.findById(templateId);
+
+        return row.map(this::hydrate)
                 .orElseThrow(() -> new IllegalStateException(
                         "Template " + templateId + " disappeared mid-edit"));
     }
 
-    // Only record a change when the value actually changed: the log is a record
-    // of state changes, not of actions attempted.
-    private <T extends Record> void recordUpdate(String table, UUID uuid, T before, T after) {
+    // Structural edits always move the version: a clause appearing or
+    // disappearing changes the document whatever it says.
+    private DocumentTemplate reloadAndBump(UUID templateId) {
+        return reload(templateId, true);
+    }
+
+    /**
+     * Only record a change when the value actually changed: the log is a record
+     * of state changes, not of actions attempted.
+     *
+     * <p>Returns the fields that moved, which is also what decides whether the
+     * document's version has to move. Empty means the patch was a no-op.
+     */
+    private <T extends Record> Set<String> recordUpdate(String table, UUID uuid, T before, T after) {
         AuditMapper.Diff diff = AuditMapper.diff(before, after);
-        if (!diff.before().isEmpty()) {
-            auditService.recordUpdate(table, uuid, diff.before(), diff.after());
+        if (diff.before().isEmpty()) {
+            return Set.of();
         }
+        auditService.recordUpdate(table, uuid, diff.before(), diff.after());
+        return diff.before().keySet();
+    }
+
+    /**
+     * Fields that never reach the page. An instrument freezes template_version
+     * to say which wording it was cut from, so the number should move when the
+     * wording does and not when an author leaves themselves a reminder.
+     *
+     * <p>Record component names, not column names -- {@link AuditMapper} works
+     * off the accessor names. They happen to agree for {@code note}; a field
+     * added here whose Java name is camelCase must be spelled that way.
+     */
+    private static final Set<String> NON_PRINTING_FIELDS = Set.of("note");
+
+    private static boolean affectsPrintedOutput(Set<String> changedFields) {
+        return changedFields.stream().anyMatch(field -> !NON_PRINTING_FIELDS.contains(field));
     }
 
     private static String asStringOrNull(Object value) {

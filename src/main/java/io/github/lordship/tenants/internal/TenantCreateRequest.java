@@ -10,6 +10,4 @@ public record TenantCreateRequest(
 
     @NotNull
     UUID personId
-) {
-
-}
+) { }
