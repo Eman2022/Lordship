@@ -11,7 +11,6 @@ public record Tenant(
         LocalDate startDate,
         LocalDate endDate,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt,
         OffsetDateTime deletedAt
 ) {
 

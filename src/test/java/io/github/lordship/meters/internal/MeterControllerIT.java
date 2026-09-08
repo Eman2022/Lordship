@@ -152,13 +152,13 @@ public class MeterControllerIT extends IntegrationTest {
 
     // CONTROLLER TESTS
     @Test
-    void getMeter_shouldReturn403_whenNoTokenProvided() throws Exception {
+    void getMeter_shouldReturn401_whenNoTokenProvided() throws Exception {
         mockMvc.perform(get("/meters/{uuid}", UUID.randomUUID()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void createMeter_shouldReturn403_whenNoTokenProvided() throws Exception {
+    void createMeter_shouldReturn401_whenNoTokenProvided() throws Exception {
         var request = new MeterCreateRequest(UUID.randomUUID(), 1.0, 1.0, MeterType.WATER, MeterMeasurement.GAL, false, 99999,                 1.0,
                 15,
                 false);
@@ -166,7 +166,7 @@ public class MeterControllerIT extends IntegrationTest {
         mockMvc.perform(post("/meters/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

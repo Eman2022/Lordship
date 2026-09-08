@@ -11,6 +11,7 @@ public record AgentRow (
         String workPhone,
         String workEmail,
         String agentPassword,
+        OffsetDateTime tokensValidFrom,
         OffsetDateTime createdAt,
         OffsetDateTime deletedAt
 ) {
@@ -20,6 +21,7 @@ public record AgentRow (
                 this.personId,
                 this.workPhone,
                 this.workEmail,
+                this.tokensValidFrom,
                 this.createdAt,
                 this.deletedAt
         );
@@ -27,13 +29,14 @@ public record AgentRow (
 
     public AgentRow(UUID personId, String workPhone, String workEmail, String agentPassword){
         this(
-            null,
-            personId,
-            workPhone,
-            workEmail,
-            agentPassword,
-            null,
-            null
+                null,
+                personId,
+                workPhone,
+                workEmail,
+                agentPassword,
+                null,
+                null,
+                null
         );
     }
 }

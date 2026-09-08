@@ -230,9 +230,9 @@ public class PersonControllerIT extends IntegrationTest {
     }
 
     @Test
-    void getAnyPerson_shouldReturn403_whenNoTokenProvided() throws Exception {
+    void getAnyPerson_shouldReturn401_whenNoTokenProvided() throws Exception {
         mockMvc.perform(get("/api/persons/{uuid}", UUID.randomUUID()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
 

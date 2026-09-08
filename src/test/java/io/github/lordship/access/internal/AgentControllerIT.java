@@ -111,7 +111,7 @@ public class AgentControllerIT extends IntegrationTest {
     }
 
     @Test
-    void register_shouldReturn403_whenAgentIsUnauthorized() throws Exception {
+    void register_shouldReturn401_whenAgentIsUnauthorized() throws Exception {
         // Arrange
         String testAgentName = "Bilbo Baggins";
         String testAgentNameEmail = "BigBaggins@gmail.com";
@@ -123,11 +123,11 @@ public class AgentControllerIT extends IntegrationTest {
                 null, testAgentPassword);
 
         // Act
-        mockMvc.perform(post("/api/agents/register")
+        mockMvc.perform(post("/api/agents")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(agentRegistrationRequest)))
         // Assert
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -157,7 +157,7 @@ public class AgentControllerIT extends IntegrationTest {
         mockMvc.perform(post("/api/roles")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(rcr)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         // second make sure the role can be created by the authorized user
         mockMvc.perform(post("/api/roles")

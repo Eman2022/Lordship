@@ -384,7 +384,7 @@ public class TermsTemplateControllerIT extends IntegrationTest {
     @Test
     void listGlobalTemplates_shouldBeRejected_whenNoTokenProvided() throws Exception {
         mockMvc.perform(get("/api/terms-templates/global"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

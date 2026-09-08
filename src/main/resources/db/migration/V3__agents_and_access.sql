@@ -8,6 +8,7 @@ CREATE TABLE agent (
                        work_phone     VARCHAR(20),
                        work_email     VARCHAR(120),
                        agent_password VARCHAR(255),
+                       tokens_valid_from TIMESTAMPTZ, -- null until a password change or revoke ends this agent's sessions
                        created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
                        deleted_at     TIMESTAMPTZ,
                        FOREIGN KEY (person_id) REFERENCES person(uuid)
@@ -17,14 +18,14 @@ CREATE INDEX idx_agent_person_id ON agent(person_id) WHERE deleted_at IS NULL;
 CREATE UNIQUE INDEX uq_agent_email_active ON agent(work_email) WHERE deleted_at IS NULL;
 
 CREATE TABLE agent_login_event (
-                           uuid           UUID PRIMARY KEY DEFAULT uuidv7(),
-                           agent_id       UUID NOT NULL,
-                           occurred_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-                           ip_address     VARCHAR(45),
-                           browser_client TEXT,
-                           browserOs      TEXT,
-                           outcome        SMALLINT NOT NULL,
-                           FOREIGN KEY (agent_id) REFERENCES agent(uuid)
+                                   uuid           UUID PRIMARY KEY DEFAULT uuidv7(),
+                                   agent_id       UUID NOT NULL,
+                                   occurred_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                   ip_address     VARCHAR(45),
+                                   browser_client TEXT,
+                                   browserOs      TEXT,
+                                   outcome        SMALLINT NOT NULL,
+                                   FOREIGN KEY (agent_id) REFERENCES agent(uuid)
 );
 
 CREATE INDEX idx_login_event_agent ON agent_login_event(agent_id, occurred_at DESC);
@@ -43,13 +44,13 @@ CREATE TABLE permission ( -- note permissions are seeded and NOT editable (hence
 );
 
 CREATE TABLE role_permission (  -- where a permission is granted to a role
-                             uuid          UUID PRIMARY KEY DEFAULT uuidv7(),
-                             role_id       UUID NOT NULL,
-                             permission_id UUID NOT NULL,
-                             created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-                             deleted_at    TIMESTAMPTZ,
-                             FOREIGN KEY (role_id)       REFERENCES agent_role(uuid),
-                             FOREIGN KEY (permission_id) REFERENCES permission(uuid)
+                                 uuid          UUID PRIMARY KEY DEFAULT uuidv7(),
+                                 role_id       UUID NOT NULL,
+                                 permission_id UUID NOT NULL,
+                                 created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                 deleted_at    TIMESTAMPTZ,
+                                 FOREIGN KEY (role_id)       REFERENCES agent_role(uuid),
+                                 FOREIGN KEY (permission_id) REFERENCES permission(uuid)
 );
 
 CREATE UNIQUE INDEX uq_role_permission_active
@@ -75,17 +76,17 @@ CREATE UNIQUE INDEX uq_granted_role_active
 CREATE INDEX idx_granted_role_agent_id ON granted_role(agent_id) WHERE deleted_at IS NULL;
 
 CREATE TABLE denied_permission (
-                               uuid              UUID PRIMARY KEY DEFAULT uuidv7(),
-                               agent_id          UUID NOT NULL,
-                               permission_id     UUID NOT NULL,
-                               denied_by         UUID NOT NULL,
-                               denial_removed_by UUID,
-                               created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-                               deleted_at        TIMESTAMPTZ,
-                               FOREIGN KEY (agent_id)          REFERENCES agent(uuid),
-                               FOREIGN KEY (permission_id)     REFERENCES permission(uuid),
-                               FOREIGN KEY (denied_by)         REFERENCES agent(uuid),
-                               FOREIGN KEY (denial_removed_by) REFERENCES agent(uuid)
+                                   uuid              UUID PRIMARY KEY DEFAULT uuidv7(),
+                                   agent_id          UUID NOT NULL,
+                                   permission_id     UUID NOT NULL,
+                                   denied_by         UUID NOT NULL,
+                                   denial_removed_by UUID,
+                                   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                   deleted_at        TIMESTAMPTZ,
+                                   FOREIGN KEY (agent_id)          REFERENCES agent(uuid),
+                                   FOREIGN KEY (permission_id)     REFERENCES permission(uuid),
+                                   FOREIGN KEY (denied_by)         REFERENCES agent(uuid),
+                                   FOREIGN KEY (denial_removed_by) REFERENCES agent(uuid)
 );
 
 CREATE UNIQUE INDEX uq_denied_permission_active
@@ -93,15 +94,15 @@ CREATE UNIQUE INDEX uq_denied_permission_active
 CREATE INDEX idx_denied_permission_agent_id ON denied_permission(agent_id) WHERE deleted_at IS NULL;
 
 CREATE TABLE agent_property_assignment (
-                               uuid        UUID PRIMARY KEY DEFAULT uuidv7(),
-                               agent_id    UUID NOT NULL,
-                               property_id UUID NOT NULL,
-                               assigned_by UUID NOT NULL,
-                               assigned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                               removed_at  TIMESTAMPTZ,
-                               FOREIGN KEY (agent_id)    REFERENCES agent(uuid),
-                               FOREIGN KEY (property_id) REFERENCES property(uuid),
-                               FOREIGN KEY (assigned_by) REFERENCES agent(uuid)
+                                           uuid        UUID PRIMARY KEY DEFAULT uuidv7(),
+                                           agent_id    UUID NOT NULL,
+                                           property_id UUID NOT NULL,
+                                           assigned_by UUID NOT NULL,
+                                           assigned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                           removed_at  TIMESTAMPTZ,
+                                           FOREIGN KEY (agent_id)    REFERENCES agent(uuid),
+                                           FOREIGN KEY (property_id) REFERENCES property(uuid),
+                                           FOREIGN KEY (assigned_by) REFERENCES agent(uuid)
 );
 
 CREATE INDEX idx_assignment_agent    ON agent_property_assignment(agent_id)    WHERE removed_at IS NULL;

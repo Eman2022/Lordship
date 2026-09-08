@@ -2,14 +2,6 @@
 -- V6: Tenancy
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION set_updated_at()
-    RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE TABLE tenancy (
                          uuid                  UUID PRIMARY KEY DEFAULT uuidv7(),
                          lot_id                UUID NOT NULL,
@@ -23,7 +15,6 @@ CREATE TABLE tenancy (
                          accept_payments       BOOLEAN NOT NULL DEFAULT TRUE,
                          exempt_from_late_fees BOOLEAN NOT NULL DEFAULT FALSE,
                          created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
-                         updated_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
                          deleted_at            TIMESTAMPTZ,
                          FOREIGN KEY (lot_id) REFERENCES lot(uuid)
 );
@@ -98,10 +89,10 @@ CREATE TRIGGER trg_tenancy_active_limit
     BEFORE INSERT OR UPDATE OF lot_id, end_date, deleted_at ON tenancy
     FOR EACH ROW EXECUTE FUNCTION tenancy_active_limit();
 
-CREATE TRIGGER trg_tenancy_updated_at
-    BEFORE UPDATE ON tenancy
-    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+-- ── Tenant ────────────────────────────────────────────────────────────────────
 
+-- One row per person per stay. A tenancy normally has several: the household is
+-- every row on it whose end_date is null.
 CREATE TABLE tenant (
                         uuid       UUID PRIMARY KEY DEFAULT uuidv7(),
                         tenancy_id UUID NOT NULL,
@@ -109,11 +100,23 @@ CREATE TABLE tenant (
                         start_date DATE,
                         end_date   DATE,
                         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                         deleted_at TIMESTAMPTZ,
                         FOREIGN KEY (person_id)  REFERENCES person(uuid),
                         FOREIGN KEY (tenancy_id) REFERENCES tenancy(uuid)
 );
+
+-- A person is on a tenancy once at a time. Someone who moves out and later moves
+-- back gets a second row: the first one carries an end_date, so it is out of the
+-- index and the return does not collide with the stay it follows.
+CREATE UNIQUE INDEX uq_tenant_active_person
+    ON tenant(tenancy_id, person_id) WHERE end_date IS NULL AND deleted_at IS NULL;
+
+-- Serves "who lives here", the question the table exists to answer.
+CREATE INDEX idx_tenant_tenancy_active
+    ON tenant(tenancy_id) WHERE end_date IS NULL AND deleted_at IS NULL;
+
+-- Every stay a person has had, for the tenant view.
+CREATE INDEX idx_tenant_person ON tenant(person_id) WHERE deleted_at IS NULL;
 
 -- ── Account ───────────────────────────────────────────────────────────────────
 

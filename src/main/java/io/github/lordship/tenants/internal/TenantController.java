@@ -2,6 +2,7 @@ package io.github.lordship.tenants.internal;
 
 import io.github.lordship.tenants.Tenant;
 import io.github.lordship.tenants.TenantService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +11,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -17,16 +19,15 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/tenants")
 public class TenantController {
+
     private final TenantService tenantService;
-
-
 
     public TenantController(TenantService tenantService) {
         this.tenantService = tenantService;
     }
 
-
-
+    // tenancyId and personId are the minimum. startDate may be sent and is
+    // otherwise derived; everything else about the stay arrives by PATCH.
     @PreAuthorize("hasAuthority('tenants:create')")
     @PostMapping("/create")
     public ResponseEntity<TenantResponse> createTenant(@RequestBody @Valid TenantCreateRequest request) {
@@ -43,6 +44,32 @@ public class TenantController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // The household. activeOnly=false adds the stays that have already ended.
+    @PreAuthorize("hasAuthority('tenants:view')")
+    @GetMapping("/tenancy/{tenancyId}")
+    public ResponseEntity<List<TenantResponse>> getByTenancy(
+            @PathVariable UUID tenancyId,
+            @RequestParam(defaultValue = "true") boolean activeOnly) {
+
+        List<Tenant> tenants = activeOnly
+                ? tenantService.findActiveByTenancy(tenancyId)
+                : tenantService.findByTenancy(tenancyId);
+
+        return ResponseEntity.ok(tenants.stream().map(TenantResponse::from).toList());
+    }
+
+    @PreAuthorize("hasAuthority('tenants:view')")
+    @GetMapping("/person/{personId}")
+    public ResponseEntity<List<TenantResponse>> getByPerson(@PathVariable UUID personId) {
+        return ResponseEntity.ok(
+                tenantService.findByPerson(personId).stream()
+                        .map(TenantResponse::from)
+                        .toList());
+    }
+
+    // Moving out is setting endDate, so there is no separate move-out endpoint.
+    // Sending endDate null undoes one, which the service refuses when that person
+    // is already back on the tenancy under a newer row.
     @PreAuthorize("hasAuthority('tenants:edit')")
     @PatchMapping("/{uuid}")
     public ResponseEntity<TenantResponse> patchTenant(
@@ -59,13 +86,9 @@ public class TenantController {
             changes.put("end_date", request.get("endDate"));
         }
 
-        try {
-            return tenantService.patchTenant(uuid, changes)
-                    .map(t -> ResponseEntity.ok(TenantResponse.from(t)))
-                    .orElse(ResponseEntity.notFound().build());
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        return tenantService.patchTenant(uuid, changes)
+                .map(t -> ResponseEntity.ok(TenantResponse.from(t)))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PreAuthorize("hasAuthority('tenants:delete')")
@@ -74,5 +97,24 @@ public class TenantController {
         return tenantService.softDelete(uuid)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
+    }
+
+    // "Person ... is already an active tenant on tenancy ..." is the whole content
+    // of the refusal, and an empty 409 throws it away.
+    @ExceptionHandler(IllegalArgumentException.class)
+    ResponseEntity<Map<String, String>> badRequest(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("message", String.valueOf(e.getMessage())));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    ResponseEntity<Map<String, String>> conflict(IllegalStateException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("message", String.valueOf(e.getMessage())));
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    ResponseEntity<Map<String, String>> notFound(EntityNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", String.valueOf(e.getMessage())));
     }
 }

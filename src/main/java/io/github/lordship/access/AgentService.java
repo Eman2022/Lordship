@@ -96,6 +96,9 @@ public class AgentService {
             return false;
         }
 
+        // note: this logs the user out (forcing them to log back in)
+        agentRepository.revokeTokens(agentId);
+
         auditService.recordUpdate("agent", agentId,
                 Map.of("agent_password", "[redacted]"),
                 Map.of("agent_password", "[reset]"));

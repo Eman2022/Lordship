@@ -40,7 +40,7 @@ public class PropertyControllerIT extends IntegrationTest {
     // ── Unauthorized tests ────────────────────────────────────
 
     @Test
-    void createProperty_shouldReturn403_whenNoTokenProvided() throws Exception {
+    void createProperty_shouldReturn401_whenNoTokenProvided() throws Exception {
         mockMvc.perform(post("/api/properties/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -49,35 +49,35 @@ public class PropertyControllerIT extends IntegrationTest {
                                     "propertyAddress": "999 Test Ave"
                                 }
                                 """))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void getProperty_shouldReturn403_whenNoTokenProvided() throws Exception {
+    void getProperty_shouldReturn401_whenNoTokenProvided() throws Exception {
         mockMvc.perform(get("/api/properties/TST01"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void getAllProperties_shouldReturn403_whenNoTokenProvided() throws Exception {
+    void getAllProperties_shouldReturn401_whenNoTokenProvided() throws Exception {
         mockMvc.perform(get("/api/properties"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void patchProperty_shouldReturn403_whenNoTokenProvided() throws Exception {
+    void patchProperty_shouldReturn401_whenNoTokenProvided() throws Exception {
         mockMvc.perform(patch("/api/properties/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "propertyName": "Updated Name" }
                                 """))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void deleteProperty_shouldReturn403_whenNoTokenProvided() throws Exception {
+    void deleteProperty_shouldReturn401_whenNoTokenProvided() throws Exception {
         mockMvc.perform(delete("/api/properties/" + UUID.randomUUID()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ── Authorized tests ──────────────────────────────────────
