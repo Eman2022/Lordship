@@ -2,6 +2,7 @@ package io.github.lordship.propertyassignments;
 
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
+import io.github.lordship.identity.AgentAuthorizationCache;
 import io.github.lordship.propertyassignments.internal.PropertyAssignmentRepository;
 import io.github.lordship.propertyassignments.internal.PropertyAssignmentRow;
 import org.springframework.stereotype.Service;
@@ -17,18 +18,24 @@ public class PropertyAssignmentService {
 
     private final PropertyAssignmentRepository propertyAssignmentRepository;
     private final AuditService auditService;
+    private final AgentAuthorizationCache authorizationCache;
 
     public PropertyAssignmentService(PropertyAssignmentRepository propertyAssignmentRepository,
-                                     AuditService auditService) {
+                                     AuditService auditService,
+                                     AgentAuthorizationCache authorizationCache) {
         this.propertyAssignmentRepository = propertyAssignmentRepository;
         this.auditService = auditService;
+        this.authorizationCache = authorizationCache;
     }
 
+    // the assignment set is baked into the cached PropertyScope, so both of these
+    // have to evict the agent they touch
     @Transactional
     public PropertyAssignment assign(UUID agentId, UUID propertyId, UUID assignedBy) {
         PropertyAssignmentRow row = propertyAssignmentRepository.save(
                 new PropertyAssignmentRow(agentId, propertyId, assignedBy)
         );
+        authorizationCache.invalidate(agentId);
         auditService.recordInsert("agent_property_assignment", row.uuid(), AuditMapper.toMap(row));
         return row.toPropertyAssignment();
     }
@@ -39,6 +46,7 @@ public class PropertyAssignmentService {
             if (!propertyAssignmentRepository.endAssignment(assignmentId)) {
                 return false;
             }
+            authorizationCache.invalidate(assignment.agentId());
             auditService.recordDelete("agent_property_assignment", assignmentId, AuditMapper.toMap(assignment));
             return true;
         }).orElse(false);
@@ -46,8 +54,8 @@ public class PropertyAssignmentService {
 
     public Set<UUID> getAgentAssignedPropertyUUIDs(UUID agentId) {
         return propertyAssignmentRepository.getAgentActiveAssignments(agentId)
-            .stream()
-            .map(PropertyAssignmentRow::propertyId)
-            .collect(Collectors.toSet());
+                .stream()
+                .map(PropertyAssignmentRow::propertyId)
+                .collect(Collectors.toSet());
     }
 }
