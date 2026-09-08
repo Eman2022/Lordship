@@ -6,6 +6,7 @@ import io.github.lordship.access.internal.role.RoleRepository;
 import io.github.lordship.access.internal.role.RoleRow;
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
+import io.github.lordship.identity.AgentAuthorizationCache;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,13 +23,16 @@ public class GrantedRoleService {
     private final GrantedRoleRepository grantedRoleRepository;
     private final RoleRepository roleRepository;
     private final AuditService auditService;
+    private final AgentAuthorizationCache authorizationCache;
 
     public GrantedRoleService(GrantedRoleRepository grantedRoleRepository,
                               RoleRepository roleRepository,
-                              AuditService auditService) {
+                              AuditService auditService,
+                              AgentAuthorizationCache authorizationCache) {
         this.grantedRoleRepository = grantedRoleRepository;
         this.roleRepository = roleRepository;
         this.auditService = auditService;
+        this.authorizationCache = authorizationCache;
     }
 
     // granting a role the agent already actively holds is a no-op:
@@ -45,6 +49,7 @@ public class GrantedRoleService {
         GrantedRoleRow row = grantedRoleRepository.save(
                 new GrantedRoleRow(agentId, roleId, grantedBy)
         );
+        authorizationCache.invalidate(agentId);
         auditService.recordInsert("granted_role", row.uuid(), AuditMapper.toMap(row));
         return row.toGrantedRole();
     }
@@ -69,8 +74,10 @@ public class GrantedRoleService {
         GrantedRoleRow row = grantedRoleRepository.save(
                 new GrantedRoleRow(agentId, roleId.uuid(), UUID.fromString("00000000-0000-7000-8000-000000000002"))
         );
+        authorizationCache.invalidate(agentId);
         return row.toGrantedRole();
     }
+
 
     @Transactional
     public boolean revokeGrant(UUID grantId, UUID revokedBy) {
@@ -79,6 +86,7 @@ public class GrantedRoleService {
 
         if (!grantedRoleRepository.revoke(grantId, revokedBy)) return false;
 
+        authorizationCache.invalidate(before.get().agentId());
         auditService.recordDelete("granted_role", grantId, AuditMapper.toMap(before.get()));
         return true;
     }
@@ -97,7 +105,9 @@ public class GrantedRoleService {
         return revokeRole(agentId, row.uuid(), revokedBy);
     }
 
-
+    // Every holder loses the role, one audited revocation each. Called by
+    // RoleService.deleteRole -- a deleted role that leaves its grants standing is
+    // a role whose permissions are still being handed out.
     @Transactional
     public int revokeAllForRole(UUID roleId, UUID revokedBy) {
         int revoked = 0;

@@ -18,8 +18,14 @@ public final class TestAuthSupport {
 
     private TestAuthSupport() {}
 
-    /** An agent created for one test, with the token it logs in under. */
-    public record TestAgent(UUID uuid, String workEmail, String password, String token) {}
+    /**
+     * An agent created for one test, with the token it logs in under.
+     *
+     * <p>roleId is the role the requested permissions were hung on, so a test can go
+     * back and change it -- append a permission, revoke the grant, delete the role.
+     * It is null when no permissions were asked for, since no role is created then.
+     */
+    public record TestAgent(UUID uuid, UUID roleId, String workEmail, String password, String token) {}
 
     // helper method
     public static String loginAsRoot(MockMvc mockMvc, ObjectMapper objectMapper,
@@ -86,6 +92,8 @@ public final class TestAuthSupport {
                 .readTree(registered.getResponse().getContentAsString())
                 .get("uuid").asString());
 
+        UUID roleId = null;
+
         if (permissionNames.length > 0) {
             String roleName = "IT Role " + suffix;
 
@@ -101,7 +109,7 @@ public final class TestAuthSupport {
                     .andExpect(status().isCreated())
                     .andReturn();
 
-            UUID roleId = UUID.fromString(objectMapper
+            roleId = UUID.fromString(objectMapper
                     .readTree(role.getResponse().getContentAsString())
                     .get("uuid").asString());
 
@@ -125,10 +133,10 @@ public final class TestAuthSupport {
         }
 
         String token = loginAsAgent(mockMvc, objectMapper, workEmail, password);
-        return new TestAgent(agentId, workEmail, password, token);
+        return new TestAgent(agentId, roleId, workEmail, password, token);
     }
 
-     // create An agent with no role at all. registerAgent grants none, so this agent
+    // create An agent with no role at all. registerAgent grants none, so this agent
     public static TestAgent agentWithNoPermissions(MockMvc mockMvc,
                                                    ObjectMapper objectMapper,
                                                    String rootToken) throws Exception {

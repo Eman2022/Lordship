@@ -7,6 +7,7 @@ import io.github.lordship.access.internal.agents.AgentRepository;
 import io.github.lordship.access.internal.agents.AgentRow;
 import io.github.lordship.audit.AuditMapper;
 import io.github.lordship.audit.AuditService;
+import io.github.lordship.identity.AgentAuthorizationCache;
 import io.github.lordship.persons.Person;
 import io.github.lordship.persons.PersonService;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ public class AgentService {
     private final GrantedRoleService grantedRoleService;
     private final LoginEventRepository loginEventRepository;
     private final AuditService auditService;
+    private final AgentAuthorizationCache authorizationCache;
 
     private static final Logger log = LoggerFactory.getLogger(AgentService.class);
 
@@ -42,7 +44,8 @@ public class AgentService {
             JwtService jwtService,
             GrantedRoleService grantedRoleService,
             LoginEventRepository loginEventRepository,
-            AuditService auditService
+            AuditService auditService,
+            AgentAuthorizationCache authorizationCache
     ) {
         this.agentRepository = agentRepository;
         this.personService = personService;
@@ -52,6 +55,7 @@ public class AgentService {
         this.grantedRoleService = grantedRoleService;
         this.loginEventRepository = loginEventRepository;
         this.auditService = auditService;
+        this.authorizationCache = authorizationCache;
     }
 
     @Transactional
@@ -99,6 +103,9 @@ public class AgentService {
         // note: this logs the user out (forcing them to log back in)
         agentRepository.revokeTokens(agentId);
 
+        // clear the cached login credentials
+        authorizationCache.invalidate(agentId);
+
         auditService.recordUpdate("agent", agentId,
                 Map.of("agent_password", "[redacted]"),
                 Map.of("agent_password", "[reset]"));
@@ -140,7 +147,6 @@ public class AgentService {
         return Optional.empty();
     }
 
-     // Note: this runs after ensureDefaultRoles, which guarantees the Admin role exists
     @Transactional
     public void ensureRootAgentExists(String email, String password) {
         UUID rootAgentId = findByWorkEmail(email)

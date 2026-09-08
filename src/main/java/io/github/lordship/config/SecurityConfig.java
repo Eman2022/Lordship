@@ -1,10 +1,8 @@
 package io.github.lordship.config;
 
-import io.github.lordship.access.AgentService;
 import io.github.lordship.access.JwtService;
-import io.github.lordship.access.PermissionService;
 import io.github.lordship.audit.AuditContext;
-import io.github.lordship.propertyassignments.PropertyAssignmentService;
+import io.github.lordship.identity.AgentAuthorizationCache;
 import jakarta.servlet.Filter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -36,10 +34,9 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthFilter jwtAuthFilter(JwtService jwtService,
-                                       PermissionService permissionService,
-                                       AgentService agentService,
-                                       PropertyAssignmentService propertyAssignmentService) {
-        return new JwtAuthFilter(jwtService, permissionService, agentService, propertyAssignmentService);
+                                       AgentAuthorizationCache authorizationCache,
+                                       AgentAuthorizationLoader authorizationLoader) {
+        return new JwtAuthFilter(jwtService, authorizationCache, authorizationLoader);
     }
 
     @Bean

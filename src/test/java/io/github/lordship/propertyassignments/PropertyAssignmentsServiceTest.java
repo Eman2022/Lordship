@@ -1,6 +1,7 @@
 package io.github.lordship.propertyassignments;
 
 import io.github.lordship.audit.AuditService;
+import io.github.lordship.identity.AgentAuthorizationCache;
 import io.github.lordship.propertyassignments.internal.PropertyAssignmentRepository;
 import io.github.lordship.propertyassignments.internal.PropertyAssignmentRow;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,6 @@ import java.util.Set;
 import java.util.UUID;
 
 
-
 @ExtendWith(MockitoExtension.class)
 public class PropertyAssignmentsServiceTest {
 
@@ -26,6 +26,9 @@ public class PropertyAssignmentsServiceTest {
 
     @Mock
     AuditService auditService;
+
+    @Mock
+    AgentAuthorizationCache authorizationCache;
 
     @InjectMocks
     PropertyAssignmentService propertyAssignmentService;
@@ -50,6 +53,7 @@ public class PropertyAssignmentsServiceTest {
         assertEquals(propertyId, result.propertyId());
         assertEquals(assignedBy, result.assignedBy());
         assertNotNull(result.uuid());
+        verify(authorizationCache).invalidate(agentId);
         verify(auditService).recordInsert(eq("agent_property_assignment"), eq(stubRow.uuid()), any());
     }
 
