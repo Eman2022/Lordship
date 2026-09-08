@@ -372,11 +372,11 @@ public class DocumentTemplateControllerIT extends IntegrationTest {
     }
 
     @Test
-    void endpoints_shouldReturn403_whenNoTokenProvided() throws Exception {
+    void endpoints_shouldReturn401_whenNoTokenProvided() throws Exception {
         mockMvc.perform(get("/api/document-templates"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         mockMvc.perform(get("/api/document-templates/tokens"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }

@@ -13,11 +13,10 @@ public record TenantRow(
         LocalDate startDate,
         LocalDate endDate,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt,
         OffsetDateTime deletedAt
 ) {
 
-    public Tenant toTenant(){
+    public Tenant toTenant() {
         return new Tenant(
                 this.uuid,
                 this.tenancyId,
@@ -25,26 +24,7 @@ public record TenantRow(
                 this.startDate,
                 this.endDate,
                 this.createdAt,
-                this.updatedAt,
                 this.deletedAt
-        );
-    }
-
-    public static TenantRow forInsert(
-            UUID tenancyId,
-            UUID personId,
-            LocalDate startDate,
-            LocalDate endDate
-    ) {
-        return new TenantRow(
-                null,
-                tenancyId,
-                personId,
-                startDate,
-                endDate,
-                null,
-                null,
-                null
         );
     }
 }

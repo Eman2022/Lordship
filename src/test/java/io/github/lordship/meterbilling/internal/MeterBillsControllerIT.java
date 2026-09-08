@@ -173,7 +173,7 @@ public class MeterBillsControllerIT extends IntegrationTest {
     }
 
     @Test
-    void createMeterBill_shouldReturn403_whenNoTokenProvided() throws Exception {
+    void createMeterBill_shouldReturn401_whenNoTokenProvided() throws Exception {
         String body = """
                 {
                     "billedMeter": "%s", "billedAmount": 500, "rateAmount": 0.0148,
@@ -184,7 +184,7 @@ public class MeterBillsControllerIT extends IntegrationTest {
         mockMvc.perform(post("/meterbills/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

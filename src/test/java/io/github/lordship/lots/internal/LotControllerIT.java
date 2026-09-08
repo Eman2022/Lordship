@@ -37,7 +37,7 @@ public class LotControllerIT extends IntegrationTest {
 
 
     @Test
-    void createLot_shouldReturn403_whenUnauthorized() throws Exception {
+    void createLot_shouldReturn401_whenUnauthorized() throws Exception {
         // Arrange
         String requestBody = """
                 {
@@ -51,7 +51,7 @@ public class LotControllerIT extends IntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 // Assert
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

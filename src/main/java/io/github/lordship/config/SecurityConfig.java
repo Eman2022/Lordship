@@ -14,6 +14,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -29,6 +30,11 @@ public class SecurityConfig {
     }
 
     @Bean
+    public AuthenticationEntryPoint authenticationEntryPoint() {
+        return new LordshipAuthenticationEntryPoint();
+    }
+
+    @Bean
     public JwtAuthFilter jwtAuthFilter(JwtService jwtService,
                                        PermissionService permissionService,
                                        AgentService agentService,
@@ -39,7 +45,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            @Qualifier("jwtAuthFilter") Filter jwtAuthFilter,
-                                           @Qualifier("auditContextFilter") Filter auditContextFilter) throws Exception {
+                                           @Qualifier("auditContextFilter") Filter auditContextFilter,
+                                           AuthenticationEntryPoint authenticationEntryPoint) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -56,6 +63,12 @@ public class SecurityConfig {
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
+                // Without this, the default is Http403ForbiddenEntryPoint and an
+                // anonymous request is refused with the same 403 as an agent who
+                // is logged in and simply lacks the authority. The entry point is
+                // reached only when the denied request is anonymous; a real agent
+                // still falls to the AccessDeniedHandler and its 403.
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(auditContextFilter, jwtAuthFilter.getClass());
         return http.build();

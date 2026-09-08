@@ -86,7 +86,6 @@ public class TenancyRepositoryTest extends IntegrationTest {
         assertFalse(saved.exemptFromLateFees());
 
         assertNotNull(saved.createdAt());
-        assertNotNull(saved.updatedAt());
         assertNull(saved.deletedAt());
     }
 
@@ -228,12 +227,6 @@ public class TenancyRepositoryTest extends IntegrationTest {
         assertEquals(saved.uuid(), closed.uuid());
         assertEquals(end, closed.endDate());
 
-        // set_updated_at uses CURRENT_TIMESTAMP, which in Postgres is the
-        // transaction's start time -- inside one @Transactional test it cannot
-        // move past created_at, so this asserts the trigger fired without
-        // pretending wall-clock time passed.
-        assertNotNull(closed.updatedAt());
-        assertFalse(closed.updatedAt().isBefore(closed.createdAt()));
     }
 
     // No guard at this layer: refusing to re-close is TenancyService's job, and

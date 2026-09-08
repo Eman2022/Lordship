@@ -50,7 +50,7 @@ CREATE TABLE meter_reads (
                             rollover_count INT NOT NULL DEFAULT 0, -- may be harder to calculate for pre-existing meters
                             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                             updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                            deleted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                            deleted_at TIMESTAMPTZ,
                             FOREIGN KEY (targeted_meter) REFERENCES meters(uuid)
 );
 

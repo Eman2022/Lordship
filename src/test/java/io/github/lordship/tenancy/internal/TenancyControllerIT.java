@@ -102,13 +102,13 @@ public class TenancyControllerIT extends IntegrationTest {
     }
 
     @Test
-    void createTenancy_shouldReturn403_whenNoTokenProvided() throws Exception {
+    void createTenancy_shouldReturn401_whenNoTokenProvided() throws Exception {
         var request = new TenancyController.TenancyCreateRequest(UUID.randomUUID());
 
         mockMvc.perform(post("/api/tenancy/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -184,9 +184,9 @@ public class TenancyControllerIT extends IntegrationTest {
     }
 
     @Test
-    void getTenancy_shouldReturn403_whenNoTokenProvided() throws Exception {
+    void getTenancy_shouldReturn401_whenNoTokenProvided() throws Exception {
         mockMvc.perform(get("/api/tenancy/{uuid}", UUID.randomUUID()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -337,11 +337,11 @@ public class TenancyControllerIT extends IntegrationTest {
     }
 
     @Test
-    void patchTenancy_shouldReturn403_whenNoTokenProvided() throws Exception {
+    void patchTenancy_shouldReturn401_whenNoTokenProvided() throws Exception {
         mockMvc.perform(patch("/api/tenancy/{uuid}", UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"endDate\": \"" + LocalDate.now() + "\"}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ---- delete -------------------------------------------------------------
@@ -366,8 +366,8 @@ public class TenancyControllerIT extends IntegrationTest {
     }
 
     @Test
-    void deleteTenancy_shouldReturn403_whenNoTokenProvided() throws Exception {
+    void deleteTenancy_shouldReturn401_whenNoTokenProvided() throws Exception {
         mockMvc.perform(delete("/api/tenancy/{uuid}", UUID.randomUUID()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }

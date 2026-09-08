@@ -61,61 +61,61 @@ public class VehicleControllerIT extends IntegrationTest {
     // ── Unauthorized tests ────────────────────────────────────
 
     @Test
-    void unauthorizedRegisterReturns403() throws Exception {
+    void unauthorizedRegisterReturns401() throws Exception {
         mockMvc.perform(post("/vehicles/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 buildVehicleRequest(UUID.randomUUID()))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void unauthorizedGetByIdReturns403() throws Exception {
+    void unauthorizedGetByIdReturns401() throws Exception {
         mockMvc.perform(get("/vehicles/" + UUID.randomUUID()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void unauthorizedGetByTenancyReturns403() throws Exception {
+    void unauthorizedGetByTenancyReturns401() throws Exception {
         mockMvc.perform(get("/vehicles/bytenancy/" + UUID.randomUUID()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void unauthorizedGetByPropertyReturns403() throws Exception {
+    void unauthorizedGetByPropertyReturns401() throws Exception {
         mockMvc.perform(get("/vehicles/byproperty/" + UUID.randomUUID()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void unauthorizedPatchReturns403() throws Exception {
+    void unauthorizedPatchReturns401() throws Exception {
         mockMvc.perform(patch("/vehicles/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("color", "Red"))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void unauthorizedDeleteReturns403() throws Exception {
+    void unauthorizedDeleteReturns401() throws Exception {
         mockMvc.perform(delete("/vehicles/" + UUID.randomUUID()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void unauthorizedGetPolicyReturns403() throws Exception {
+    void unauthorizedGetPolicyReturns401() throws Exception {
         mockMvc.perform(get("/vehicles/policy/" + UUID.randomUUID()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void unauthorizedSetPolicyReturns403() throws Exception {
+    void unauthorizedSetPolicyReturns401() throws Exception {
         mockMvc.perform(put("/vehicles/policy/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of(
                                 "freeVehicleLimit", 2,
                                 "extraVehicleFee",  "25.00"
                         ))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ── Authorized tests ──────────────────────────────────────

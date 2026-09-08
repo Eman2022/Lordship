@@ -372,10 +372,10 @@ public class TenancyChargeTermControllerIT extends IntegrationTest {
     }
 
     @Test
-    void endpoints_shouldReturn403_withoutAToken() throws Exception {
+    void endpoints_shouldReturn401_withoutAToken() throws Exception {
         // Act / Assert
         mockMvc.perform(get("/api/tenancy-charge-terms").param("tenancy", tenancy.toString()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ---- Helpers -------------------------------------------------------------

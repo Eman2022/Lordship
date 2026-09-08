@@ -65,7 +65,6 @@ public class TenancyServiceTests {
                 true,
                 false,
                 OffsetDateTime.now(ZoneOffset.UTC).minusDays(10).truncatedTo(ChronoUnit.DAYS),
-                OffsetDateTime.now(ZoneOffset.UTC).minusDays(5).truncatedTo(ChronoUnit.DAYS),
                 null
         );
     }

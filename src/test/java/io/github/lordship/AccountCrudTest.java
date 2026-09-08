@@ -66,45 +66,45 @@ public class AccountCrudTest extends IntegrationTest {
     }
 
     // -------------------------------------------------------------------------
-    // Tests: unauthorized access returns 403
+    // Tests: unauthorized access returns 401
     // -------------------------------------------------------------------------
 
     @Test
-    void unauthorizedCreateReturns403() throws Exception {
+    void unauthorizedCreateReturns401() throws Exception {
         AccountCreationRequest request = new AccountCreationRequest(UUID.randomUUID(), null);
 
         mockMvc.perform(post("/accounts/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void unauthorizedGetByIdReturns403() throws Exception {
+    void unauthorizedGetByIdReturns401() throws Exception {
         mockMvc.perform(get("/accounts/" + UUID.randomUUID()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void unauthorizedGetByPropertyReturns403() throws Exception {
+    void unauthorizedGetByPropertyReturns401() throws Exception {
         mockMvc.perform(get("/accounts/property/TST01"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void unauthorizedUpdateReturns403() throws Exception {
+    void unauthorizedUpdateReturns401() throws Exception {
         AccountUpdateRequest request = new AccountUpdateRequest(AccountStatus.ACTIVE, false, null);
 
         mockMvc.perform(put("/accounts/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void unauthorizedDeleteReturns403() throws Exception {
+    void unauthorizedDeleteReturns401() throws Exception {
         mockMvc.perform(delete("/accounts/" + UUID.randomUUID()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // -------------------------------------------------------------------------

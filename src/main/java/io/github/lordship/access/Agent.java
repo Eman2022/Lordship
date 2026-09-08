@@ -9,6 +9,7 @@ public record Agent(
     UUID personId,
     String workPhone,
     String workEmail,
+    OffsetDateTime tokensValidFrom,
     OffsetDateTime createdAt,
     OffsetDateTime deletedAt
 ) {

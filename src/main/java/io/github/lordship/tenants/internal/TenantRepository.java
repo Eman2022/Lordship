@@ -18,15 +18,17 @@ public class TenantRepository {
 
     public TenantRepository(JdbcClient jdbcClient) { this.jdbc = jdbcClient; }
 
-    public TenantRow save(TenantRow row) {
+    public TenantRow save(UUID tenancyId, UUID personId, LocalDate startDate) {
         return jdbc.sql("""
                 INSERT INTO tenant (
-                        tenancy_id, person_id, start_date, end_date
+                        tenancy_id, person_id, start_date
                     ) VALUES (
-                        :tenancyId, :personId, :startDate, :endDate
+                        :tenancyId, :personId, :startDate
                     ) RETURNING *
                 """)
-                .paramSource(row)
+                .param("tenancyId", tenancyId)
+                .param("personId", personId)
+                .param("startDate", startDate)
                 .query(TenantRow.class)
                 .single();
     }
@@ -38,38 +40,67 @@ public class TenantRepository {
                 .optional();
     }
 
+    // Every stay on the tenancy, past ones included.
     public List<TenantRow> findByTenancy(UUID tenancyId) {
-        return jdbc.sql("SELECT * FROM tenant WHERE tenancy_id = :tenancyId")
+        return jdbc.sql("""
+                SELECT * FROM tenant
+                WHERE tenancy_id = :tenancyId AND deleted_at IS NULL
+                ORDER BY start_date NULLS LAST, created_at
+                """)
                 .param("tenancyId", tenancyId)
                 .query(TenantRow.class)
                 .list();
     }
 
-    // Determines when a tenancyId closes
-    public TenantRow end(UUID uuid, LocalDate endDate) {
+    // The household: who is on this tenancy now.
+    public List<TenantRow> findActiveByTenancy(UUID tenancyId) {
         return jdbc.sql("""
-                UPDATE tenant
-                SET end_date = :endDate
-                WHERE uuid = :uuid AND deleted_at IS NULL
-                RETURNING *
+                SELECT * FROM tenant
+                WHERE tenancy_id = :tenancyId
+                  AND end_date IS NULL AND deleted_at IS NULL
+                ORDER BY start_date NULLS LAST, created_at
                 """)
-                .param("uuid", uuid)
-                .param("endDate", endDate)
+                .param("tenancyId", tenancyId)
                 .query(TenantRow.class)
-                .single();
+                .list();
     }
 
-    // Soft-delete tenants
+    // Backs uq_tenant_active_person: the same read the index enforces, so the
+    // service can refuse a duplicate with a sentence instead of a constraint name.
+    public Optional<TenantRow> findActiveByTenancyAndPerson(UUID tenancyId, UUID personId) {
+        return jdbc.sql("""
+                SELECT * FROM tenant
+                WHERE tenancy_id = :tenancyId AND person_id = :personId
+                  AND end_date IS NULL AND deleted_at IS NULL
+                """)
+                .param("tenancyId", tenancyId)
+                .param("personId", personId)
+                .query(TenantRow.class)
+                .optional();
+    }
+
+    public List<TenantRow> findByPerson(UUID personId) {
+        return jdbc.sql("""
+                SELECT * FROM tenant
+                WHERE person_id = :personId AND deleted_at IS NULL
+                ORDER BY start_date NULLS LAST, created_at
+                """)
+                .param("personId", personId)
+                .query(TenantRow.class)
+                .list();
+    }
+
     public boolean softDelete(UUID uuid) {
         return jdbc.sql("UPDATE tenant SET deleted_at = CURRENT_TIMESTAMP WHERE uuid = :uuid AND deleted_at IS NULL")
                 .param("uuid", uuid)
                 .update() > 0;
     }
 
+    // start_date and end_date only. A move-out is end_date arriving here; there
+    // is no separate close method, matching TenancyRepository's one door.
     public Optional<TenantRow> patch(UUID uuid, Map<String, Object> changes) {
         if (changes.isEmpty()) return findById(uuid);
 
-        // Only allow specific columns to be patched
         for (String col : changes.keySet()) {
             if (!ALLOWED_COLUMNS.contains(col)) {
                 throw new IllegalArgumentException("Invalid column: " + col);
@@ -88,7 +119,7 @@ public class TenantRepository {
         params.put("uuid", uuid);
 
         return jdbc.sql(sql.toString())
-                .paramSource(params)
+                .params(params)
                 .query(TenantRow.class)
                 .optional();
     }

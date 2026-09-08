@@ -16,7 +16,6 @@ public record TenancyRow(
     boolean acceptPayments,
     boolean exemptFromLateFees,
     OffsetDateTime createdAt,
-    OffsetDateTime updatedAt,
     OffsetDateTime deletedAt
 ) {
 
@@ -31,29 +30,7 @@ public record TenancyRow(
                 this.acceptPayments,
                 this.exemptFromLateFees,
                 this.createdAt,
-                this.updatedAt,
                 this.deletedAt
         );
     }
-
-    public static TenancyRow forInsert(
-            UUID lotId,
-            LocalDate startDate,
-            LocalDate endDate
-    ) {
-        return new TenancyRow(
-                null,
-                lotId,
-                startDate,
-                endDate,
-                false,
-                false,
-                true,
-                false,
-                null,
-                null,
-                null
-        );
-    }
-
 }

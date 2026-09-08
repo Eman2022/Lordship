@@ -14,8 +14,7 @@ public record Tenancy(
     boolean acceptPayments,
     boolean exemptFromLateFees,
     OffsetDateTime createdAt,
-    OffsetDateTime  updatedAt,
-    OffsetDateTime  deletedAt
+    OffsetDateTime deletedAt
 ) {
     public boolean isSoftDeleted() {
         return deletedAt != null;

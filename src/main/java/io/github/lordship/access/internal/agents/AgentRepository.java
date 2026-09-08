@@ -23,9 +23,9 @@ public class AgentRepository {
                         :personId, :workPhone, :workEmail, :agentPassword
                     ) RETURNING *
                 """)
-        .paramSource(row)
-        .query(AgentRow.class)
-        .single();
+                .paramSource(row)
+                .query(AgentRow.class)
+                .single();
     }
 
     public int updatePassword(UUID agentId, String hashedPassword) {
@@ -36,6 +36,17 @@ public class AgentRepository {
                 .param("hashedPassword", hashedPassword)
                 .param("agentId", agentId)
                 .update();
+    }
+
+    // logs the agent out
+    public boolean revokeTokens(UUID agentId) {
+        // note we're using clock_timestamp(), not now(): now() is the transaction's start time.
+        return jdbc.sql("""
+            UPDATE agent SET tokens_valid_from = date_trunc('second', clock_timestamp()) 
+            WHERE uuid = :agentId AND deleted_at IS NULL
+            """)
+                .param("agentId", agentId)
+                .update() > 0;
     }
 
     public Optional<AgentRow> findById(UUID uuid) {
