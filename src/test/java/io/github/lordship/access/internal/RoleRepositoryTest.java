@@ -53,6 +53,24 @@ public class RoleRepositoryTest extends IntegrationTest {
         assertThrows(DuplicateKeyException.class, () -> roleRepository.save(role2));
     }
 
+    // uq_agent_role_name_active is partial on deleted_at, so the name comes back
+    // when the role goes. Without that, deleting a role burned its name for good
+    // and ensureDefaultRoles could not re-seed one it had deleted.
+    @Test
+    void save_shouldSucceed_whenReusingTheNameOfASoftDeletedRole() {
+        // Arrange
+        RoleRow first = roleRepository.save(buildRow());
+        assertTrue(roleRepository.softDelete(first.uuid()));
+
+        // Act
+        RoleRow second = roleRepository.save(buildRow());
+
+        // Assert
+        assertNotNull(second.uuid());
+        assertNotEquals(first.uuid(), second.uuid());
+        assertEquals("Role name", second.roleName());
+    }
+
     @Test
     void patch_shouldPersistRow_whenAllFieldsChanged() {
         // Arrange

@@ -97,6 +97,18 @@ public class GrantedRoleService {
         return revokeRole(agentId, row.uuid(), revokedBy);
     }
 
+
+    @Transactional
+    public int revokeAllForRole(UUID roleId, UUID revokedBy) {
+        int revoked = 0;
+        for (GrantedRoleRow row : grantedRoleRepository.findByRoleId(roleId)) {
+            if (revokeGrant(row.uuid(), revokedBy)) {
+                revoked++;
+            }
+        }
+        return revoked;
+    }
+
     // returns revoked grants too, so the caller can tell "never granted" from "revoked"
     public Optional<GrantedRole> findById(UUID grantId) {
         return grantedRoleRepository.findById(grantId).map(GrantedRoleRow::toGrantedRole);

@@ -17,9 +17,11 @@ public class PermissionRepository {
         this.jdbc = jdbcClient;
     }
 
+    // permission has no deleted_at column (V3) -- the predicate that used to be
+    // here would have thrown the first time anything called this.
     public Optional<PermissionRow> findById(UUID id) {
         return jdbc.sql("""
-                SELECT * FROM permission WHERE uuid = :uuid AND deleted_at IS NULL
+                SELECT * FROM permission WHERE uuid = :uuid
                 """)
                 .param("uuid", id)
                 .query(PermissionRow.class)
@@ -38,21 +40,25 @@ public class PermissionRepository {
 
     public Set<PermissionRow> getAllPermissions() {
         return new HashSet<>(jdbc.sql("""
-                SELECT * from permission 
+                SELECT * from permission
                 """)   // note: permissions can't be deleted
                 .query(PermissionRow.class)
                 .list());
     }
 
+    // The agent_role join is the backstop for RoleService.deleteRole: without it a
+    // grant outlives the role it names and keeps handing out its permissions.
     public Set<PermissionRow> findActivePermissionsForAgent(UUID agentId) {
         return new HashSet<>(jdbc.sql("""
                 SELECT DISTINCT p.*
                 FROM permission p
                 JOIN role_permission rp ON rp.permission_id = p.uuid
                 JOIN granted_role gr ON gr.role_id = rp.role_id
+                JOIN agent_role r ON r.uuid = gr.role_id
                 WHERE gr.agent_id = :agentId
                  AND gr.deleted_at IS NULL
                  AND rp.deleted_at IS NULL
+                 AND r.deleted_at IS NULL
                  AND p.uuid NOT IN (
                  SELECT permission_id
                  FROM denied_permission

@@ -2,6 +2,8 @@ package io.github.lordship.access.internal.role;
 
 import io.github.lordship.access.Role;
 import io.github.lordship.access.RoleService;
+import io.github.lordship.audit.ActingAgent;
+import io.github.lordship.audit.AuditContext;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -28,9 +30,12 @@ public class RoleController {
     ) { }
 
     private final RoleService roleService;
+    private final AuditContext auditContext;
 
-    public RoleController(RoleService roleService) {
+    public RoleController(RoleService roleService,
+                          AuditContext auditContext) {
         this.roleService = roleService;
+        this.auditContext = auditContext;
     }
 
     @PreAuthorize("hasAuthority('agent_roles:create')")
@@ -51,7 +56,7 @@ public class RoleController {
     @PreAuthorize("hasAuthority('agent_roles:delete')")
     @DeleteMapping("/{uuid}")
     public ResponseEntity<Void> deleteRole(@PathVariable UUID uuid) {
-        return roleService.deleteRole(uuid) ?
+        return roleService.deleteRole(uuid, ActingAgent.resolve(auditContext)) ?
                 ResponseEntity.noContent().build() :
                 ResponseEntity.notFound().build();
     }

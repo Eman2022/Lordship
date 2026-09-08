@@ -16,8 +16,8 @@ INSERT INTO permission (uuid, permission_name) VALUES
     (uuidv7(), 'agents:view'),
     (uuidv7(), 'agents:edit'),
     (uuidv7(), 'agents:reset_passwords'),
-    (uuidv7(), 'agents:view_own'),
-    (uuidv7(), 'agents:edit_own'),
+    (uuidv7(), 'agents:view_own'), -- aspirational
+    (uuidv7(), 'agents:edit_own'), -- aspirational
     (uuidv7(), 'agents:create'),
     (uuidv7(), 'agents:delete'),
 
@@ -60,13 +60,13 @@ INSERT INTO permission (uuid, permission_name) VALUES
     (uuidv7(), 'persons:view'),
     (uuidv7(), 'persons:edit'),
     (uuidv7(), 'persons:view_own'),
-    (uuidv7(), 'persons:edit_own'),
+    (uuidv7(), 'persons:edit_own'), -- aspirational
     (uuidv7(), 'persons:create'),
     (uuidv7(), 'persons:delete'),
 
     -- Audit
     (uuidv7(), 'audit:view'),
-    (uuidv7(), 'audit:view_own'),
+    (uuidv7(), 'audit:view_own'), -- aspirational
 
     -- Tenancy
     (uuidv7(), 'tenancy:view'),
