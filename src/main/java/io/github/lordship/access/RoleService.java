@@ -20,13 +20,16 @@ import java.util.UUID;
 public class RoleService {
 
     private final RoleRepository roleRepository;
+    private final GrantedRoleService grantedRoleService;
     private final AuditService auditService;
 
     private static final Logger log = LoggerFactory.getLogger(RoleService.class);
 
     public RoleService(RoleRepository roleRepository,
+                       GrantedRoleService grantedRoleService,
                        AuditService auditService) {
         this.roleRepository = roleRepository;
+        this.grantedRoleService = grantedRoleService;
         this.auditService = auditService;
     }
 
@@ -91,12 +94,29 @@ public class RoleService {
         return Optional.of(afterRow.toRole());
     }
 
+    /**
+     * Soft-deletes the role and revokes every grant that named it, each revocation
+     * audited on its own so the log can answer why an agent lost a permission.
+     *
+     * <p>The revocations are what take the permissions away for anything reading
+     * granted_role directly; PermissionRepository joining agent_role is the backstop
+     * for the two ever drifting apart.
+     *
+     * <p>No role is exempt, Admin included -- see RoleDeletionIT for what that costs
+     * and why no guard is in place yet.
+     */
     @Transactional
-    public boolean deleteRole(UUID uuid) {
+    public boolean deleteRole(UUID uuid, UUID revokedBy) {
         return roleRepository.findById(uuid).map(roleRow -> {
             if (!roleRepository.softDelete(uuid)) {
                 return false;
             }
+
+            int revoked = grantedRoleService.revokeAllForRole(uuid, revokedBy);
+            if (revoked > 0) {
+                log.info("Deleting role {} revoked {} grant(s)", roleRow.roleName(), revoked);
+            }
+
             auditService.recordDelete("agent_role", uuid, AuditMapper.toMap(roleRow));
             return true;
         }).orElse(false);

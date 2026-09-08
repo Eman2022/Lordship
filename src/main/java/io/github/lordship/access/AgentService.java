@@ -140,10 +140,17 @@ public class AgentService {
         return Optional.empty();
     }
 
+     // Note: this runs after ensureDefaultRoles, which guarantees the Admin role exists
     @Transactional
     public void ensureRootAgentExists(String email, String password) {
-        if (findByWorkEmail(email).isPresent()) return;
+        UUID rootAgentId = findByWorkEmail(email)
+                .map(Agent::uuid)
+                .orElseGet(() -> createRootAgent(email, password));
 
+        grantedRoleService.systemGrantRole(rootAgentId, "Admin");
+    }
+
+    private UUID createRootAgent(String email, String password) {
         UUID correlationId = UUID.randomUUID();
 
         Person person = personService.systemInsertRootPerson("Root Admin", correlationId);
@@ -157,9 +164,8 @@ public class AgentService {
         );
 
         Agent agent = agentRepository.save(agentRow).toAgent();
-
-        grantedRoleService.systemGrantRole(agent.uuid(), "Admin");
         log.warn("Root agent with email {} has been created - change password ASAP", email);
+        return agent.uuid();
     }
 
     public Optional<Agent> findById(UUID uuid) {

@@ -32,11 +32,14 @@ CREATE INDEX idx_login_event_agent ON agent_login_event(agent_id, occurred_at DE
 
 CREATE TABLE agent_role (
                             uuid             UUID PRIMARY KEY DEFAULT uuidv7(),
-                            role_name        VARCHAR(60) NOT NULL UNIQUE,
+                            role_name        VARCHAR(60) NOT NULL,
                             role_description TEXT,
                             created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
                             deleted_at       TIMESTAMPTZ
 );
+
+CREATE UNIQUE INDEX uq_agent_role_name_active
+    ON agent_role(role_name) WHERE deleted_at IS NULL;
 
 CREATE TABLE permission ( -- note permissions are seeded and NOT editable (hence no created_at or deleted_at timestamps
                             uuid            UUID PRIMARY KEY DEFAULT uuidv7(),
