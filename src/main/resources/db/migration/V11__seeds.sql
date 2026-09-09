@@ -1,5 +1,5 @@
 -- ============================================================
--- V2: All seed data — permissions, standard terms, roles, and role grants.
+-- V11: All seed data — permissions, standard terms, roles, and role grants.
 -- Also fixes V24's missing role grants for meters:*.
 -- ============================================================
 
@@ -138,7 +138,13 @@ INSERT INTO permission (uuid, permission_name) VALUES
     (uuidv7(), 'document_template:view'),
     (uuidv7(), 'document_template:create'),
     (uuidv7(), 'document_template:edit'),
-    (uuidv7(), 'document_template:delete')
+    (uuidv7(), 'document_template:delete'),
+
+    -- homes
+    (uuidv7(), 'homes:view'),
+    (uuidv7(), 'homes:create'),
+    (uuidv7(), 'homes:edit'),
+    (uuidv7(), 'homes:delete')
 ;
 
 -- ── Roles ─────────────────────────────────────────────────────────────────────
@@ -210,7 +216,10 @@ AND p.permission_name IN (
     'meterbills:view',
     'meterbills:edit',
     'document_template:view',
-    'property_document:view'
+    'property_document:view',
+    'homes:view',
+    'homes:create',
+    'homes:edit'
 );
 
 -- Property Manager
@@ -245,5 +254,6 @@ AND p.permission_name IN (
     'vehicles:view',
     'meters:view',
     'meterbills:view',
-    'meterbills:edit'
+    'meterbills:edit',
+    'homes:view'
 );

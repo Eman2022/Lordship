@@ -3,6 +3,7 @@ package io.github.lordship.config;
 import io.github.lordship.access.JwtService;
 import io.github.lordship.audit.AuditContext;
 import io.github.lordship.identity.AgentAuthorizationCache;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -48,6 +49,15 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // An unhandled exception is rendered by forwarding to /error, which is a
+                        // second pass through this chain. JwtAuthFilter is a OncePerRequestFilter
+                        // and skips error dispatches by design, and STATELESS means nothing else
+                        // restores the Authentication -- so without this line every validation
+                        // failure, unreadable body and bad path variable is denied here and comes
+                        // back 401 instead of its real status. Must stay first: rules match in
+                        // declaration order. The original handler does not re-run on this pass;
+                        // only the error body is written.
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/api/agents/auth").permitAll()
                         .requestMatchers(
                                 "/v3/api-docs",
