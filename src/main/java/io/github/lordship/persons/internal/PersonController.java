@@ -4,6 +4,7 @@ import io.github.lordship.identity.LordshipPrincipal;
 import io.github.lordship.persons.Person;
 import io.github.lordship.persons.PersonService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,6 +19,12 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/persons")
 public class PersonController {
+
+    public record PersonCreateRequest(
+            @NotBlank
+            String nameFull
+    ) {
+    }
 
     private final PersonService personService;
 

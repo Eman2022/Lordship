@@ -21,6 +21,7 @@ public abstract class IntegrationTest {
     @Autowired
     protected AgentAuthorizationCache authorizationCache;
 
+    // Removing this @beforeEach annotation should leave the suite green — afterCompletion cleans up after rolled-back tests. If it doesn't, an eviction path has gone missing.
     @BeforeEach
     void clearAuthorizationCache() {
         authorizationCache.invalidateAll();
